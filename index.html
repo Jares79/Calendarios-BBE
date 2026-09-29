@@ -31,6 +31,7 @@ button{
     color:white;
     border:none;
     border-radius:5px;
+    cursor:pointer;
 }
 
 input{
@@ -43,23 +44,53 @@ input{
     border-radius:5px;
 }
 
+/* Mañana */
 .manana{
     background:#B3E5FC;
 }
 
+/* Tarde */
 .tarde{
     background:#42A5F5;
     color:white;
 }
 
+/* Noche */
 .noche{
     background:#9C27B0;
     color:white;
 }
 
+/* Fiesta */
 .fiesta{
     background:#E53935;
     color:white;
+}
+
+/* Partida */
+.partida{
+    background:#E0E0E0;
+}
+
+/* Intensiva */
+.intensiva{
+    background:#E0E0E0;
+}
+
+/* Semana X */
+.semanax{
+    background:#FFD54F;
+    font-weight:bold;
+}
+
+/* Semana Y */
+.semanay{
+    background:#E0E0E0;
+    font-weight:bold;
+}
+
+.resumen{
+    margin-left:15px;
 }
 
 </style>
@@ -142,56 +173,12 @@ const campo = [
 ];
 
 function diferenciaDias(fecha1, fecha2){
+
     return Math.floor(
-        (fecha1.getTime() - fecha2.getTime()) /
+        (fecha1.getTime() - fecha2.getTime())
+        /
         (1000 * 60 * 60 * 24)
     );
-}
-
-function obtenerInfoJT(fecha,inicio){
-
-    let dias = diferenciaDias(
-        fecha,
-        new Date(inicio)
-    );
-
-    let pos =
-        ((dias % patronJT.length)
-        + patronJT.length)
-        % patronJT.length;
-
-    let turno = patronJT[pos];
-
-    if(pos >= 21 && pos <= 27)
-        return {texto:"Semana X",clase:"semanax"};
-
-    if(pos >= 28 && pos <= 34)
-        return {texto:"Semana Y",clase:"semanay"};
-
-    return convertirTurno(turno);
-}
-
-function obtenerInfoOP(fecha,inicio){
-
-    let dias = diferenciaDias(
-        fecha,
-        new Date(inicio)
-    );
-
-    let pos =
-        ((dias % patronOP.length)
-        + patronOP.length)
-        % patronOP.length;
-
-    let turno = patronOP[pos];
-
-    if(pos >= 35 && pos <= 41)
-        return {texto:"Semana X",clase:"semanax"};
-
-    if(pos >= 42 && pos <= 48)
-        return {texto:"Semana Y",clase:"semanay"};
-
-    return convertirTurno(turno);
 }
 
 function convertirTurno(turno){
@@ -242,6 +229,84 @@ function convertirTurno(turno){
     }
 }
 
+function obtenerInfoJT(fecha,inicio){
+
+    let dias =
+        diferenciaDias(
+            fecha,
+            new Date(inicio)
+        );
+
+    let pos =
+        ((dias % patronJT.length)
+        + patronJT.length)
+        % patronJT.length;
+
+    let turno = patronJT[pos];
+
+    if(pos >= 21 && pos <= 27){
+        return {
+            texto:"Semana X",
+            clase:"semanax"
+        };
+    }
+
+    if(pos >= 28 && pos <= 34){
+        return {
+            texto:"Semana Y",
+            clase:"semanay"
+        };
+    }
+
+    if(pos >= 84 && pos <= 90){
+        return {
+            texto:"Semana X",
+            clase:"semanax"
+        };
+    }
+
+    if(pos >= 91 && pos <= 97){
+        return {
+            texto:"Semana Y",
+            clase:"semanay"
+        };
+    }
+
+    return convertirTurno(turno);
+}
+
+function obtenerInfoOP(fecha,inicio){
+
+    let dias =
+        diferenciaDias(
+            fecha,
+            new Date(inicio)
+        );
+
+    let pos =
+        ((dias % patronOP.length)
+        + patronOP.length)
+        % patronOP.length;
+
+    let turno = patronOP[pos];
+
+    if(pos >= 35 && pos <= 41){
+        return {
+            texto:"Semana X",
+            clase:"semanax"
+        };
+    }
+
+    if(pos >= 42 && pos <= 48){
+        return {
+            texto:"Semana Y",
+            clase:"semanay"
+        };
+    }
+
+    return convertirTurno(turno);
+}
+
 function pintar(nombre,info){
 
     return `
@@ -253,8 +318,9 @@ function pintar(nombre,info){
 
 function agregarResumen(resumen,nombre,turno){
 
-    if(!resumen[turno])
+    if(!resumen[turno]){
         resumen[turno] = [];
+    }
 
     resumen[turno].push(nombre);
 }
@@ -274,9 +340,8 @@ function consultar(){
 
     let resumen = {};
 
-    let html = `
-        <h2>Fecha: ${valor}</h2>
-    `;
+    let html =
+        `<h2>Fecha: ${valor}</h2>`;
 
     html += "<h2>👨‍✈️ Jefes de Turno</h2>";
 
@@ -295,9 +360,10 @@ function consultar(){
             j.name,
             info.texto
         );
+
     });
 
-    html += "<h2>🎛️ Operadores Control</h2>";
+    html += "<h2>🎛️ Operadores de Control</h2>";
 
     control.forEach(o=>{
 
@@ -314,9 +380,10 @@ function consultar(){
             o.name,
             info.texto
         );
+
     });
 
-    html += "<h2>🔧 Operadores Campo</h2>";
+    html += "<h2>🔧 Operadores de Campo</h2>";
 
     campo.forEach(o=>{
 
@@ -333,18 +400,33 @@ function consultar(){
             o.name,
             info.texto
         );
+
     });
 
     html += "<hr>";
     html += "<h2>📋 Resumen Diario</h2>";
 
-    Object.keys(resumen).forEach(turno=>{
+    const orden = [
+        "Semana X",
+        "Semana Y",
+        "Mañana",
+        "Tarde",
+        "Noche",
+        "Partida",
+        "Intensiva",
+        "Fiesta"
+    ];
+
+    orden.forEach(turno=>{
+
+        if(!resumen[turno]) return;
 
         html += `<h3>${turno}</h3>`;
 
         resumen[turno].forEach(persona=>{
 
-            html += `• ${persona}<br>`;
+            html +=
+            `<div class="resumen">• ${persona}</div>`;
 
         });
 
