@@ -1,15 +1,18 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>Cuadrantes Central</title>
 
 <style>
+
 body{
     font-family: Arial, sans-serif;
-    margin:20px;
     background:#f4f4f4;
+    margin:20px;
 }
 
 h1{
@@ -19,43 +22,47 @@ h1{
 .card{
     background:white;
     padding:15px;
-    margin-bottom:15px;
+    margin-bottom:20px;
     border-radius:10px;
-    box-shadow:0 2px 5px rgba(0,0,0,.1);
-}
-
-.jt{
-    background:#d9edf7;
-}
-
-.oc{
-    background:#dff0d8;
-}
-
-.of{
-    background:#fcf8e3;
+    box-shadow:0 2px 5px rgba(0,0,0,.15);
 }
 
 button{
-    padding:10px;
-    border:none;
-    border-radius:5px;
-    cursor:pointer;
     background:#1f4e79;
     color:white;
+    border:none;
+    padding:10px 20px;
+    border-radius:5px;
+    cursor:pointer;
 }
 
 input{
     padding:8px;
 }
+
+.turno{
+    padding:8px;
+    margin:4px 0;
+    border-radius:5px;
+}
+
+.M{background:#28a745;color:white;}
+.T{background:#fd7e14;color:white;}
+.N{background:#007bff;color:white;}
+.F{background:#d6d8db;}
+.P{background:#6f42c1;color:white;}
+.I{background:#ffc107;}
+
 </style>
 
 </head>
+
 <body>
 
 <h1>📅 Cuadrantes Central</h1>
 
 <div class="card">
+
 <h2>Consulta rápida</h2>
 
 <input type="date" id="fecha">
@@ -64,83 +71,127 @@ input{
 Consultar
 </button>
 
-<div id="resultado"></div>
 </div>
 
-<div class="card jt">
-<h2>Jefes de Turno</h2>
-
-<ul>
-<li>Javi</li>
-<li>Borja</li>
-<li>Peje</li>
-<li>Gari</li>
-<li>Dani</li>
-<li>Asier</li>
-<li>David</li>
-</ul>
-
-</div>
-
-<div class="card oc">
-
-<h2>Operadores de Control</h2>
-
-<ul>
-<li>Aspi</li>
-<li>Lauki</li>
-<li>Alias</li>
-<li>Pedro</li>
-<li>Silva</li>
-<li>Hector</li>
-<li>Garces</li>
-</ul>
-
-</div>
-
-<div class="card of">
-
-<h2>Operadores de Campo</h2>
-
-<ul>
-<li>Josu</li>
-<li>Jose</li>
-<li>Jurado</li>
-<li>Oscar</li>
-<li>Urko</li>
-<li>Xabi</li>
-<li>Alex</li>
-</ul>
-
+<div class="card" id="resultado">
+Selecciona una fecha.
 </div>
 
 <script>
 
-function consultar(){
+const patronJT=[
+"F","P","M","M","T","T","N","N",
+"F","F","F","I","M","M","T","T","N","N",
+"F","F","F","P","P","P","P","I","F","F",
+"P","P","P","P","I","F","F","F",
+"M","M","T","T","N","N",
+"F","F","F","P","M","M","T","T","N","N",
+"F","F","F","F","M","M","T","T","N","N",
+"F","F","F","P","M","M","T","T","N","N",
+"F","F","F","F","M","M","T","T","N","N",
+"F","F",
+"P","P","P","P","I","F","F",
+"P","P","P","P","I","F","F"
+];
 
-let fecha=document.getElementById('fecha').value;
+const patronOP=[
+"M","M","T","T","T","F","F",
+"F","P","M","M","N","N","N",
+"F","F","F","P","M","T","T",
+"N","N","F","F","F","M","M",
+"T","T","N","N","F","F","F",
+"P","P","P","P","I","F","F",
+"P","P","P","P","I","F","F"
+];
 
-if(!fecha){
-alert('Selecciona una fecha');
-return;
+const jefes=[
+{name:"Javi",inicio:"2026-03-02"},
+{name:"Borja",inicio:"2026-02-02"},
+{name:"Peje",inicio:"2026-04-13"},
+{name:"Gari",inicio:"2026-03-16"},
+{name:"Dani",inicio:"2026-02-16"},
+{name:"Asier",inicio:"2026-03-30"},
+{name:"David",inicio:"2026-01-19"}
+];
+
+const operadores=[
+{name:"Aspi / Josu",inicio:"2025-01-13"},
+{name:"Lauki / Jose",inicio:"2025-01-06"},
+{name:"Alias / Jurado",inicio:"2025-01-20"},
+{name:"Pedro / Oscar",inicio:"2025-02-17"},
+{name:"Silva / Urko",inicio:"2025-02-03"},
+{name:"Hector / Xabi",inicio:"2025-01-27"},
+{name:"Garces / Alex",inicio:"2025-02-10"}
+];
+
+function diferenciaDias(fechaA,fechaB){
+    return Math.floor(
+        (fechaA-fechaB)/(1000*60*60*24)
+    );
 }
 
-document.getElementById('resultado').innerHTML=
-`
-<h3>Fecha consultada:</h3>
-<p>${fecha}</p>
+function obtenerTurno(fecha,inicio,patron){
 
-<p>⚠️ Próxima versión:</p>
+    const fechaInicio=new Date(inicio);
 
-<ul>
-<li>Cálculo automático JT-98</li>
-<li>Cálculo automático OP-49</li>
-<li>Cambios de turno</li>
-<li>Vacaciones</li>
-<li>Histórico</li>
-</ul>
-`;
+    let dias=diferenciaDias(fecha,fechaInicio);
 
+    let posicion=((dias % patron.length)+patron.length)%patron.length;
+
+    return patron[posicion];
+}
+
+function pintar(nombre,turno){
+
+    return `
+    <div class="turno ${turno}">
+        <strong>${nombre}</strong> → ${turno}
+    </div>
+    `;
+}
+
+function consultar(){
+
+    const valor=document.getElementById("fecha").value;
+
+    if(!valor){
+        alert("Selecciona una fecha");
+        return;
+    }
+
+    const fecha=new Date(valor);
+
+    let html=`
+    <h2>Fecha consultada</h2>
+    <p><strong>${valor}</strong></p>
+    `;
+
+    html+="<h2>👨‍✈️ Jefes de Turno</h2>";
+
+    jefes.forEach(jefe=>{
+        const turno=obtenerTurno(
+            fecha,
+            jefe.inicio,
+            patronJT
+        );
+
+        html+=pintar(jefe.name,turno);
+    });
+
+    html+="<h2>🏭 Operadores Control / Campo</h2>";
+
+    operadores.forEach(op=>{
+
+        const turno=obtenerTurno(
+            fecha,
+            op.inicio,
+            patronOP
+        );
+
+        html+=pintar(op.name,turno);
+    });
+
+    document.getElementById("resultado").innerHTML=html;
 }
 
 </script>
