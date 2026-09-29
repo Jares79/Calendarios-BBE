@@ -1,10 +1,8 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <title>Cuadrantes Central</title>
 
 <style>
@@ -41,20 +39,40 @@ input{
 }
 
 .turno{
-    padding:8px;
-    margin:4px 0;
-    border-radius:5px;
+    padding:10px;
+    margin:5px 0;
+    border-radius:6px;
+    font-weight:bold;
 }
 
-.M{background:#28a745;color:white;}
-.T{background:#fd7e14;color:white;}
-.N{background:#007bff;color:white;}
-.F{background:#d6d8db;}
-.P{background:#6f42c1;color:white;}
-.I{background:#ffc107;}
+.manana{
+    background:#B3E5FC;
+}
+
+.tarde{
+    background:#42A5F5;
+    color:white;
+}
+
+.noche{
+    background:#9C27B0;
+    color:white;
+}
+
+.fiesta{
+    background:#E53935;
+    color:white;
+}
+
+.semanax{
+    background:#E0E0E0;
+}
+
+.semanay{
+    background:#F5F5F5;
+}
 
 </style>
-
 </head>
 
 <body>
@@ -80,15 +98,20 @@ Selecciona una fecha.
 <script>
 
 const patronJT=[
-"F","P","M","M","T","T","N","N",
-"F","F","F","I","M","M","T","T","N","N",
-"F","F","F","P","P","P","P","I","F","F",
-"P","P","P","P","I","F","F","F",
+"F","P","M","M","T","T","N","N","F","F","F","I",
+"M","M","T","T","N","N","F","F","F",
+"P","P","P","P","I","F","F",
+"P","P","P","P","I","F","F",
+"F",
 "M","M","T","T","N","N",
-"F","F","F","P","M","M","T","T","N","N",
-"F","F","F","F","M","M","T","T","N","N",
-"F","F","F","P","M","M","T","T","N","N",
-"F","F","F","F","M","M","T","T","N","N",
+"F","F","F",
+"P","M","M","T","T","N","N",
+"F","F","F","F",
+"M","M","T","T","N","N",
+"F","F","F",
+"P","M","M","T","T","N","N",
+"F","F","F","F",
+"M","M","T","T","N","N",
 "F","F",
 "P","P","P","P","I","F","F",
 "P","P","P","P","I","F","F"
@@ -114,87 +137,85 @@ const jefes=[
 {name:"David",inicio:"2026-01-19"}
 ];
 
-const operadores=[
-{name:"Aspi / Josu",inicio:"2025-01-13"},
-{name:"Lauki / Jose",inicio:"2025-01-06"},
-{name:"Alias / Jurado",inicio:"2025-01-20"},
-{name:"Pedro / Oscar",inicio:"2025-02-17"},
-{name:"Silva / Urko",inicio:"2025-02-03"},
-{name:"Hector / Xabi",inicio:"2025-01-27"},
-{name:"Garces / Alex",inicio:"2025-02-10"}
+const control=[
+{name:"Aspi",inicio:"2025-01-13"},
+{name:"Lauki",inicio:"2025-01-06"},
+{name:"Alias",inicio:"2025-01-20"},
+{name:"Pedro",inicio:"2025-02-17"},
+{name:"Silva",inicio:"2025-02-03"},
+{name:"Hector",inicio:"2025-01-27"},
+{name:"Garces",inicio:"2025-02-10"}
 ];
 
-function diferenciaDias(fechaA,fechaB){
-    return Math.floor(
-        (fechaA-fechaB)/(1000*60*60*24)
+const campo=[
+{name:"Josu",inicio:"2025-01-13"},
+{name:"Jose",inicio:"2025-01-06"},
+{name:"Jurado",inicio:"2025-01-20"},
+{name:"Oscar",inicio:"2025-02-17"},
+{name:"Urko",inicio:"2025-02-03"},
+{name:"Xabi",inicio:"2025-01-27"},
+{name:"Alex",inicio:"2025-02-10"}
+];
+
+function diferenciaDias(a,b){
+    return Math.floor((a-b)/(1000*60*60*24));
+}
+
+function obtenerPosicion(fecha,inicio,longitud){
+
+    const dias = diferenciaDias(
+        fecha,
+        new Date(inicio)
     );
+
+    return ((dias % longitud) + longitud) % longitud;
 }
 
 function obtenerTurno(fecha,inicio,patron){
 
-    const fechaInicio=new Date(inicio);
+    const pos = obtenerPosicion(
+        fecha,
+        inicio,
+        patron.length
+    );
 
-    let dias=diferenciaDias(fecha,fechaInicio);
+    return patron[pos];
+}
 
-    let posicion=((dias % patron.length)+patron.length)%patron.length;
+function descripcion(turno){
 
-    return patron[posicion];
+    switch(turno){
+
+        case "M": return "Mañana";
+        case "T": return "Tarde";
+        case "N": return "Noche";
+        case "F": return "Fiesta";
+        case "P": return "Partida";
+        case "I": return "Intensiva";
+
+        default:
+            return turno;
+
+    }
+
+}
+
+function clase(turno){
+
+    switch(turno){
+
+        case "M": return "manana";
+        case "T": return "tarde";
+        case "N": return "noche";
+        case "F": return "fiesta";
+        default: return "";
+
+    }
+
 }
 
 function pintar(nombre,turno){
 
     return `
-    <div class="turno ${turno}">
-        <strong>${nombre}</strong> → ${turno}
-    </div>
-    `;
-}
-
-function consultar(){
-
-    const valor=document.getElementById("fecha").value;
-
-    if(!valor){
-        alert("Selecciona una fecha");
-        return;
-    }
-
-    const fecha=new Date(valor);
-
-    let html=`
-    <h2>Fecha consultada</h2>
-    <p><strong>${valor}</strong></p>
-    `;
-
-    html+="<h2>👨‍✈️ Jefes de Turno</h2>";
-
-    jefes.forEach(jefe=>{
-        const turno=obtenerTurno(
-            fecha,
-            jefe.inicio,
-            patronJT
-        );
-
-        html+=pintar(jefe.name,turno);
-    });
-
-    html+="<h2>🏭 Operadores Control / Campo</h2>";
-
-    operadores.forEach(op=>{
-
-        const turno=obtenerTurno(
-            fecha,
-            op.inicio,
-            patronOP
-        );
-
-        html+=pintar(op.name,turno);
-    });
-
-    document.getElementById("resultado").innerHTML=html;
-}
-
-</script>
-
-</body>
-</html>
+    <div class="turno ${clase(turno)}">
+    ${nombre} → ${descripcion(turno
