@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cuadrantes Central</title>
+
+<style>
+body{
+    font-family: Arial, sans-serif;
+    margin:20px;
+    background:#f4f4f4;
+}
+
+h1{
+    color:#1f4e79;
+}
+
+.card{
+    background:white;
+    padding:15px;
+    margin-bottom:15px;
+    border-radius:10px;
+    box-shadow:0 2px 5px rgba(0,0,0,.1);
+}
+
+.jt{
+    background:#d9edf7;
+}
+
+.oc{
+    background:#dff0d8;
+}
+
+.of{
+    background:#fcf8e3;
+}
+
+button{
+    padding:10px;
+    border:none;
+    border-radius:5px;
+    cursor:pointer;
+    background:#1f4e79;
+    color:white;
+}
+
+input{
+    padding:8px;
+}
+</style>
+
+</head>
+<body>
+
+<h1>📅 Cuadrantes Central</h1>
+
+<div class="card">
+<h2>Consulta rápida</h2>
+
+<input type="date" id="fecha">
+
+<button onclick="consultar()">
+Consultar
+</button>
+
+<div id="resultado"></div>
+</div>
+
+<div class="card jt">
+<h2>Jefes de Turno</h2>
+
+<ul>
+<li>Javi</li>
+<li>Borja</li>
+<li>Peje</li>
+<li>Gari</li>
+<li>Dani</li>
+<li>Asier</li>
+<li>David</li>
+</ul>
+
+</div>
+
+<div class="card oc">
+
+<h2>Operadores de Control</h2>
+
+<ul>
+<li>Aspi</li>
+<li>Lauki</li>
+<li>Alias</li>
+<li>Pedro</li>
+<li>Silva</li>
+<li>Hector</li>
+<li>Garces</li>
+</ul>
+
+</div>
+
+<div class="card of">
+
+<h2>Operadores de Campo</h2>
+
+<ul>
+<li>Josu</li>
+<li>Jose</li>
+<li>Jurado</li>
+<li>Oscar</li>
+<li>Urko</li>
+<li>Xabi</li>
+<li>Alex</li>
+</ul>
+
+</div>
+
+<script>
+
+function consultar(){
+
+let fecha=document.getElementById('fecha').value;
+
+if(!fecha){
+alert('Selecciona una fecha');
+return;
+}
+
+document.getElementById('resultado').innerHTML=
+`
+<h3>Fecha consultada:</h3>
+<p>${fecha}</p>
+
+<p>⚠️ Próxima versión:</p>
+
+<ul>
+<li>Cálculo automático JT-98</li>
+<li>Cálculo automático OP-49</li>
+<li>Cambios de turno</li>
+<li>Vacaciones</li>
+<li>Histórico</li>
+</ul>
+`;
+
+}
+
+</script>
+
+</body>
+</html>
