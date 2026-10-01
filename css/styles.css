@@ -1,0 +1,104 @@
+<style>
+table{
+    border-collapse:collapse;
+    font-size:12px;
+    width:100%;
+}
+
+th,td{
+    border:1px solid #ccc;
+    padding:4px;
+    text-align:center;
+}
+
+.nombre{
+    text-align:left;
+    font-weight:bold;
+    white-space:nowrap;
+}
+body{
+    font-family: Arial, sans-serif;
+    background:#f4f4f4;
+    margin:20px;
+}
+
+.card{
+    background:white;
+    padding:15px;
+    border-radius:10px;
+    margin-bottom:15px;
+}
+
+h1{
+    color:#1f4e79;
+}
+
+button{
+    padding:10px;
+    background:#1f4e79;
+    color:white;
+    border:none;
+    border-radius:5px;
+    cursor:pointer;
+}
+
+input{
+    padding:8px;
+}
+
+.item{
+    padding:8px;
+    margin:4px 0;
+    border-radius:5px;
+}
+
+/* Mañana */
+.manana{
+    background:#B3E5FC;
+}
+
+/* Tarde */
+.tarde{
+    background:#42A5F5;
+    color:white;
+}
+
+/* Noche */
+.noche{
+    background:#9C27B0;
+    color:white;
+}
+
+/* Fiesta */
+.fiesta{
+    background:#E53935;
+    color:white;
+}
+
+/* Partida */
+.partida{
+    background:#E0E0E0;
+}
+
+/* Intensiva */
+.intensiva{
+    background:#E0E0E0;
+}
+
+/* Semana X */
+.semanax{
+    background:#FFD54F;
+    font-weight:bold;
+}
+
+/* Semana Y */
+.semanay{
+    background:#E0E0E0;
+    font-weight:bold;
+}
+
+.resumen{
+    margin-left:15px;
+}
+
+</style>
