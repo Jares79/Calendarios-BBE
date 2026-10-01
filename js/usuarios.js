@@ -21,3 +21,10 @@ password: "demo",
 rol: "empleado"
 }
 ];
+function login(usuario, password) {
+    return usuarios.find(
+        u =>
+            u.usuario === usuario &&
+            u.password === password
+    );
+}
