@@ -6,6 +6,12 @@ const usuarioActual = login(
 console.log(usuarioActual);
 
 if (usuarioActual) {
-    console.log("Bienvenido " + usuarioActual.nombre);
-    console.log("Rol: " + usuarioActual.rol);
+
+    document.getElementById("infoUsuario").innerHTML =
+        "<strong>Usuario:</strong> " +
+        usuarioActual.nombre +
+        "<br>" +
+        "<strong>Rol:</strong> " +
+        usuarioActual.rol;
+
 }
