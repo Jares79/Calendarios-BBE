@@ -4,7 +4,7 @@ id: 1,
 nombre: "Javier Ares",
 usuario: "JAM",
 password: "659740929",
-rol: "administrador"
+rol: "administrador",
 empleado: "Javi"
 },
 {
