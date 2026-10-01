@@ -1,5 +1,8 @@
 console.log("Aplicación cargada");
 
-console.log("Usuarios:");
+const usuarioActual = login(
+    "JAM",
+    "659740929"
+);
 
-console.log(usuarios);
+console.log(usuarioActual);
