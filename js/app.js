@@ -1,9 +1,8 @@
-const usuarioActual = login(
+let usuarioActual = login(
     "JAM",
-    "659740929"
+    "admin123"
 );
 
-console.log(usuarioActual);
 
 if (usuarioActual) {
 
