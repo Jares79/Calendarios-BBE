@@ -3,7 +3,7 @@ const usuarios = [
 id: 1,
 nombre: "Javier Ares",
 usuario: "JAM",
-password: "659740929",
+password: "admin123",
 rol: "administrador",
 empleado: "Javi"
 },
