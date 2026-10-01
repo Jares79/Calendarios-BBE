@@ -8,9 +8,33 @@ function verMiCalendario() {
         return;
     }
 
-    document.getElementById("miCalendario").innerHTML =
-        `
-        <h3>Calendario mensual</h3>
-        <p>Mes seleccionado: ${valor}</p>
+    const partes = valor.split("-");
+
+    const anio = Number(partes[0]);
+    const mes = Number(partes[1]) - 1;
+
+    const diasMes =
+        new Date(
+            anio,
+            mes + 1,
+            0
+        ).getDate();
+
+    let html = `
+        <h3>
+            Calendario de ${valor}
+        </h3>
+    `;
+
+    for (let dia = 1; dia <= diasMes; dia++) {
+
+        html += `
+            <div class="item">
+                Día ${dia}
+            </div>
         `;
+    }
+
+    document.getElementById("miCalendario").innerHTML =
+        html;
 }
