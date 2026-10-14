@@ -213,11 +213,11 @@ select{
         min-width:auto;
         width:100%;
         white-space:normal;
-        padding:6px 10px;
+        padding:4px 8px;
     }
 
     h1{
-        font-size:28px;
+        font-size:26px;
         margin-bottom:0;
     }
 
@@ -230,7 +230,7 @@ select{
         justify-content:center;
         align-items:center;
         gap:30px;
-        margin-bottom:8px;
+        margin-bottom:5px;
     }
 
     .barraMes h3{
@@ -241,9 +241,13 @@ select{
     }
 
     .barraMes button{
-        width:50px;
-        height:50px;
+        width:42px;
+        height:42px;
         padding:0;
+    }
+    .card{
+    padding:15px;
+    margin-bottom:15px;
     }
 
     .calendario-grid{
