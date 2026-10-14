@@ -226,24 +226,23 @@ select{
     }
 
     .barraMes{
-        display:grid;
-        grid-template-columns:1fr auto 1fr;
+        display:flex;
+        justify-content:space-between;
         align-items:center;
-        margin-bottom:10px;
-    }
-
-    .barraMes button:first-child{
-        justify-self:start;
-    }
-
-    .barraMes button:last-child{
-        justify-self:end;
+        width:340px;
+        margin:0 auto 10px auto;
     }
 
     .barraMes h3{
         font-size:20px;
         text-align:center;
         margin:0;
+    }
+
+    .barraMes button{
+        width:55px;
+        height:55px;
+        padding:0;
     }
 
     .calendario-grid{
