@@ -1,17 +1,29 @@
+let fechaCalendario = new Date();
+
 function verMiCalendario() {
 
-    const valor =
-        document.getElementById("mesUsuario").value;
+    const anio =
+        fechaCalendario.getFullYear();
 
-    if (!valor) {
-        alert("Selecciona un mes");
-        return;
-    }
+    const mes =
+        fechaCalendario.getMonth();
 
-    const partes = valor.split("-");
+    let nombreMes =
+        fechaCalendario.toLocaleDateString(
+            "es-ES",
+            {
+                month:"long",
+                year:"numeric"
+            }
+        );
 
-    const anio = Number(partes[0]);
-    const mes = Number(partes[1]) - 1;
+    nombreMes =
+        nombreMes.charAt(0).toUpperCase() +
+        nombreMes.slice(1);
+
+    document.getElementById(
+        "tituloMes"
+    ).textContent = nombreMes;
 
     const empleado = jefes.find(
         j => j.name === usuarioActual.empleado
@@ -29,8 +41,30 @@ function verMiCalendario() {
             0
         ).getDate();
 
-    let html =
-        `<h3>${usuarioActual.nombre}</h3>`;
+    let html = `
+    <div class="calendario-grid">
+
+        <div class="dia-cabecera">L</div>
+        <div class="dia-cabecera">M</div>
+        <div class="dia-cabecera">X</div>
+        <div class="dia-cabecera">J</div>
+        <div class="dia-cabecera">V</div>
+        <div class="dia-cabecera">S</div>
+        <div class="dia-cabecera">D</div>
+    `;
+
+    let primerDia =
+        new Date(anio, mes, 1).getDay();
+
+    primerDia =
+        primerDia === 0
+        ? 6
+        : primerDia - 1;
+
+    for(let i = 0; i < primerDia; i++){
+
+        html += `<div></div>`;
+    }
 
     for (let dia = 1; dia <= diasMes; dia++) {
 
@@ -48,12 +82,41 @@ function verMiCalendario() {
             );
 
         html += `
-            <div class="item ${info.clase}">
-                Día ${dia} - ${info.texto}
+            <div
+                class="dia-calendario ${info.clase}"
+            >
+                <div class="numero-dia">
+                    ${dia}
+                </div>
+
+                <div class="turno-dia">
+                    ${inicial(info)}
+                </div>
             </div>
         `;
     }
 
-    document.getElementById("miCalendario").innerHTML =
-        html;
+    html += `</div>`;
+
+    document.getElementById(
+        "miCalendario"
+    ).innerHTML = html;
+}
+
+function mesAnterior(){
+
+    fechaCalendario.setMonth(
+        fechaCalendario.getMonth() - 1
+    );
+
+    verMiCalendario();
+}
+
+function mesSiguiente(){
+
+    fechaCalendario.setMonth(
+        fechaCalendario.getMonth() + 1
+    );
+
+    verMiCalendario();
 }
