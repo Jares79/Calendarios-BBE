@@ -206,42 +206,43 @@ select{
     .cabecera{
         flex-direction:column;
         align-items:stretch;
-        margin-bottom:10px;
+        margin-bottom:8px;
     }
 
     .usuarioCabecera{
         min-width:auto;
         width:100%;
         white-space:normal;
-        padding:8px 10px;
+        padding:6px 10px;
     }
 
     h1{
         font-size:28px;
-        margin-bottom:5px;
+        margin-bottom:0;
     }
 
     .subtitulo{
-        margin-bottom:15px;
+        margin-bottom:10px;
     }
 
     .barraMes{
         display:flex;
-        justify-content:space-between;
+        justify-content:center;
         align-items:center;
-        width:340px;
-        margin:0 auto 10px auto;
+        gap:30px;
+        margin-bottom:8px;
     }
 
     .barraMes h3{
-        font-size:20px;
+        font-size:16px;
         text-align:center;
         margin:0;
+        white-space:nowrap;
     }
 
     .barraMes button{
-        width:55px;
-        height:55px;
+        width:50px;
+        height:50px;
         padding:0;
     }
 
