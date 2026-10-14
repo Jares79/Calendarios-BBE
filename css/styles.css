@@ -224,13 +224,13 @@ select{
     }
 
     .calendario-grid{
-        grid-template-columns:repeat(7,48px);
+        grid-template-columns:repeat(7,47px);
         justify-content:center;
         gap:3px;
     }
 
     .dia-calendario{
-        width:48px;
+        width:47px;
     }
 
     .numero-dia{
