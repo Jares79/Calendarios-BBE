@@ -126,7 +126,6 @@ h2{
     border-bottom:2px solid #e5e5e5;
     padding-bottom:10px;
 }
-}
 
 input,
 select{
@@ -153,38 +152,15 @@ select{
     transform:translateY(-3px);
     box-shadow:0 10px 25px rgba(0,0,0,0.15);
 }
-.dashboard{
-    display:flex;
-    gap:20px;
-    margin-bottom:20px;
-}
 
-.dashboard .card{
-    flex:1;
-    padding:12px;
-}
-
-.resumen-card{
-    text-align:center;
-}
-
-.resumen-card h3{
-    color:#1f4e79;
-    margin:0 0 5px 0;
-}
-
-
-.resumen-card p{
-    font-size:20px;
-    font-weight:bold;
-    margin:0;
-}
 .barraMes{
     display:flex;
-    justify-content:space-between;
+    justify-content:center;
     align-items:center;
+    gap:290px;
     margin-bottom:20px;
 }
+
 
 .barraMes h3{
     margin:0;
@@ -192,7 +168,8 @@ select{
 }
 .calendario-grid{
     display:grid;
-    grid-template-columns:repeat(7,1fr);
+    grid-template-columns:repeat(7,115px);
+    justify-content:center;
     gap:4px;
 }
 
@@ -204,32 +181,37 @@ select{
 }
 
 .dia-calendario{
-    min-height:50px;
+    min-height:60px;
     border-radius:10px;
     display:flex;
     flex-direction:column;
     justify-content:center;
     align-items:center;
     font-weight:bold;
+    width:115px;
 }
 
 .numero-dia{
-    font-size:16px;
-    margin-bottom:2px;
+    font-size:20px;
+    margin-bottom:5px;
 }
 
 .turno-dia{
-    font-size:16px;
+    font-size:20px;
 }
-@media (max-width: 768px){
 
-    .dashboard{
+
+@media (max-width:768px){
+
+    .cabecera{
         flex-direction:column;
+        align-items:stretch;
     }
 
-    .dashboard .card{
+    .usuarioCabecera{
+        min-width:auto;
         width:100%;
-        box-sizing:border-box;
+        white-space:normal;
     }
 
     .barraMes{
@@ -242,7 +224,13 @@ select{
     }
 
     .calendario-grid{
+        grid-template-columns:repeat(7,60px);
+        justify-content:center;
         gap:3px;
+    }
+
+    .dia-calendario{
+        width:60px;
     }
 
     .numero-dia{
@@ -252,6 +240,25 @@ select{
     .turno-dia{
         font-size:16px;
     }
+     h1{
+        font-size:32px;
+    }
 
+}
+
+.cabecera{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:20px;
+    margin-bottom:20px;
+}
+
+.usuarioCabecera{
+    background:#e8f1fb;
+    border-left:5px solid #1f4e79;
+    padding:12px;
+    border-radius:12px;
+    min-width:250px;
 }
 </style>

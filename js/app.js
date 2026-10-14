@@ -7,10 +7,9 @@ let usuarioActual = login(
 if (usuarioActual) {
 
     document.getElementById("infoUsuario").innerHTML =
-        "<strong>Usuario:</strong> " +
-        usuarioActual.nombre +
-        "<br>" +
-        "<strong>Rol:</strong> " +
-        usuarioActual.rol;
+    "👤 <strong>" +
+    usuarioActual.nombre +
+    "</strong> | 🔐 " +
+    usuarioActual.rol;
 verMiCalendario();
 }
