@@ -13,16 +13,35 @@
 <body>
 
 <h1>📅 Calendario de turnos BBE</h1>
-<div id="infoUsuario" class="card"></div>
+<p class="subtitulo">
+Planificación y consulta de turnos BBE
+</p>
+<div class="dashboard">
+
+    <div id="infoUsuario" class="card"></div>
+
+    <div class="card resumen-card">
+        <h3>📅 Año</h3>
+        <p id="anioActual"></p>
+    </div>
+
+    <div class="card resumen-card">
+    <h3>📆 Mes </h3>
+    <p id="mesActual"></p>
+</div>
+
+</div>
 <div class="card">
 <h2>Mi calendario mensual</h2>
- 
-<input type="month" id="mesUsuario">
- 
-<button onclick="verMiCalendario()">
-Ver calendario
-</button>
- 
+<div class="barraMes">
+
+    <button onclick="mesAnterior()">◀</button>
+
+    <h3 id="tituloMes"></h3>
+
+    <button onclick="mesSiguiente()">▶</button>
+
+</div>
 <div id="miCalendario"></div>
 </div>
  

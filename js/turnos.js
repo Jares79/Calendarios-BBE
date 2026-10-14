@@ -95,33 +95,6 @@ function obtenerInfoJT(fecha,inicio){
 
     let turno = patronJT[pos];
 
-    if(pos >= 21 && pos <= 27){
-        return {
-            texto:"Semana X",
-            clase:"semanax"
-        };
-    }
-
-    if(pos >= 28 && pos <= 34){
-        return {
-            texto:"Semana Y",
-            clase:"semanay"
-        };
-    }
-
-    if(pos >= 84 && pos <= 90){
-        return {
-            texto:"Semana X",
-            clase:"semanax"
-        };
-    }
-
-    if(pos >= 91 && pos <= 97){
-        return {
-            texto:"Semana Y",
-            clase:"semanay"
-        };
-    }
 
     return convertirTurno(turno);
 }
@@ -141,19 +114,7 @@ function obtenerInfoOP(fecha,inicio){
 
     let turno = patronOP[pos];
 
-    if(pos >= 35 && pos <= 41){
-        return {
-            texto:"Semana X",
-            clase:"semanax"
-        };
-    }
-
-    if(pos >= 42 && pos <= 48){
-        return {
-            texto:"Semana Y",
-            clase:"semanay"
-        };
-    }
+    
 
     return convertirTurno(turno);
 }

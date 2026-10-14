@@ -12,5 +12,5 @@ if (usuarioActual) {
         "<br>" +
         "<strong>Rol:</strong> " +
         usuarioActual.rol;
-
+verMiCalendario();
 }

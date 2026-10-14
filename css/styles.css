@@ -1,4 +1,7 @@
 <style>
+*{
+    box-sizing:border-box;
+}
 table{
     border-collapse:collapse;
     font-size:12px;
@@ -18,30 +21,47 @@ th,td{
 }
 body{
     font-family: Arial, sans-serif;
-    background:#f4f4f4;
-    margin:20px;
+    background:#eef2f7;
+    max-width:1200px;
+    margin:auto;
+    padding:20px;
+    box-sizing:border-box;
 }
 
 .card{
     background:white;
-    padding:15px;
-    border-radius:10px;
-    margin-bottom:15px;
+    padding:20px;
+    border-radius:16px;
+    margin-bottom:20px;
+    box-shadow:0 6px 20px rgba(0,0,0,0.12);
 }
 
 h1{
     color:#1f4e79;
+    text-align:center;
+    font-size:42px;
+    margin-bottom:10px;
+}
+.subtitulo{
+    text-align:center;
+    color:#666;
+    font-size:18px;
+    margin-bottom:30px;
 }
 
 button{
-    padding:10px;
+    padding:12px 20px;
     background:#1f4e79;
     color:white;
     border:none;
-    border-radius:5px;
+    border-radius:10px;
     cursor:pointer;
+    font-weight:bold;
+    transition:0.2s;
 }
-
+button:hover{
+    background:#2d6aa3;
+}
 input{
     padding:8px;
 }
@@ -100,5 +120,138 @@ input{
 .resumen{
     margin-left:15px;
 }
+h2{
+    color:#1f4e79;
+    margin-top:0;
+    border-bottom:2px solid #e5e5e5;
+    padding-bottom:10px;
+}
+}
 
+input,
+select{
+    padding:10px;
+    border:1px solid #ccc;
+    border-radius:8px;
+}
+
+.card:hover{
+    transform:translateY(-2px);
+    transition:0.2s;
+}
+#infoUsuario{
+    background:#e8f1fb;
+    border-left:5px solid #1f4e79;
+    font-size:16px;
+    line-height:1.3;
+}
+.card{
+    transition:0.25s;
+}
+
+.card:hover{
+    transform:translateY(-3px);
+    box-shadow:0 10px 25px rgba(0,0,0,0.15);
+}
+.dashboard{
+    display:flex;
+    gap:20px;
+    margin-bottom:20px;
+}
+
+.dashboard .card{
+    flex:1;
+    padding:12px;
+}
+
+.resumen-card{
+    text-align:center;
+}
+
+.resumen-card h3{
+    color:#1f4e79;
+    margin:0 0 5px 0;
+}
+
+
+.resumen-card p{
+    font-size:20px;
+    font-weight:bold;
+    margin:0;
+}
+.barraMes{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:20px;
+}
+
+.barraMes h3{
+    margin:0;
+    color:#1f4e79;
+}
+.calendario-grid{
+    display:grid;
+    grid-template-columns:repeat(7,1fr);
+    gap:4px;
+}
+
+.dia-cabecera{
+    text-align:center;
+    font-weight:bold;
+    color:#1f4e79;
+    padding:10px;
+}
+
+.dia-calendario{
+    min-height:50px;
+    border-radius:10px;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    font-weight:bold;
+}
+
+.numero-dia{
+    font-size:16px;
+    margin-bottom:2px;
+}
+
+.turno-dia{
+    font-size:16px;
+}
+@media (max-width: 768px){
+
+    .dashboard{
+        flex-direction:column;
+    }
+
+    .dashboard .card{
+        width:100%;
+        box-sizing:border-box;
+    }
+
+    .barraMes{
+        gap:10px;
+    }
+
+    .barraMes h3{
+        font-size:20px;
+        text-align:center;
+    }
+
+    .calendario-grid{
+        gap:3px;
+    }
+
+    .numero-dia{
+        font-size:14px;
+    }
+
+    .turno-dia{
+        font-size:16px;
+    }
+
+}
 </style>
