@@ -1,4 +1,9 @@
 let fechaCalendario = new Date();
+let inicioTouchX = 0;
+let finTouchX = 0;
+let inicioTouchY = 0;
+let finTouchY = 0;
+let swipeActivo = false;
 
 function verMiCalendario() {
 
@@ -101,6 +106,42 @@ function verMiCalendario() {
     document.getElementById(
         "miCalendario"
     ).innerHTML = html;
+    const calendario =
+    document.getElementById(
+        "miCalendario"
+    );
+
+if(!swipeActivo){
+
+    calendario.addEventListener(
+        "touchstart",
+        function(e){
+
+            inicioTouchX =
+    e.changedTouches[0].screenX;
+
+            inicioTouchY =
+    e.changedTouches[0].screenY;
+        }
+    );
+
+    calendario.addEventListener(
+        "touchend",
+        function(e){
+
+            finTouchX =
+    e.changedTouches[0].screenX;
+
+            finTouchY =
+    e.changedTouches[0].screenY;
+
+            manejarSwipe();
+
+        }
+    );
+
+    swipeActivo = true;
+}
 }
 
 function mesAnterior(){
@@ -119,4 +160,126 @@ function mesSiguiente(){
     );
 
     verMiCalendario();
+}
+
+function manejarSwipe(){
+
+    const diferenciaX =
+        inicioTouchX - finTouchX;
+
+    const diferenciaY =
+        inicioTouchY - finTouchY;
+
+    // Si el gesto es más vertical que horizontal
+    if(
+        Math.abs(diferenciaY) >
+        Math.abs(diferenciaX)
+    ){
+        return;
+    }
+
+    // Si apenas se ha movido horizontalmente
+    if(
+        Math.abs(diferenciaX) < 50
+    ){
+        return;
+    }
+
+    const calendario =
+        document.getElementById(
+            "miCalendario"
+        );
+
+    calendario.classList.add(
+        "calendario-animando"
+    );
+
+    setTimeout(function(){
+
+        if(diferenciaX > 0){
+
+            mesSiguiente();
+
+        }else{
+
+            mesAnterior();
+
+        }
+
+        calendario.classList.remove(
+            "calendario-animando"
+        );
+
+    },200);
+
+}
+
+function mostrarSelectorMes(){
+
+    document.getElementById(
+        "mesSelector"
+    ).value = fechaCalendario.getMonth();
+
+    document.getElementById(
+        "anioSelector"
+    ).value = fechaCalendario.getFullYear();
+
+    const selector =
+        document.getElementById(
+            "selectorMes"
+        );
+
+    if(selector.style.display === "block"){
+
+        selector.style.display = "none";
+
+    }else{
+
+        selector.style.display = "block";
+    }
+
+}
+
+function aplicarMes(){
+
+    const mes =
+        Number(
+            document.getElementById(
+                "mesSelector"
+            ).value
+        );
+
+    const anio =
+        Number(
+            document.getElementById(
+                "anioSelector"
+            ).value
+        );
+
+    fechaCalendario =
+        new Date(
+            anio,
+            mes,
+            1
+        );
+
+    verMiCalendario();
+
+    document.getElementById(
+        "selectorMes"
+    ).style.display = "none";
+
+}
+
+function irAHoy(){
+
+    fechaCalendario =
+        new Date();
+
+    verMiCalendario();
+
+    document.getElementById(
+        "selectorMes"
+    ).style.display = "none";
+
 }

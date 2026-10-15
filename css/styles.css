@@ -166,6 +166,24 @@ select{
     margin:0;
     color:#1f4e79;
 }
+.selectorMes{
+    display:none;
+    width:fit-content;
+    margin:15px auto;
+    text-align:center;
+}
+
+.selectorMes select{
+    min-width:120px;
+    margin:5px;
+}
+
+.accionesMes{
+    display:flex;
+    justify-content:center;
+    gap:10px;
+    margin-top:10px;
+}
 .calendario-grid{
     display:grid;
     grid-template-columns:repeat(7,115px);
@@ -274,9 +292,15 @@ select{
     }
 
     .turno-dia{
-        font-size:16px;
-    }
+    font-size:16px;
+}
 
+#miCalendario{
+    transition:opacity 0.2s ease;
+}
+
+.calendario-animando{
+    opacity:0;
 }
 
 .cabecera{
@@ -293,4 +317,40 @@ select{
     padding:12px;
     border-radius:12px;
     min-width:250px;
+}
+.calendario-animando{
+    opacity:0;
+    transition:opacity 0.2s ease;
+}
+
+#miCalendario{
+    transition:opacity 0.2s ease;
+}
+#selectorMes{
+    text-align:center;
+    margin-bottom:10px;
+}
+#tituloMes{
+    cursor:pointer;
+}
+.selectorMes{
+    display:none;
+    background:white;
+    padding:15px;
+    border-radius:12px;
+    box-shadow:0 4px 12px rgba(0,0,0,0.15);
+    width:fit-content;
+    margin:10px auto;
+    text-align:center;
+}
+
+.selectorMes select{
+    min-width:120px;
+    margin:5px;
+}
+
+.accionesMes{
+    display:flex;
+    gap:10px;
+    justify-content:center;
 }
