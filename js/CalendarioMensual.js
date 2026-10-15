@@ -1,6 +1,8 @@
 let fechaCalendario = new Date();
 let inicioTouchX = 0;
 let finTouchX = 0;
+let inicioTouchY = 0;
+let finTouchY = 0;
 let swipeActivo = false;
 
 function verMiCalendario() {
@@ -116,8 +118,10 @@ if(!swipeActivo){
         function(e){
 
             inicioTouchX =
-                e.changedTouches[0].screenX;
+    e.changedTouches[0].screenX;
 
+            inicioTouchY =
+    e.changedTouches[0].screenY;
         }
     );
 
@@ -126,7 +130,10 @@ if(!swipeActivo){
         function(e){
 
             finTouchX =
-                e.changedTouches[0].screenX;
+    e.changedTouches[0].screenX;
+
+            finTouchY =
+    e.changedTouches[0].screenY;
 
             manejarSwipe();
 
@@ -157,8 +164,26 @@ function mesSiguiente(){
 
 function manejarSwipe(){
 
-    const diferencia =
+    const diferenciaX =
         inicioTouchX - finTouchX;
+
+    const diferenciaY =
+        inicioTouchY - finTouchY;
+
+    // Si el gesto es más vertical que horizontal
+    if(
+        Math.abs(diferenciaY) >
+        Math.abs(diferenciaX)
+    ){
+        return;
+    }
+
+    // Si apenas se ha movido horizontalmente
+    if(
+        Math.abs(diferenciaX) < 50
+    ){
+        return;
+    }
 
     const calendario =
         document.getElementById(
@@ -171,14 +196,14 @@ function manejarSwipe(){
 
     setTimeout(function(){
 
-        if(diferencia > 50){
+        if(diferenciaX > 0){
 
             mesSiguiente();
-        }
 
-        if(diferencia < -50){
+        }else{
 
             mesAnterior();
+
         }
 
         calendario.classList.remove(
