@@ -283,3 +283,49 @@ function irAHoy(){
     ).style.display = "none";
 
 }
+function cerrarSesion(){
+
+    console.log(
+        "Cerrar sesión pendiente"
+    );
+
+}
+function toggleUsuario(){
+
+    const panel =
+        document.getElementById(
+            "panelUsuario"
+        );
+
+    const cabecera =
+        document.getElementById(
+            "infoUsuario"
+        );
+
+    if(panel.style.display === "block"){
+
+        panel.style.display = "none";
+
+        cabecera.innerHTML =
+            "👤 <strong>" +
+            usuarioActual.nombre +
+            "</strong>&nbsp;&nbsp;&nbsp;▼";
+
+    }else{
+
+panel.innerHTML = `
+    <p>
+        <strong>Rol:</strong>
+        ${usuarioActual.rol}
+    </p>
+`;
+
+        panel.style.display = "block";
+
+        cabecera.innerHTML =
+            "👤 <strong>" +
+            usuarioActual.nombre +
+            "</strong>&nbsp;&nbsp;&nbsp;▲";
+    }
+
+}
