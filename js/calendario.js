@@ -95,6 +95,18 @@ function ocultarDetalleDia(){
         panelDetalle.style.display = "none";
     }
 }
+// --- CERRAR EL DETALLE DEL DÍA AL HACER CLIC FUERA ---
+document.addEventListener('click', function(event) {
+    const panelDetalle = document.getElementById("panelDetalleDia");
+    
+    // Comprobamos si el panel de detalle está visible en la pantalla
+    if (panelDetalle && window.getComputedStyle(panelDetalle).display !== 'none') {
+        // Si el clic NO está dentro del panel y NO se ha hecho sobre un día del calendario
+        if (!panelDetalle.contains(event.target) && !event.target.closest('.dia-calendario')) {
+            ocultarDetalleDia();
+        }
+    }
+});
 
 
 // --- GESTIÓN DE CLIC EN DÍA ---

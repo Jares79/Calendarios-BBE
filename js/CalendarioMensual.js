@@ -183,7 +183,6 @@ function toggleUsuario(){
         panel.style.display = "block";
         cabecera.innerHTML = "👤 <strong>" + usuarioActual.nombre + "</strong>&nbsp;&nbsp;&nbsp;▲";
 
-        // 1. Establecemos por defecto la fecha de HOY en el input de búsqueda
         const inputFecha = document.getElementById("fecha");
         if(inputFecha && !inputFecha.value){
             const hoy = new Date();
@@ -193,7 +192,6 @@ function toggleUsuario(){
             inputFecha.value = `${yyyy}-${mm}-${dd}`;
         }
 
-        // 2. Establecemos por defecto el colectivo según escritorio o móvil
         const selectColectivo = document.getElementById("colectivoAnual");
         if(selectColectivo){
             const esMovil = window.innerWidth <= 768;
@@ -232,3 +230,30 @@ function verCalendarioDesdeMenu(){
     verCalendario(anioVal);
     window.scrollTo(0, 0);
 }
+
+// --- CERRAR EL SELECTOR DE MES AL HACER CLIC FUERA ---
+document.addEventListener('click', function(event) {
+    const selector = document.getElementById('selectorMes');
+    const tituloMes = document.getElementById('tituloMes');
+    
+    if (selector && selector.style.display === 'block') {
+        if (!selector.contains(event.target) && !tituloMes.contains(event.target)) {
+            selector.style.display = 'none';
+        }
+    }
+});
+
+// --- CERRAR LA TARJETA DE DETALLE O CALENDARIO ANUAL AL HACER CLIC FUERA ---
+document.addEventListener('click', function(event) {
+    const detalleDia = document.getElementById('resultado');
+    
+    if (detalleDia && detalleDia.style.display === 'block') {
+        // Ignoramos si el clic ocurre dentro del resultado, en un día del calendario o dentro del panel de usuario
+        if (!detalleDia.contains(event.target) && 
+            !event.target.closest('.dia-calendario') && 
+            !event.target.closest('#panelUsuario') && 
+            !event.target.closest('#infoUsuario')) {
+            detalleDia.style.display = 'none';
+        }
+    }
+});
