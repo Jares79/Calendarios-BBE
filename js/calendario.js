@@ -97,7 +97,7 @@ function ocultarDetalleDia(){
 }
 
 
-// --- GESTIÓN DE CLIC EN DÍA ( TARJETA DE DETALLE UNIFICADA ARRIBA DEL TODO ) ---
+// --- GESTIÓN DE CLIC EN DÍA ---
 function seleccionarDia(fechaStr, empleadoNombre, puestoTexto, turnoTexto, claseTurno){
     let panelDetalle = document.getElementById("panelDetalleDia");
     
@@ -121,7 +121,6 @@ function seleccionarDia(fechaStr, empleadoNombre, puestoTexto, turnoTexto, clase
         </div>
     `;
 
-    // Forzamos la inserción siempre como primer hijo de la tarjeta principal para que quede arriba del todo
     const cardCalendario = document.getElementById("cardCalendario");
     const resultado = document.getElementById("resultado");
     
@@ -168,7 +167,7 @@ function inicial(info){
 }
 
 
-// --- CALENDARIO ANUAL (POR COLECTIVOS O MAESTRO) ---
+// --- CALENDARIO ANUAL COMPACTO Y AJUSTADO SIN SCROLL ---
 function verCalendario(anioParam){
     ocultarDetalleDia();
 
@@ -200,7 +199,7 @@ function verCalendario(anioParam){
             ...campo.map(e => ({ ...e, esJT: false })),
             ...jefes.map(e => ({ ...e, esJT: true }))
         ];
-        tituloVista = "Planificación Anual Formato Maestro";
+        tituloVista = "Planificación Anual Maestro";
         iconoPuesto = "⭐ Empleado";
     }
 
@@ -210,35 +209,38 @@ function verCalendario(anioParam){
     }
 
     let html = `
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px;">
-            <h2>📅 ${tituloVista} (${anio})</h2>
-            <div style="display:flex; gap:10px; align-items:center;">
-                <label style="font-weight:bold; color:#1f4e79;">Año:</label>
-                <select id="anioAnualSelect" style="padding:6px; border-radius:6px; border:1px solid #ccc;" onchange="cambiarAnioAnual(this.value)">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
+            <h2 style="font-size:1.1rem; margin:0;">📅 ${tituloVista} (${anio})</h2>
+            <div style="display:flex; gap:8px; align-items:center;">
+                <select id="anioAnualSelect" style="padding:4px 8px; border-radius:6px; border:1px solid #ccc; font-size:0.85rem;" onchange="cambiarAnioAnual(this.value)">
                     ${opcionesAniosHtml}
                 </select>
-                <button onclick="cerrarVistaResultado()" style="background:#64748b; padding:8px 14px; font-size:13px;">✖ Volver</button>
+                <button onclick="cerrarVistaResultado()" style="background:#64748b; padding:6px 12px; font-size:12px;">✖ Volver</button>
             </div>
         </div>
-        <p style="color:#666; font-size:13px; margin-bottom:15px;">
-            ℹ️ Vista anual optimizada. Desliza para explorar todo el año.
-        </p>
     `;
 
-    html += `<div class="table-responsive" style="max-height:82vh; width:100%; border:1px solid #cbd5e1; border-radius:8px;">`;
-    html += `<table class="tabla-anual-unificada" style="width:100%;">`;
+    const esMovil = window.innerWidth <= 768;
+
+    // Columnas de Fecha y Día estilizadas y estrechas en móvil
+    const anchoFecha = esMovil ? "11%" : "75px";
+    const anchoDia = esMovil ? "10%" : "75px";
+
+    html += `<div style="max-height:82vh; width:100%; overflow-x:hidden; overflow-y:auto; border:1px solid #cbd5e1; border-radius:8px; background:white;">`;
+    html += `<table class="tabla-anual-unificada" style="width:100%; table-layout:fixed; border-collapse:separate; border-spacing:0;">`;
     html += `<thead><tr>`;
     
-    html += `<th class="th-vertical" style="left:0; z-index:4; min-width:70px; width:70px; writing-mode:horizontal-tb; transform:none; height:auto; text-align:center; font-size:11px; padding: 10px 4px;">Fecha</th>`;
-    html += `<th class="th-vertical" style="left:70px; z-index:4; min-width:75px; width:75px; writing-mode:horizontal-tb; transform:none; height:auto; text-align:center; font-size:11px; padding: 10px 4px;">Día</th>`;
+    html += `<th class="th-vertical" style="left:0; z-index:4; width:${anchoFecha}; min-width:${anchoFecha}; max-width:${anchoFecha}; writing-mode:horizontal-tb; transform:none; height:auto; text-align:center; font-size:9px; padding: 4px 0px;">Fecha</th>`;
+    html += `<th class="th-vertical" style="left:${anchoFecha}; z-index:4; width:${anchoDia}; min-width:${anchoDia}; max-width:${anchoDia}; writing-mode:horizontal-tb; transform:none; height:auto; text-align:center; font-size:9px; padding: 4px 0px;">Día</th>`;
 
     empleadosAProcesar.forEach(emp => {
-        html += `<th class="th-vertical" style="min-width:38px; width:38px;">${emp.name}</th>`;
+        html += `<th class="th-vertical" style="font-size:9px; padding: 4px 0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${emp.name}</th>`;
     });
 
     html += `</tr></thead><tbody>`;
 
-    const diasSemanaNombres = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+    const diasCortos = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+    const diasLargos = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
 
     let fechaIterador = new Date(anio, 0, 1);
     const fechaFin = new Date(anio, 11, 31);
@@ -247,16 +249,18 @@ function verCalendario(anioParam){
         const anioF = fechaIterador.getFullYear();
         const mesF = String(fechaIterador.getMonth() + 1).padStart(2, '0');
         const diaF = String(fechaIterador.getDate()).padStart(2, '0');
+        
+        const fechaVistaMovil = `${diaF}/${mesF}`;
         const fechaFormateada = `${diaF}/${mesF}/${anioF}`;
-        const nombreDiaSemana = diasSemanaNombres[fechaIterador.getDay()];
+        const nombreDiaSemana = esMovil ? diasCortos[fechaIterador.getDay()] : diasLargos[fechaIterador.getDay()];
 
         const esFinDeSemana = (fechaIterador.getDay() === 0 || fechaIterador.getDay() === 6);
-        const estiloFilaFija = esFinDeSemana ? `background:#f1f5f9; color:#64748b;` : `background:#f8fafc;`;
+        const estiloFilaFija = esFinDeSemana ? `background:#e2e8f0; color:#475569;` : `background:#f8fafc;`;
 
         html += `<tr>`;
 
-        html += `<td style="${estiloFilaFija} font-weight:bold; border:1px solid #cbd5e1; padding:6px 4px; text-align:center; position:sticky; left:0; z-index:2; white-space:nowrap; font-size:11px; min-width:70px; width:70px; height:32px;">${fechaFormateada}</td>`;
-        html += `<td style="${estiloFilaFija} font-weight:bold; border:1px solid #cbd5e1; padding:6px 4px; text-align:center; position:sticky; left:70px; z-index:2; white-space:nowrap; font-size:11px; min-width:75px; width:75px; height:32px;">${nombreDiaSemana}</td>`;
+        html += `<td style="${estiloFilaFija} font-weight:bold; border:1px solid #cbd5e1; padding:2px 1px; text-align:center; position:sticky; left:0; z-index:2; font-size:9px; width:${anchoFecha}; min-width:${anchoFecha}; max-width:${anchoFecha}; height:26px; white-space:nowrap; overflow:hidden;">${fechaVistaMovil}</td>`;
+        html += `<td style="${estiloFilaFija} font-weight:bold; border:1px solid #cbd5e1; padding:2px 1px; text-align:center; position:sticky; left:${anchoFecha}; z-index:2; font-size:9px; width:${anchoDia}; min-width:${anchoDia}; max-width:${anchoDia}; height:26px; white-space:nowrap; overflow:hidden;">${nombreDiaSemana}</td>`;
 
         empleadosAProcesar.forEach(emp => {
             const info = emp.esJT 
@@ -266,8 +270,8 @@ function verCalendario(anioParam){
             let puestoEmp = emp.esJT ? "👨‍✈️ Jefe de Turno" : (tipoColectivo === "control" ? "🎛️ Operador de Control" : (tipoColectivo === "campo" ? "🔧 Operador de Campo" : iconoPuesto));
 
             html += `
-                <td style="text-align:center; padding:2px; min-width:38px; width:38px; height:32px; border:1px solid #cbd5e1;">
-                    <button class="td-celda-turno ${info.clase}" onclick="seleccionarDia('${fechaFormateada}', '${emp.name}', '${puestoEmp}', '${info.texto}', '${info.clase}')" style="width:100%; height:100%; border:none; cursor:pointer; font-weight:bold; font-size:12px; display:flex; align-items:center; justify-content:center; padding:0; border-radius:6px;" title="${emp.name} | ${fechaFormateada} (${nombreDiaSemana}) : ${info.texto}">
+                <td style="text-align:center; padding:1px; height:26px; border:1px solid #cbd5e1; overflow:hidden;">
+                    <button class="td-celda-turno ${info.clase}" onclick="seleccionarDia('${fechaFormateada}', '${emp.name}', '${puestoEmp}', '${info.texto}', '${info.clase}')" style="width:100%; height:100%; border:none; cursor:pointer; font-weight:bold; font-size:10px; display:flex; align-items:center; justify-content:center; padding:0; border-radius:3px;" title="${emp.name} | ${fechaFormateada} (${nombreDiaSemana}) : ${info.texto}">
                         ${inicial(info)}
                     </button>
                 </td>

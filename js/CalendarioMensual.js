@@ -173,7 +173,7 @@ function toggleUsuario(){
     const rolTexto = document.getElementById("rolUsuarioTexto");
 
     if(rolTexto && typeof usuarioActual !== 'undefined'){
-        rolTexto.textContent = "Rol: " + usuarioActual.rol;
+        rolTexto.textContent = usuarioActual.rol;
     }
 
     if(panel.style.display === "block"){
@@ -182,6 +182,23 @@ function toggleUsuario(){
     }else{
         panel.style.display = "block";
         cabecera.innerHTML = "👤 <strong>" + usuarioActual.nombre + "</strong>&nbsp;&nbsp;&nbsp;▲";
+
+        // 1. Establecemos por defecto la fecha de HOY en el input de búsqueda
+        const inputFecha = document.getElementById("fecha");
+        if(inputFecha && !inputFecha.value){
+            const hoy = new Date();
+            const yyyy = hoy.getFullYear();
+            const mm = String(hoy.getMonth() + 1).padStart(2, '0');
+            const dd = String(hoy.getDate()).padStart(2, '0');
+            inputFecha.value = `${yyyy}-${mm}-${dd}`;
+        }
+
+        // 2. Establecemos por defecto el colectivo según escritorio o móvil
+        const selectColectivo = document.getElementById("colectivoAnual");
+        if(selectColectivo){
+            const esMovil = window.innerWidth <= 768;
+            selectColectivo.value = esMovil ? "jefes" : "todos";
+        }
     }
 }
 
