@@ -95,19 +95,28 @@ function ocultarDetalleDia(){
         panelDetalle.style.display = "none";
     }
 }
-// --- CERRAR EL DETALLE DEL DÍA AL HACER CLIC FUERA ---
+
+// --- CERRAR EL DETALLE DEL DÍA AL HACER CLIC FUERA (SÓLO EL DETALLE) ---
 document.addEventListener('click', function(event) {
     const panelDetalle = document.getElementById("panelDetalleDia");
+    const contenedorResultado = document.getElementById("resultado");
     
-    // Comprobamos si el panel de detalle está visible en la pantalla
+    // Si hay un detalle del día abierto
     if (panelDetalle && window.getComputedStyle(panelDetalle).display !== 'none') {
-        // Si el clic NO está dentro del panel y NO se ha hecho sobre un día del calendario
-        if (!panelDetalle.contains(event.target) && !event.target.closest('.dia-calendario')) {
+        const esDentroDetalle = panelDetalle.contains(event.target);
+        const esDiaCalendario = event.target.closest('.dia-calendario');
+        const esPanelUsuario = event.target.closest('#panelUsuario');
+        const esBotonMenu = event.target.closest('#infoUsuario') || event.target.closest('button');
+        
+        // Comprobamos si el contenedor de resultados está mostrando el calendario anual
+        // (si tiene una tabla dentro, es el anual y no debemos cerrarlo al hacer clic dentro)
+        const esCalendarioAnualAbierto = contenedorResultado && contenedorResultado.querySelector('table');
+
+        if (!esDentroDetalle && !esDiaCalendario && !esPanelUsuario && !esBotonMenu && !esCalendarioAnualAbierto) {
             ocultarDetalleDia();
         }
     }
 });
-
 
 // --- GESTIÓN DE CLIC EN DÍA ---
 function seleccionarDia(fechaStr, empleadoNombre, puestoTexto, turnoTexto, claseTurno){
@@ -234,7 +243,6 @@ function verCalendario(anioParam){
 
     const esMovil = window.innerWidth <= 768;
 
-    // Columnas de Fecha y Día estilizadas y estrechas en móvil
     const anchoFecha = esMovil ? "11%" : "75px";
     const anchoDia = esMovil ? "10%" : "75px";
 
