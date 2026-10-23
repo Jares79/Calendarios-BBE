@@ -2,186 +2,122 @@
 <html lang="es">
 <head>
     <link rel="icon" type="image/x-icon" href="img/favicon.ico">
-
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<link rel="stylesheet" href="css/styles.css">
-    
-<title>Calendario BBE</title>
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="css/styles.css">
+    <title>Calendario BBE</title>
 </head>
 
 <body>
 
 <div class="cabecera">
-
     <div>
-
        <h1>
-    <img
-        src="img/LOGO_BBE_SOLO.png"
-        class="logoCabecera"
-        alt="BBE">
-
-    Calendario BBE
-</h1>
-
+            <img src="img/LOGO_BBE_SOLO.png" class="logoCabecera" alt="BBE">
+            Calendario BBE
+        </h1>
     </div>
-
-   
 </div>
 
-<div
-    class="usuarioCabecera">
-
-    <div
-        id="infoUsuario"
-        onclick="toggleUsuario()">
-    </div>
-
-    <div
-        class="cerrarSesion"
-        onclick="cerrarSesion()">
-
+<div class="usuarioCabecera">
+    <div id="infoUsuario" onclick="toggleUsuario()"></div>
+    <div class="cerrarSesion" onclick="cerrarSesion()">
         🚪 Cerrar sesión
-
     </div>
-
 </div>
 
-<div
-    id="panelUsuario"
-    class="panelUsuario">
+<!-- Panel de usuario estructurado de forma profesional en el HTML -->
+<div id="panelUsuario" class="panelUsuario">
+    <div style="margin-bottom: 6px;">
+        <span id="rolUsuarioTexto" style="font-size: 0.95rem; color: #475569; font-weight: 600; text-transform: capitalize;">Rol: --</span>
+    </div>
+    
+    <div style="border: 0; height: 1px; background-color: #e2e8f0; margin: 16px 0;"></div>
+
+    <div style="display: flex; flex-direction: column; gap: 10px;">
+        <h3 style="color: #1f4e79; font-size: 0.95rem; font-weight: 700; margin: 0;">🔍 Búsqueda por día</h3>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+            <input type="date" id="fecha" style="padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 10px; background: #ffffff; font-size: 0.9rem; color: #1e293b; outline: none;">
+            <button onclick="ejecutarBusquedaDesdeMenu()" style="padding: 10px 18px; background: #1f4e79; color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 0.9rem;">Buscar</button>
+        </div>
+    </div>
+
+    <div style="border: 0; height: 1px; background-color: #e2e8f0; margin: 16px 0;"></div>
+
+    <div style="display: flex; flex-direction: column; gap: 10px;">
+        <h3 style="color: #1f4e79; font-size: 0.95rem; font-weight: 700; margin: 0;">📅 Calendario anual</h3>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+            <select id="colectivoAnual" style="padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 10px; background: #ffffff; font-size: 0.9rem; color: #1e293b; outline: none;">
+                <option value="jefes">👨‍✈️ Jefes de Turno (7)</option>
+                <option value="control">🎛️ Op. Control (7)</option>
+                <option value="campo">🔧 Op. Campo (7)</option>
+                <option value="todos">👥 Todos (21)</option>
+            </select>
+            
+            <select id="anioAnualSelect" style="padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 10px; background: #ffffff; font-size: 0.9rem; color: #1e293b; outline: none; min-width: 95px;">
+                <option value="2026">2026</option>
+                <option value="2027">2027</option>
+                <option value="2028">2028</option>
+                <option value="2029">2029</option>
+                <option value="2030">2030</option>
+            </select>
+
+            <button onclick="verCalendarioDesdeMenu()" style="padding: 10px 18px; background: #1f4e79; color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 0.9rem;">Ver anual</button>
+        </div>
+    </div>
 </div>
 
 <div class="card" id="cardCalendario">
-<h2>📅 Mi calendario</h2>
-<div class="barraMes">
+    <h2>📅 Mi calendario</h2>
+    <div class="barraMes">
+        <button onclick="mesAnterior()">◀</button>
+        <h3 id="tituloMes" onclick="mostrarSelectorMes()"></h3>
+        <button onclick="mesSiguiente()">▶</button>
+    </div>
+    
+    <div id="selectorMes" class="selectorMes">
+        <select id="mesSelector">
+            <option value="0">Enero</option>
+            <option value="1">Febrero</option>
+            <option value="2">Marzo</option>
+            <option value="3">Abril</option>
+            <option value="4">Mayo</option>
+            <option value="5">Junio</option>
+            <option value="6">Julio</option>
+            <option value="7">Agosto</option>
+            <option value="8">Septiembre</option>
+            <option value="9">Octubre</option>
+            <option value="10">Noviembre</option>
+            <option value="11">Diciembre</option>
+        </select>
 
-    <button onclick="mesAnterior()">◀</button>
+        <select id="anioSelector">
+            <option value="2025">2025</option>
+            <option value="2026">2026</option>
+            <option value="2027">2027</option>
+            <option value="2028">2028</option>
+            <option value="2029">2029</option>
+            <option value="2030">2030</option>
+            <option value="2031">2031</option>
+            <option value="2032">2032</option>
+            <option value="2033">2033</option>
+            <option value="2034">2034</option>
+            <option value="2035">2035</option>
+        </select>
 
-    <h3 id="tituloMes" onclick="mostrarSelectorMes()"></h3>
-
-    <button onclick="mesSiguiente()">▶</button>
-
-</div>
-<div id="selectorMes" class="selectorMes">
-
-    <select id="mesSelector">
-
-        <option value="0">Enero</option>
-        <option value="1">Febrero</option>
-        <option value="2">Marzo</option>
-        <option value="3">Abril</option>
-        <option value="4">Mayo</option>
-        <option value="5">Junio</option>
-        <option value="6">Julio</option>
-        <option value="7">Agosto</option>
-        <option value="8">Septiembre</option>
-        <option value="9">Octubre</option>
-        <option value="10">Noviembre</option>
-        <option value="11">Diciembre</option>
-
-    </select>
-
-    <select id="anioSelector">
-
-        <option value="2025">2025</option>
-        <option value="2026">2026</option>
-        <option value="2027">2027</option>
-        <option value="2028">2028</option>
-        <option value="2029">2029</option>
-        <option value="2030">2030</option>
-        <option value="2031">2031</option>
-        <option value="2032">2032</option>
-        <option value="2033">2033</option>
-        <option value="2034">2034</option>
-        <option value="2035">2035</option>
-
-    </select>
-
-    <div class="accionesMes">
-
-        <button onclick="irAHoy()">
-            🏠 Hoy
-        </button>
-
-        <button onclick="aplicarMes()">
-            ✅ Ir
-        </button>
-
+        <div class="accionesMes">
+            <button onclick="irAHoy()">🏠 Hoy</button>
+            <button onclick="aplicarMes()">✅ Ir</button>
+        </div>
     </div>
 
+    <div id="miCalendario"></div>
 </div>
 
-<div id="miCalendario"></div>
+<!-- Tarjeta de resultados -->
+<div id="resultado" class="card" style="display: none;">
+    Selecciona una fecha.
 </div>
- 
-<div class="card" id="opcionesAvanzadas">
-
-    <h2>🔍 Búsqueda por día</h2>
-
-    <input
-        type="date"
-        id="fecha">
-
-    <button onclick="consultar()">
-        Buscar
-    </button>
-
-    <br><br>
-
-    <h2>📆 Calendario general</h2>
-
-    <select
-        id="mes"
-        style="
-            width:140px;
-            height:48px;
-            font-size:18px;
-            padding:8px;
-            box-sizing:border-box;
-        ">
-        <option value="0">Enero</option>
-        <option value="1">Febrero</option>
-        <option value="2">Marzo</option>
-        <option value="3">Abril</option>
-        <option value="4">Mayo</option>
-        <option value="5">Junio</option>
-        <option value="6">Julio</option>
-        <option value="7">Agosto</option>
-        <option value="8">Septiembre</option>
-        <option value="9">Octubre</option>
-        <option value="10">Noviembre</option>
-        <option value="11">Diciembre</option>
-    </select>
-
-    <input
-        type="number"
-        id="anio"
-        value="2026"
-        min="2025"
-        max="2040"
-        style="
-            width:140px;
-            height:48px;
-            font-size:18px;
-            padding:8px;
-            box-sizing:border-box;
-        "
-    >
-
-    <button onclick="verCalendario()">
-        Ver calendario
-    </button>
-
-</div>
-
-<div id="resultado" class="card">
-Selecciona una fecha.
-</div>
-
 
 <script src="js/usuarios.js"></script>
 <script src="js/permisos.js"></script>
