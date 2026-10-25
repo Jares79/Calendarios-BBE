@@ -45,6 +45,7 @@ body{
 }
 
 .card {
+    position: relative; /* ¡Imprescindible para que el menú flote respecto a esta tarjeta y no se desplace mal! */
     background: white;
     padding: 20px;
     border-radius: 16px;
@@ -322,12 +323,12 @@ h2{
 .selectorMes {
     display: none;
     position: absolute;
-    top: -10px;
+    top: 45px;            /* Se coloca justo debajo del título del mes */
     left: 0;
     right: 0;
     width: 290px;
-    margin: 0 auto;
-    z-index: 50;
+    margin: 0 auto;       /* Centrado automático perfecto */
+    z-index: 100;         /* Por encima de todo lo demás de la tarjeta */
     background: #ffffff;
     padding: 20px;
     border-radius: 16px;
@@ -467,7 +468,7 @@ h2{
     padding: 0;
 }
 
-/* --- VISTA MÓVIL --- */
+/* --- VISTA MÓVIL OPTIMIZADA --- */
 @media (max-width:768px){
     body{
         padding-left: 8px;
@@ -502,6 +503,26 @@ h2{
     
     .logoCabecera{
         height:40px;
+    }
+
+    /* --- ADAPTACIÓN DINÁMICA DEL CALENDARIO MENSUAL EN MÓVIL --- */
+    .calendario-grid {
+        gap: 3px;
+    }
+
+    .dia-calendario {
+        height: calc((68vh - 80px) / 6); /* Altura automática para que quepan siempre las 6 filas sin desbordar */
+        min-height: 38px;
+        max-height: 54px;
+        padding: 4px;
+    }
+
+    .numero-dia {
+        font-size: 0.8rem;
+    }
+
+    .turno-dia {
+        font-size: 1.1rem;
     }
 
     .resultado-grid {
