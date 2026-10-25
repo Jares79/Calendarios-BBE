@@ -10,9 +10,7 @@
 
 <body>
 
-<body>
-
-<!-- Contenedor superior fijo (Sticky Header) -->
+<!-- Contenedor superior fijo (Sticky puro, sin romper el flujo del DOM) -->
 <div class="header-fijo-container">
     <div class="cabecera">
         <div>
@@ -29,52 +27,56 @@
             🚪 Cerrar sesión
         </div>
     </div>
+</div>
 
-    <!-- Panel de usuario desplegable tipo Dashboard (AHORA DENTRO DEL CONTENEDOR FIJO) -->
-    <div id="panelUsuario" class="panelUsuario" style="display: none;">
-        <!-- Cabecera del panel con el Rol -->
-        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
-            <span style="font-size: 0.85rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Acceso como:</span>
+<!-- Panel de usuario desplegable FUERA de la cabecera fija para evitar bloqueos de scroll -->
+<div id="panelUsuario" class="panelUsuario" style="display: none;">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 0.8rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Acceso como:</span>
             <span id="rolUsuarioTexto" class="panel-rol-badge">Administrador</span>
         </div>
-        
-        <div class="panel-divisor" style="margin: 8px 0;"></div>
+    </div>
+    
+    <div class="panel-divisor" style="margin: 6px 0 10px 0;"></div>
 
-        <!-- Contenido en tarjetas Grid compactas -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; align-items: start;">
+    <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+        <button id="btnToggleBusqueda" type="button" class="panel-btn-tab" onclick="toggleSeccionPanel('busqueda')" style="flex: 1; padding: 8px 12px; font-size: 0.85rem; background: #e2e8f0; color: #1e293b; border: 1px solid #cbd5e1; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s;">
+            🔍 Buscar día
+        </button>
+        <button id="btnToggleAnual" type="button" class="panel-btn-tab" onclick="toggleSeccionPanel('anual')" style="flex: 1; padding: 8px 12px; font-size: 0.85rem; background: #e2e8f0; color: #1e293b; border: 1px solid #cbd5e1; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s;">
+            📅 Calendario Anual
+        </button>
+    </div>
+
+   <!-- Sub-sección 1: Búsqueda por día -->
+<div id="seccionBusqueda" class="panel-subseccion" style="display: none; background: #f8fafc; padding: 10px 12px; border-radius: 8px; border: 1px solid #e2e8f0; margin-top: 6px;">
+    <div class="panel-controles" style="display: flex; gap: 8px;">
+        <input type="date" id="fecha" style="flex: 1; min-width: 130px; padding: 6px 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.85rem;">
+        <!-- Añadimos el cierre del panelUsuario aquí -->
+        <button class="panel-btn" onclick="ejecutarBusquedaDesdeMenu()" style="padding: 6px 14px; font-size: 0.85rem; background: #1f4e79; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">Buscar</button>
+    </div>
+</div>
+
+    <!-- Sub-sección 2: Calendario Anual -->
+    <div id="seccionAnual" class="panel-subseccion" style="display: none; background: #f8fafc; padding: 10px 12px; border-radius: 8px; border: 1px solid #e2e8f0; margin-top: 6px;">
+        <div class="panel-controles" style="display: flex; gap: 6px; flex-wrap: wrap;">
+            <select id="colectivoAnual" style="flex: 1; min-width: 130px; padding: 6px 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.85rem;">
+                <option value="jefes">👨‍✈️ Jefes de Turno (7)</option>
+                <option value="control">🎛️ Operadores de Control (7)</option>
+                <option value="campo">🔧 Operadores de Campo (7)</option>
+                <option value="todos">👥 Todos (21)</option>
+            </select>
             
-            <!-- Bloque 1: Búsqueda por día -->
-            <div class="panel-seccion" style="background: #f8fafc; padding: 10px 14px; border-radius: 10px; border: 1px solid #e2e8f0;">
-                <h3 class="panel-titulo" style="font-size: 0.9rem; margin-bottom: 8px;">🔍 Búsqueda por día</h3>
-                <div class="panel-controles" style="display: flex; gap: 8px;">
-                    <input type="date" id="fecha" style="flex: 1; min-width: 140px; padding: 6px 10px;">
-                    <button class="panel-btn" onclick="ejecutarBusquedaDesdeMenu()" style="padding: 6px 12px;">Buscar</button>
-                </div>
-            </div>
+            <select id="anioAnualSelect" class="select-anio" style="width: 75px; padding: 6px 4px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.85rem;">
+                <option value="2026">2026</option>
+                <option value="2027">2027</option>
+                <option value="2028">2028</option>
+                <option value="2029">2029</option>
+                <option value="2030">2030</option>
+            </select>
 
-            <!-- Bloque 2: Calendario Anual -->
-            <div class="panel-seccion" style="background: #f8fafc; padding: 10px 14px; border-radius: 10px; border: 1px solid #e2e8f0;">
-                <h3 class="panel-titulo" style="font-size: 0.9rem; margin-bottom: 8px;">📅 Calendario Anual</h3>
-                <div class="panel-controles" style="display: flex; gap: 6px; flex-wrap: wrap;">
-                    <select id="colectivoAnual" style="flex: 1; min-width: 140px; padding: 6px 10px;">
-                        <option value="jefes">👨‍✈️ Jefes de Turno (7)</option>
-                        <option value="control">🎛️ Operadores de Control (7)</option>
-                        <option value="campo">🔧 Operadores de Campo (7)</option>
-                        <option value="todos">👥 Todos (21)</option>
-                    </select>
-                    
-                    <select id="anioAnualSelect" class="select-anio" style="width: 75px; padding: 6px 4px;">
-                        <option value="2026">2026</option>
-                        <option value="2027">2027</option>
-                        <option value="2028">2028</option>
-                        <option value="2029">2029</option>
-                        <option value="2030">2030</option>
-                    </select>
-
-                    <button class="panel-btn" onclick="verCalendarioDesdeMenu()" style="padding: 6px 10px;">Ver anual</button>
-                </div>
-            </div>
-
+            <button class="panel-btn" onclick="verCalendarioDesdeMenu()" style="padding: 6px 12px; font-size: 0.85rem; background: #1f4e79; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">Ver anual</button>
         </div>
     </div>
 </div>

@@ -144,7 +144,6 @@ function seleccionarDia(fechaStr, empleadoNombre, puestoTexto, turnoTexto, clase
 
     let htmlCompis = "";
     if (compisMismoTurno.length > 0) {
-        // Usamos c.nombre en lugar de c.name
         let listaCompis = compisMismoTurno.map(c => `${c.simbolo} ${c.nombre}`).join(" - ");
         htmlCompis = `
             <div style="margin-top: 6px; border-top: 1px solid #e2e8f0; padding-top: 6px;">
@@ -180,8 +179,7 @@ function seleccionarDia(fechaStr, empleadoNombre, puestoTexto, turnoTexto, clase
     }
 
    panelDetalle.style.display = "block";
-    // Subimos suavemente la ventana principal para que la tarjeta se vea justo debajo de la cabecera
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 // --- UTILIDADES ---
@@ -226,20 +224,16 @@ function verCalendario(anioParam){
 
     let empleadosAProcesar = [];
     let tituloVista = "";
-    let iconoPuesto = "👨‍✈️ Jefe de Turno";
 
     if(tipoColectivo === "jefes"){
         empleadosAProcesar = jefes.map(e => ({ ...e, esJT: true }));
         tituloVista = "👨‍✈️ Jefes de Turno";
-        iconoPuesto = "👨‍✈️ Jefe de Turno";
     } else if(tipoColectivo === "control"){
         empleadosAProcesar = control.map(e => ({ ...e, esJT: false }));
         tituloVista = "🎛️ Operadores de Control";
-        iconoPuesto = "🎛️ Operador de Control";
     } else if(tipoColectivo === "campo"){
         empleadosAProcesar = campo.map(e => ({ ...e, esJT: false }));
         tituloVista = "🔧 Operadores de Campo";
-        iconoPuesto = "🔧 Operador de Campo";
     } else {
         empleadosAProcesar = [
             ...control.map(e => ({ ...e, esJT: false })),
@@ -247,7 +241,6 @@ function verCalendario(anioParam){
             ...jefes.map(e => ({ ...e, esJT: true }))
         ];
         tituloVista = "Planificación Anual Maestro";
-        iconoPuesto = "⭐ Empleado";
     }
 
     let opcionesAniosHtml = "";
@@ -313,7 +306,15 @@ function verCalendario(anioParam){
                 ? obtenerInfoJT(fechaIterador, emp.inicio) 
                 : obtenerInfoOP(fechaIterador, emp.inicio);
 
-            let puestoEmp = emp.esJT ? "👨‍✈️ Jefe de Turno" : (tipoColectivo === "control" ? "🎛️ Operador de Control" : (tipoColectivo === "campo" ? "🔧 Operador de Campo" : iconoPuesto));
+            // Determinamos dinámicamente el puesto exacto de ESTE empleado en concreto
+            let puestoEmp = "⭐ Empleado";
+            if (jefes.some(j => j.name === emp.name)) {
+                puestoEmp = "👨‍✈️ Jefe de Turno";
+            } else if (control.some(o => o.name === emp.name)) {
+                puestoEmp = "🎛️ Operador de Control";
+            } else if (campo.some(o => o.name === emp.name)) {
+                puestoEmp = "🔧 Operador de Campo";
+            }
 
             html += `
                 <td style="text-align:center; padding:1px; height:26px; border:1px solid #cbd5e1; overflow:hidden;">
@@ -340,4 +341,36 @@ function verCalendario(anioParam){
 
 function cambiarAnioAnual(nuevoAnio){
     verCalendario(nuevoAnio);
+}
+
+function toggleSeccionPanel(tipo) {
+    const secBusqueda = document.getElementById('seccionBusqueda');
+    const secAnual = document.getElementById('seccionAnual');
+    const btnBusqueda = document.getElementById('btnToggleBusqueda');
+    const btnAnual = document.getElementById('btnToggleAnual');
+
+    if (!secBusqueda || !secAnual) return;
+
+    if (tipo === 'busqueda') {
+        const estaAbierta = secBusqueda.style.display === 'block';
+        
+        secBusqueda.style.display = estaAbierta ? 'none' : 'block';
+        secAnual.style.display = 'none';
+
+        btnBusqueda.style.background = estaAbierta ? '#e2e8f0' : '#1f4e79';
+        btnBusqueda.style.color = estaAbierta ? '#1e293b' : '#ffffff';
+        btnAnual.style.background = '#e2e8f0';
+        btnAnual.style.color = '#1e293b';
+
+    } else if (tipo === 'anual') {
+        const estaAbierta = secAnual.style.display === 'block';
+
+        secAnual.style.display = estaAbierta ? 'none' : 'block';
+        secBusqueda.style.display = 'none';
+
+        btnAnual.style.background = estaAbierta ? '#e2e8f0' : '#1f4e79';
+        btnAnual.style.color = estaAbierta ? '#1e293b' : '#ffffff';
+        btnBusqueda.style.background = '#e2e8f0';
+        btnBusqueda.style.color = '#1e293b';
+    }
 }

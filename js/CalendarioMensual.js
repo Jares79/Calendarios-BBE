@@ -210,10 +210,16 @@ function toggleUsuario(){
 function ejecutarBusquedaDesdeMenu(){
     const panel = document.getElementById("panelUsuario");
     const cabecera = document.getElementById("infoUsuario");
+    const secBusqueda = document.getElementById("seccionBusqueda");
     
+    // 1. Ejecutamos la búsqueda
     consultar();
     
+    // 2. Ocultamos el panel principal y la subsección de búsqueda
     if(panel) panel.style.display = 'none';
+    if(secBusqueda) secBusqueda.style.display = 'none';
+    
+    // 3. Restauramos la flechita de la cabecera para que apunte hacia abajo (▼)
     if(cabecera && typeof usuarioActual !== 'undefined') {
         cabecera.innerHTML = "👤 <strong>" + usuarioActual.nombre + "</strong>&nbsp;&nbsp;&nbsp;▼";
     }
