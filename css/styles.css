@@ -682,3 +682,28 @@ h2{
         text-align: center;
     }
 }
+/* --- CABECERA FIJA SUPERIOR (STICKY) LIMPIA --- */
+.header-fijo-container {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: #eef2f7; /* Mismo color de fondo para que se integre perfectamente */
+    padding-top: 10px;
+    padding-bottom: 5px;
+    margin-bottom: 15px;
+    border-bottom: 2px solid #cbd5e1; /* Línea divisoria sutil */
+}
+
+/* Ajuste de espacio interno de la cabecera */
+.header-fijo-container .cabecera {
+    margin-bottom: 8px;
+}
+
+/* Mantenemos la barra de usuario totalmente limpia sin fondo ni caja */
+.header-fijo-container .usuarioCabecera {
+    margin-bottom: 5px;
+    border: none;
+    background: transparent;
+    padding: 2px 4px;
+}
+

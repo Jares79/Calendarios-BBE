@@ -92,53 +92,79 @@ function cerrarVistaResultado(){
 function ocultarDetalleDia(){
     const panelDetalle = document.getElementById("panelDetalleDia");
     if(panelDetalle){
-        panelDetalle.style.display = "none";
+        panelDetalle.remove();
     }
 }
 
-// --- CERRAR EL DETALLE DEL DÍA AL HACER CLIC FUERA (SÓLO EL DETALLE) ---
-document.addEventListener('click', function(event) {
-    const panelDetalle = document.getElementById("panelDetalleDia");
-    const contenedorResultado = document.getElementById("resultado");
-    
-    // Si hay un detalle del día abierto
-    if (panelDetalle && window.getComputedStyle(panelDetalle).display !== 'none') {
-        const esDentroDetalle = panelDetalle.contains(event.target);
-        const esDiaCalendario = event.target.closest('.dia-calendario');
-        const esPanelUsuario = event.target.closest('#panelUsuario');
-        const esBotonMenu = event.target.closest('#infoUsuario') || event.target.closest('button');
-        
-        // Comprobamos si el contenedor de resultados está mostrando el calendario anual
-        // (si tiene una tabla dentro, es el anual y no debemos cerrarlo al hacer clic dentro)
-        const esCalendarioAnualAbierto = contenedorResultado && contenedorResultado.querySelector('table');
-
-        if (!esDentroDetalle && !esDiaCalendario && !esPanelUsuario && !esBotonMenu && !esCalendarioAnualAbierto) {
-            ocultarDetalleDia();
-        }
-    }
-});
-
-// --- GESTIÓN DE CLIC EN DÍA ---
+// --- GESTIÓN DE CLIC EN DÍA (Corregido el error de undefined) ---
 function seleccionarDia(fechaStr, empleadoNombre, puestoTexto, turnoTexto, claseTurno){
-    let panelDetalle = document.getElementById("panelDetalleDia");
+    ocultarDetalleDia();
+
+    // Convertimos la fechaStr (DD/MM/YYYY) a objeto Date para buscar coincidencias
+    const partesFecha = fechaStr.split('/');
+    const fechaObj = new Date(`${partesFecha[2]}-${partesFecha[1]}-${partesFecha[0]}T00:00:00`);
+
+    // Buscamos compañeros que tengan el mismo turno (si es M, T o N)
+    let compisMismoTurno = [];
     
-    if(!panelDetalle){
-        panelDetalle = document.createElement("div");
-        panelDetalle.id = "panelDetalleDia";
-        panelDetalle.className = "card";
-        panelDetalle.style.cssText = "border-left: 5px solid #0ea5e9; background: #f8fafc; margin-bottom: 20px;";
+    if (["Mañana", "Tarde", "Noche"].includes(turnoTexto)) {
+        // Revisar Jefes
+        jefes.forEach(j => {
+            if (j.name !== empleadoNombre) {
+                let infoJ = obtenerInfoJT(fechaObj, j.inicio);
+                if (infoJ.texto === turnoTexto) {
+                    compisMismoTurno.push({ nombre: j.name, simbolo: "👨‍✈️" });
+                }
+            }
+        });
+        // Revisar Control
+        control.forEach(o => {
+            if (o.name !== empleadoNombre) {
+                let infoO = obtenerInfoOP(fechaObj, o.inicio);
+                if (infoO.texto === turnoTexto) {
+                    compisMismoTurno.push({ nombre: o.name, simbolo: "🎛️" });
+                }
+            }
+        });
+        // Revisar Campo
+        campo.forEach(o => {
+            if (o.name !== empleadoNombre) {
+                let infoO = obtenerInfoOP(fechaObj, o.inicio);
+                if (infoO.texto === turnoTexto) {
+                    compisMismoTurno.push({ nombre: o.name, simbolo: "🔧" });
+                }
+            }
+        });
+    }
+
+    let panelDetalle = document.createElement("div");
+    panelDetalle.id = "panelDetalleDia";
+    panelDetalle.className = "card";
+    panelDetalle.style.cssText = "border-left: 5px solid #0ea5e9; background: #f8fafc; margin-bottom: 15px; padding: 12px 16px;";
+
+    let htmlCompis = "";
+    if (compisMismoTurno.length > 0) {
+        // Usamos c.nombre en lugar de c.name
+        let listaCompis = compisMismoTurno.map(c => `${c.simbolo} ${c.nombre}`).join(" - ");
+        htmlCompis = `
+            <div style="margin-top: 6px; border-top: 1px solid #e2e8f0; padding-top: 6px;">
+                <p style="margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><strong>Compañeros de turno:</strong> ${listaCompis}</p>
+            </div>
+        `;
     }
 
     panelDetalle.innerHTML = `
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <h3 style="margin: 0; color: #1f4e79;">📌 Detalle del Día</h3>
-            <button onclick="ocultarDetalleDia()" style="background:#64748b; padding:4px 10px; font-size:12px;">✖ Cerrar</button>
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; margin-bottom: 8px;">
+            <h3 style="margin: 0; color: #1f4e79; font-size: 0.95rem; display: flex; align-items: center; gap: 8px;">
+                📅 ${fechaStr} 
+                <span style="font-weight: normal; color: #64748b; font-size: 0.85rem;">—</span>
+                <span class="badge-turno ${claseTurno}" style="padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; display: inline-block;">${turnoTexto}</span>
+            </h3>
+            <button onclick="ocultarDetalleDia()" style="background:#64748b; padding:2px 8px; font-size:11px; border-radius: 4px;">✖ Cerrar</button>
         </div>
-        <div style="margin-top: 10px; font-size: 14px; color: #334155;">
-            <p><strong>Fecha:</strong> ${fechaStr}</p>
-            <p><strong>Empleado:</strong> ${empleadoNombre} <span style="color: #64748b; font-weight: normal;">(${puestoTexto})</span></p>
-            <p><strong>Turno:</strong> <span class="badge-turno ${claseTurno}" style="padding: 2px 8px; border-radius: 4px; display: inline-block;">${turnoTexto}</span></p>
-            <p style="color: #64748b; font-style: italic; margin-top: 8px;">💡 (Espacio reservado para futuras propiedades).</p>
+        <div style="font-size: 13.5px; color: #334155; display: flex; flex-direction: column; gap: 4px;">
+            <p style="margin: 0;"><strong>Empleado:</strong> ${empleadoNombre} (${puestoTexto})</p>
+            ${htmlCompis}
         </div>
     `;
 
@@ -153,10 +179,10 @@ function seleccionarDia(fechaStr, empleadoNombre, puestoTexto, turnoTexto, clase
         document.body.insertBefore(panelDetalle, document.body.firstChild);
     }
 
-    panelDetalle.style.display = "block";
-    panelDetalle.scrollIntoView({ behavior: 'smooth', block: 'start' });
+   panelDetalle.style.display = "block";
+    // Subimos suavemente la ventana principal para que la tarjeta se vea justo debajo de la cabecera
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
-
 
 // --- UTILIDADES ---
 function colorCelda(clase){

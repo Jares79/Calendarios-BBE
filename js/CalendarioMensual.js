@@ -163,6 +163,9 @@ function cerrarSesion(){
     console.log("Cerrar sesión pendiente");
 }
 
+// Variable global para bloquear rebotes de doble clic
+let _bloqueoToggleUsuario = false;
+
 function toggleUsuario(){
     if(typeof ocultarDetalleDia === 'function'){
         ocultarDetalleDia();
@@ -170,18 +173,23 @@ function toggleUsuario(){
 
     const panel = document.getElementById("panelUsuario");
     const cabecera = document.getElementById("infoUsuario");
-    const rolTexto = document.getElementById("rolUsuarioTexto");
 
-    if(rolTexto && typeof usuarioActual !== 'undefined'){
-        rolTexto.textContent = usuarioActual.rol;
-    }
+    if(!panel || !cabecera) return;
 
-    if(panel.style.display === "block"){
+    // Leemos el estado real actual
+    const currentDisplay = window.getComputedStyle(panel).display;
+    const estaAbierto = currentDisplay === "block";
+
+    if(estaAbierto){
         panel.style.display = "none";
-        cabecera.innerHTML = "👤 <strong>" + usuarioActual.nombre + "</strong>&nbsp;&nbsp;&nbsp;▼";
-    }else{
+        if(typeof usuarioActual !== 'undefined'){
+            cabecera.innerHTML = "👤 <strong>" + usuarioActual.nombre + "</strong>&nbsp;&nbsp;&nbsp;▼";
+        }
+    } else {
         panel.style.display = "block";
-        cabecera.innerHTML = "👤 <strong>" + usuarioActual.nombre + "</strong>&nbsp;&nbsp;&nbsp;▲";
+        if(typeof usuarioActual !== 'undefined'){
+            cabecera.innerHTML = "👤 <strong>" + usuarioActual.nombre + "</strong>&nbsp;&nbsp;&nbsp;▲";
+        }
 
         const inputFecha = document.getElementById("fecha");
         if(inputFecha && !inputFecha.value){
@@ -199,7 +207,6 @@ function toggleUsuario(){
         }
     }
 }
-
 function ejecutarBusquedaDesdeMenu(){
     const panel = document.getElementById("panelUsuario");
     const cabecera = document.getElementById("infoUsuario");
@@ -231,29 +238,58 @@ function verCalendarioDesdeMenu(){
     window.scrollTo(0, 0);
 }
 
-// --- CERRAR EL SELECTOR DE MES AL HACER CLIC FUERA ---
+// --- GESTIÓN GLOBAL DE CLICS FUERA (LIMPIO Y SIN INTERFERENCIAS) ---
 document.addEventListener('click', function(event) {
-    const selector = document.getElementById('selectorMes');
+    // 1. Cerrar selector de mes si se hace clic fuera
+    const selectorMes = document.getElementById('selectorMes');
     const tituloMes = document.getElementById('tituloMes');
-    
-    if (selector && selector.style.display === 'block') {
-        if (!selector.contains(event.target) && !tituloMes.contains(event.target)) {
-            selector.style.display = 'none';
+    if (selectorMes && selectorMes.style.display === 'block') {
+        if (!selectorMes.contains(event.target) && !tituloMes.contains(event.target)) {
+            selectorMes.style.display = 'none';
+        }
+    }
+
+    // 2. Cerrar el panel de detalle del día si se hace clic fuera de él
+    const panelDetalle = document.getElementById('panelDetalleDia');
+    if (panelDetalle) {
+        const esDentroDelPanel = panelDetalle.contains(event.target);
+        const esBotonCalendario = event.target.closest('.dia-calendario') || event.target.closest('.td-celda-turno');
+        
+        if (!esDentroDelPanel && !esBotonCalendario) {
+            ocultarDetalleDia();
+        }
+    }
+
+    // 3. Cerrar el panel de usuario si está abierto y se hace clic fuera de él o de su cabecera
+    const panelUsuario = document.getElementById('panelUsuario');
+    const usuarioCabecera = document.querySelector('.usuarioCabecera');
+    if (panelUsuario && (panelUsuario.style.display === 'block' || panelUsuario.classList.contains('abierto'))) {
+        const esDentroPanel = panelUsuario.contains(event.target);
+        const esDentroCabecera = usuarioCabecera && usuarioCabecera.contains(event.target);
+        
+        if (!esDentroPanel && !esDentroCabecera) {
+            panelUsuario.style.display = 'none';
+            panelUsuario.classList.remove('abierto');
+            const cabeceraUsuario = document.getElementById('infoUsuario');
+            if (cabeceraUsuario && typeof usuarioActual !== 'undefined') {
+                cabeceraUsuario.innerHTML = "👤 <strong>" + usuarioActual.nombre + "</strong>&nbsp;&nbsp;&nbsp;▼";
+            }
         }
     }
 });
 
-// --- CERRAR LA TARJETA DE DETALLE O CALENDARIO ANUAL AL HACER CLIC FUERA ---
-document.addEventListener('click', function(event) {
-    const detalleDia = document.getElementById('resultado');
-    
-    if (detalleDia && detalleDia.style.display === 'block') {
-        // Ignoramos si el clic ocurre dentro del resultado, en un día del calendario o dentro del panel de usuario
-        if (!detalleDia.contains(event.target) && 
-            !event.target.closest('.dia-calendario') && 
-            !event.target.closest('#panelUsuario') && 
-            !event.target.closest('#infoUsuario')) {
-            detalleDia.style.display = 'none';
-        }
+// Enlazamos el evento de apertura/cierre de la cabecera de usuario de forma exclusiva
+document.addEventListener('DOMContentLoaded', () => {
+    const contenedorUsuario = document.querySelector('.usuarioCabecera');
+    if (contenedorUsuario) {
+        contenedorUsuario.addEventListener('click', function(e) {
+            // Si hacen clic en cerrar sesión, dejamos que actúe su propio onclick
+            if (e.target.closest('.cerrarSesion')) return;
+
+            // Evitamos que el clic suba al documento global y dispare el cierre inmediato
+            e.stopPropagation();
+
+            toggleUsuario();
+        });
     }
 });
