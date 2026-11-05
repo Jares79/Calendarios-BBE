@@ -3,6 +3,9 @@
 let usuarioActual = null;
 
 document.addEventListener("DOMContentLoaded", () => {
+    // Quitamos la clase cargando para que el body vuelva a ser visible
+    document.body.classList.remove('cargando');
+
     // 1. Comprobar si ya existe una sesión guardada en el navegador
     const usuarioGuardado = localStorage.getItem('bb_usuario');
     if (usuarioGuardado) {

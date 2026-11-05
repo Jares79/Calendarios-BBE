@@ -575,3 +575,9 @@ h2{
     background: transparent;
     padding: 2px 0;
 }
+/* --- PREVENCIÓN DE PARPADEO INICIAL (SPN) --- */
+body.cargando .card, 
+body.cargando .header-fijo-container {
+    opacity: 0;
+    visibility: hidden;
+}
