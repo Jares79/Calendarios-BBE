@@ -5,6 +5,36 @@ let inicioTouchY = 0;
 let finTouchY = 0;
 let swipeActivo = false;
 
+// Función robusta para encontrar al empleado vinculando Supabase con los arrays de empleados.js por iniciales
+function obtenerDatosEmpleadoActual() {
+    const inicialesUser = (usuarioActual.iniciales || "").replace('_F', '').trim().toLowerCase();
+    const empleadoAsoc = (usuarioActual.empleadoAsociado || "").replace('_F', '').trim().toLowerCase();
+    const nombreUser = (usuarioActual.nombre || "").trim().toLowerCase();
+
+    const coincide = (emp) => {
+        const eNombre = (emp.name || "").trim().toLowerCase();
+        const eIniciales = (emp.iniciales || "").trim().toLowerCase();
+        return (eIniciales && (eIniciales === inicialesUser || eIniciales === empleadoAsoc)) ||
+               (eNombre === nombreUser || eNombre === inicialesUser || eNombre === empleadoAsoc);
+    };
+
+    // 1. Buscar en Jefes
+    let encontrado = jefes.find(j => coincide(j));
+    if (encontrado) return { ...encontrado, esJT: true, tipoPuesto: "👨‍✈️ Jefe de Turno" };
+
+    // 2. Buscar en Control
+    encontrado = control.find(o => coincide(o));
+    if (encontrado) return { ...encontrado, esJT: false, tipoPuesto: "🎛️ Operador de Control" };
+
+    // 3. Buscar en Campo
+    encontrado = campo.find(c => coincide(c));
+    if (encontrado) return { ...encontrado, esJT: false, tipoPuesto: "🔧 Operador de Campo" };
+
+   // Red de seguridad para evitar que la aplicación se rompa si faltara algún dato
+    console.warn("⚠️ Usuario no encontrado en los arrays de empleados:", usuarioActual);
+    return { name: usuarioActual.nombre || "Desconocido", inicio: "2026-01-01", esJT: true, tipoPuesto: "👨‍✈️ Jefe de Turno" };
+}
+
 function verMiCalendario() {
     const anio = fechaCalendario.getFullYear();
     const mes = fechaCalendario.getMonth();
@@ -18,17 +48,10 @@ function verMiCalendario() {
     );
 
     nombreMes = nombreMes.charAt(0).toUpperCase() + nombreMes.slice(1);
-
     document.getElementById("tituloMes").textContent = nombreMes;
 
-    const empleado = jefes.find(
-        j => j.name === usuarioActual.empleado
-    );
-
-    if (!empleado) {
-        alert("Empleado no encontrado");
-        return;
-    }
+    // Obtenemos el empleado de forma robusta y dinámica
+    const empleado = obtenerDatosEmpleadoActual();
 
     const diasMes = new Date(anio, mes + 1, 0).getDate();
 
@@ -50,17 +73,13 @@ function verMiCalendario() {
         html += `<div></div>`;
     }
 
-    let iconoPuestoRol = "👨‍✈️ Jefe de Turno";
-    const rolLower = (usuarioActual.rol || "").toLowerCase();
-    if(rolLower.includes("control")){
-        iconoPuestoRol = "🎛️ Operador de Control";
-    } else if(rolLower.includes("campo")){
-        iconoPuestoRol = "🔧 Operador de Campo";
-    }
-
     for (let dia = 1; dia <= diasMes; dia++) {
         const fecha = new Date(anio, mes, dia);
-        const info = obtenerInfoJT(fecha, empleado.inicio);
+        
+        // Calcula el turno exacto según su patrón (JT u OP)
+        const info = empleado.esJT 
+            ? obtenerInfoJT(fecha, empleado.inicio) 
+            : obtenerInfoOP(fecha, empleado.inicio);
 
         const anioF = fecha.getFullYear();
         const mesF = String(fecha.getMonth() + 1).padStart(2, '0');
@@ -68,7 +87,7 @@ function verMiCalendario() {
         const fechaStr = `${diaF}/${mesF}/${anioF}`;
 
         html += `
-            <button type="button" class="dia-calendario ${info.clase}" onclick="seleccionarDia('${fechaStr}', '${empleado.name}', '${iconoPuestoRol}', '${info.texto}', '${info.clase}')">
+            <button type="button" class="dia-calendario ${info.clase}" onclick="seleccionarDia('${fechaStr}', '${empleado.name}', '${empleado.tipoPuesto}', '${info.texto}', '${info.clase}')">
                 <span class="numero-dia">${dia}</span>
                 <span class="turno-dia">${inicial(info)}</span>
             </button>
@@ -163,7 +182,6 @@ function cerrarSesion(){
     console.log("Cerrar sesión pendiente");
 }
 
-// Variable global para bloquear rebotes de doble clic
 let _bloqueoToggleUsuario = false;
 
 function toggleUsuario(){
@@ -176,7 +194,6 @@ function toggleUsuario(){
 
     if(!panel || !cabecera) return;
 
-    // Leemos el estado real actual
     const currentDisplay = window.getComputedStyle(panel).display;
     const estaAbierto = currentDisplay === "block";
 
@@ -207,19 +224,17 @@ function toggleUsuario(){
         }
     }
 }
+
 function ejecutarBusquedaDesdeMenu(){
     const panel = document.getElementById("panelUsuario");
     const cabecera = document.getElementById("infoUsuario");
     const secBusqueda = document.getElementById("seccionBusqueda");
     
-    // 1. Ejecutamos la búsqueda
     consultar();
     
-    // 2. Ocultamos el panel principal y la subsección de búsqueda
     if(panel) panel.style.display = 'none';
     if(secBusqueda) secBusqueda.style.display = 'none';
     
-    // 3. Restauramos la flechita de la cabecera para que apunte hacia abajo (▼)
     if(cabecera && typeof usuarioActual !== 'undefined') {
         cabecera.innerHTML = "👤 <strong>" + usuarioActual.nombre + "</strong>&nbsp;&nbsp;&nbsp;▼";
     }
@@ -244,9 +259,14 @@ function verCalendarioDesdeMenu(){
     window.scrollTo(0, 0);
 }
 
-// --- GESTIÓN GLOBAL DE CLICS FUERA (LIMPIO Y SIN INTERFERENCIAS) ---
+// Función precisa: solo devuelve true si las iniciales terminan estrictamente en _f
+function esPerfilFamiliar() {
+    if (typeof usuarioActual === 'undefined' || !usuarioActual) return false;
+    const iniciales = (usuarioActual.iniciales || "").trim().toLowerCase();
+    return iniciales.endsWith('_f');
+}
+
 document.addEventListener('click', function(event) {
-    // 1. Cerrar selector de mes si se hace clic fuera
     const selectorMes = document.getElementById('selectorMes');
     const tituloMes = document.getElementById('tituloMes');
     if (selectorMes && selectorMes.style.display === 'block') {
@@ -255,7 +275,6 @@ document.addEventListener('click', function(event) {
         }
     }
 
-    // 2. Cerrar el panel de detalle del día si se hace clic fuera de él
     const panelDetalle = document.getElementById('panelDetalleDia');
     if (panelDetalle) {
         const esDentroDelPanel = panelDetalle.contains(event.target);
@@ -266,7 +285,6 @@ document.addEventListener('click', function(event) {
         }
     }
 
-    // 3. Cerrar el panel de usuario si está abierto y se hace clic fuera de él o de su cabecera
     const panelUsuario = document.getElementById('panelUsuario');
     const usuarioCabecera = document.querySelector('.usuarioCabecera');
     if (panelUsuario && (panelUsuario.style.display === 'block' || panelUsuario.classList.contains('abierto'))) {
@@ -284,17 +302,31 @@ document.addEventListener('click', function(event) {
     }
 });
 
-// Enlazamos el evento de apertura/cierre de la cabecera de usuario de forma exclusiva
 document.addEventListener('DOMContentLoaded', () => {
+    // Si es perfil familiar estricto, ocultamos el panel y añadimos la etiqueta de familiar
+    if (esPerfilFamiliar()) {
+        const panelUsuario = document.getElementById('panelUsuario');
+        if (panelUsuario) {
+            panelUsuario.style.display = 'none';
+        }
+        const infoUsr = document.getElementById('infoUsuario');
+        if (infoUsr && typeof usuarioActual !== 'undefined') {
+            infoUsr.innerHTML = `👤 <strong>${usuarioActual.nombre}</strong> (Familiar)`;
+        }
+    }
+
     const contenedorUsuario = document.querySelector('.usuarioCabecera');
     if (contenedorUsuario) {
         contenedorUsuario.addEventListener('click', function(e) {
-            // Si hacen clic en cerrar sesión, dejamos que actúe su propio onclick
             if (e.target.closest('.cerrarSesion')) return;
+            
+            // Si es perfil familiar, bloqueamos la apertura del menú desplegable
+            if (esPerfilFamiliar()) {
+                e.stopPropagation();
+                return;
+            }
 
-            // Evitamos que el clic suba al documento global y dispare el cierre inmediato
             e.stopPropagation();
-
             toggleUsuario();
         });
     }
