@@ -1,120 +1,60 @@
-const patronJT = [
-"F","P","M","M","T","T","N","N",
-"F","F","F","I","M","M","T","T","N","N",
-"F","F","F","P","P","P","P","I","F","F",
-"P","P","P","P","I","F","F","F",
-"M","M","T","T","N","N",
-"F","F","F","P","M","M","T","T","N","N",
-"F","F","F","F","M","M","T","T","N","N",
-"F","F","F","P","M","M","T","T","N","N",
-"F","F","F","F","M","M","T","T","N","N",
-"F","F",
-"P","P","P","P","I","F","F",
-"P","P","P","P","I","F","F"
-];
+// js/turnos.js
+// Cálculo de turnos a partir del ciclo (patrón) de cada colectivo.
+// Todo se hace con fechas en texto "AAAA-MM-DD", sin horas ni zonas horarias:
+// así el resultado es el mismo en cualquier móvil y cualquier país.
 
-const patronOP = [
-"M","M","T","T","T","F","F",
-"F","P","M","M","N","N","N",
-"F","F","F","P","M","T","T",
-"N","N","F","F","F","M","M",
-"T","T","N","N","F","F","F",
-"P","P","P","P","I","F","F",
-"P","P","P","P","I","F","F"
-];
+const TURNOS = {
+    M: { texto: "Mañana",    clase: "manana" },
+    T: { texto: "Tarde",     clase: "tarde" },
+    N: { texto: "Noche",     clase: "noche" },
+    F: { texto: "Fiesta",    clase: "fiesta" },
+    P: { texto: "Partida",   clase: "partida" },
+    I: { texto: "Intensiva", clase: "intensiva" },
+    S: { texto: "Solape",    clase: "solape" }
+};
 
-function diferenciaDias(fecha1, fecha2){
-
-    return Math.floor(
-        (fecha1.getTime() - fecha2.getTime())
-        /
-        (1000 * 60 * 60 * 24)
-    );
+// Date (hora local) -> "AAAA-MM-DD"
+function aISO(fecha) {
+    const a = fecha.getFullYear();
+    const m = String(fecha.getMonth() + 1).padStart(2, "0");
+    const d = String(fecha.getDate()).padStart(2, "0");
+    return `${a}-${m}-${d}`;
 }
 
-function convertirTurno(turno){
-
-    switch(turno){
-
-        case "M":
-            return {
-                texto:"Mañana",
-                clase:"manana"
-            };
-
-        case "T":
-            return {
-                texto:"Tarde",
-                clase:"tarde"
-            };
-
-        case "N":
-            return {
-                texto:"Noche",
-                clase:"noche"
-            };
-
-        case "F":
-            return {
-                texto:"Fiesta",
-                clase:"fiesta"
-            };
-
-        case "P":
-            return {
-                texto:"Partida",
-                clase:"partida"
-            };
-
-        case "I":
-            return {
-                texto:"Intensiva",
-                clase:"intensiva"
-            };
-
-        default:
-            return {
-                texto:turno,
-                clase:""
-            };
-    }
+// "AAAA-MM-DD" -> "DD/MM/AAAA"
+function formatearFecha(iso) {
+    const [a, m, d] = iso.split("-");
+    return `${d}/${m}/${a}`;
 }
 
-function obtenerInfoJT(fecha,inicio){
-
-    let dias =
-        diferenciaDias(
-            fecha,
-            new Date(inicio)
-        );
-
-    let pos =
-    (((dias + 1) % patronJT.length)
-    + patronJT.length)
-    % patronJT.length;
-
-    let turno = patronJT[pos];
-
-
-    return convertirTurno(turno);
+function diaNumero(iso) {
+    const [a, m, d] = iso.split("-").map(Number);
+    return Math.round(Date.UTC(a, m - 1, d) / 86400000);
 }
 
-function obtenerInfoOP(fecha,inicio){
+// Código de turno ("M", "T", "N", "F", "P", "I", "S") de un empleado en una fecha
+function codigoTurno(fechaISO, empleado, colectivo) {
+    const patron = colectivo.patron;
+    const n = patron.length;
+    const dias = diaNumero(fechaISO) - diaNumero(empleado.inicio);
+    return patron[((dias % n) + n) % n];
+}
 
-    let dias =
-        diferenciaDias(
-            fecha,
-            new Date(inicio)
-        );
+function convertirTurno(codigo) {
+    const t = TURNOS[codigo];
+    return t
+        ? { codigo, texto: t.texto, clase: t.clase }
+        : { codigo, texto: codigo, clase: "" };
+}
 
-    let pos =
-    (((dias + 1) % patronOP.length)
-    + patronOP.length)
-    % patronOP.length;
+// Información del turno de un empleado (objeto de datos.js) en una fecha
+function infoTurno(fechaISO, empleado) {
+    const colectivo = buscarColectivo(empleado.colectivo);
+    if (!colectivo) return convertirTurno("?");
+    return convertirTurno(codigoTurno(fechaISO, empleado, colectivo));
+}
 
-    let turno = patronOP[pos];
-
-    
-
-    return convertirTurno(turno);
+// Letra que se pinta en la celda
+function inicial(info) {
+    return info.codigo || "?";
 }
