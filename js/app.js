@@ -57,10 +57,82 @@ function mostrarPantallaLogin() {
         const user = await loginSupabase(iniciales, pin);
 
         if (user) {
-            localStorage.setItem('bb_usuario', JSON.stringify(user));
-            location.reload(); // Recargamos para mostrar la app completa limpia
+            if (user.debeCambiarPin) {
+                // Primer acceso (o PIN reseteado): hay que elegir un PIN nuevo antes de entrar
+                mostrarPantallaCambioPin(user, pin);
+            } else {
+                localStorage.setItem('bb_usuario', JSON.stringify(user));
+                location.reload(); // Recargamos para mostrar la app completa limpia
+            }
         } else {
             btn.textContent = "Entrar";
+            btn.disabled = false;
+        }
+    });
+}
+
+function mostrarPantallaCambioPin(user, pinActual) {
+    document.body.innerHTML = `
+        <div style="display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #eef2f7; padding: 20px;">
+            <div class="card" style="width: 100%; max-width: 350px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.1); border-radius: 12px; padding: 25px;">
+                <img src="img/LOGO_BBE_SOLO.png" style="height: 50px; margin-bottom: 10px;" alt="BBE Logo">
+                <h2 style="margin-bottom: 5px; color: #1f4e79;">Elige tu PIN</h2>
+                <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 20px;">Es tu primer acceso: crea un PIN personal de 6 a 10 números.</p>
+
+                <form id="formCambioPin" style="display: flex; flex-direction: column; gap: 15px;">
+                    <div style="text-align: left;">
+                        <label style="font-size: 0.8rem; font-weight: bold; color: #475569;">PIN nuevo:</label>
+                        <input type="password" id="inputPinNuevo" inputmode="numeric" autocomplete="new-password" maxlength="10" required style="width: 100%; padding: 10px; margin-top: 4px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 1rem;" />
+                    </div>
+
+                    <div style="text-align: left;">
+                        <label style="font-size: 0.8rem; font-weight: bold; color: #475569;">Repite el PIN nuevo:</label>
+                        <input type="password" id="inputPinRepetido" inputmode="numeric" autocomplete="new-password" maxlength="10" required style="width: 100%; padding: 10px; margin-top: 4px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 1rem;" />
+                    </div>
+
+                    <p id="errorCambioPin" style="color: #b91c1c; font-size: 0.85rem; margin: 0; min-height: 1.1em;"></p>
+
+                    <button type="submit" id="btnGuardarPin" style="padding: 12px; background: #1f4e79; color: white; border: none; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer;">
+                        Guardar y entrar
+                    </button>
+                </form>
+            </div>
+        </div>
+    `;
+
+    document.getElementById("formCambioPin").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const error = document.getElementById("errorCambioPin");
+        const btn = document.getElementById("btnGuardarPin");
+        const nuevo = document.getElementById("inputPinNuevo").value.trim();
+        const repetido = document.getElementById("inputPinRepetido").value.trim();
+
+        if (!/^[0-9]{6,10}$/.test(nuevo)) {
+            error.textContent = "El PIN debe tener entre 6 y 10 números.";
+            return;
+        }
+        if (nuevo !== repetido) {
+            error.textContent = "Los dos PIN no coinciden.";
+            return;
+        }
+        if (nuevo === pinActual.trim()) {
+            error.textContent = "El PIN nuevo no puede ser igual al actual.";
+            return;
+        }
+
+        error.textContent = "";
+        btn.textContent = "Guardando...";
+        btn.disabled = true;
+
+        const resultado = await cambiarPinSupabase(user.iniciales, pinActual, nuevo);
+
+        if (resultado.ok) {
+            user.debeCambiarPin = false;
+            localStorage.setItem('bb_usuario', JSON.stringify(user));
+            location.reload();
+        } else {
+            error.textContent = resultado.mensaje;
+            btn.textContent = "Guardar y entrar";
             btn.disabled = false;
         }
     });
@@ -85,6 +157,16 @@ function iniciarApp() {
     const badgeRol = document.getElementById("rolUsuarioTexto");
     if (badgeRol) {
         badgeRol.textContent = usuarioActual.rol.toUpperCase();
+    }
+
+    // 4b. Modo familiar: oculta el panel y marca la cabecera (ya con usuarioActual cargado)
+    if (typeof aplicarModoFamiliar === 'function') {
+        aplicarModoFamiliar();
+    }
+
+    // 4c. Solo administradores: activa la opción de resetear PIN en el menú
+    if (typeof prepararPanelAdmin === 'function') {
+        prepararPanelAdmin();
     }
 
     // 5. Renderizamos su calendario

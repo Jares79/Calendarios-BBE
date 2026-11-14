@@ -344,33 +344,29 @@ function cambiarAnioAnual(nuevoAnio){
 }
 
 function toggleSeccionPanel(tipo) {
-    const secBusqueda = document.getElementById('seccionBusqueda');
-    const secAnual = document.getElementById('seccionAnual');
-    const btnBusqueda = document.getElementById('btnToggleBusqueda');
-    const btnAnual = document.getElementById('btnToggleAnual');
+    const secciones = {
+        busqueda: { sec: 'seccionBusqueda', btn: 'btnToggleBusqueda' },
+        anual:    { sec: 'seccionAnual',    btn: 'btnToggleAnual' },
+        resetpin: { sec: 'seccionResetPin', btn: 'btnToggleResetPin' }
+    };
 
-    if (!secBusqueda || !secAnual) return;
+    if (!secciones[tipo]) return;
 
-    if (tipo === 'busqueda') {
-        const estaAbierta = secBusqueda.style.display === 'block';
-        
-        secBusqueda.style.display = estaAbierta ? 'none' : 'block';
-        secAnual.style.display = 'none';
+    const secActual = document.getElementById(secciones[tipo].sec);
+    if (!secActual) return;
 
-        btnBusqueda.style.background = estaAbierta ? '#e2e8f0' : '#1f4e79';
-        btnBusqueda.style.color = estaAbierta ? '#1e293b' : '#ffffff';
-        btnAnual.style.background = '#e2e8f0';
-        btnAnual.style.color = '#1e293b';
+    const estabaAbierta = secActual.style.display === 'block';
 
-    } else if (tipo === 'anual') {
-        const estaAbierta = secAnual.style.display === 'block';
+    // Abre la sección pulsada (o la cierra si ya estaba abierta) y cierra las demás
+    Object.keys(secciones).forEach(clave => {
+        const sec = document.getElementById(secciones[clave].sec);
+        const btn = document.getElementById(secciones[clave].btn);
+        const abrir = (clave === tipo) && !estabaAbierta;
 
-        secAnual.style.display = estaAbierta ? 'none' : 'block';
-        secBusqueda.style.display = 'none';
-
-        btnAnual.style.background = estaAbierta ? '#e2e8f0' : '#1f4e79';
-        btnAnual.style.color = estaAbierta ? '#1e293b' : '#ffffff';
-        btnBusqueda.style.background = '#e2e8f0';
-        btnBusqueda.style.color = '#1e293b';
-    }
+        if (sec) sec.style.display = abrir ? 'block' : 'none';
+        if (btn) {
+            btn.style.background = abrir ? '#1f4e79' : '#e2e8f0';
+            btn.style.color = abrir ? '#ffffff' : '#1e293b';
+        }
+    });
 }

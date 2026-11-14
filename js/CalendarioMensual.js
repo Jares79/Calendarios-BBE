@@ -30,9 +30,9 @@ function obtenerDatosEmpleadoActual() {
     encontrado = campo.find(c => coincide(c));
     if (encontrado) return { ...encontrado, esJT: false, tipoPuesto: "🔧 Operador de Campo" };
 
-   // Red de seguridad para evitar que la aplicación se rompa si faltara algún dato
+    // Si no hay ficha de empleado no se inventan datos: se devuelve null y la vista muestra un aviso
     console.warn("⚠️ Usuario no encontrado en los arrays de empleados:", usuarioActual);
-    return { name: usuarioActual.nombre || "Desconocido", inicio: "2026-01-01", esJT: true, tipoPuesto: "👨‍✈️ Jefe de Turno" };
+    return null;
 }
 
 function verMiCalendario() {
@@ -52,6 +52,15 @@ function verMiCalendario() {
 
     // Obtenemos el empleado de forma robusta y dinámica
     const empleado = obtenerDatosEmpleadoActual();
+
+    if (!empleado) {
+        document.getElementById("miCalendario").innerHTML = `
+            <p style="text-align:center; color:#b91c1c; padding:20px 10px;">
+                No se ha encontrado tu ficha de empleado, así que no se puede mostrar el calendario.
+                Avisa al administrador.
+            </p>`;
+        return;
+    }
 
     const diasMes = new Date(anio, mes + 1, 0).getDate();
 
@@ -122,12 +131,12 @@ function verMiCalendario() {
 }
 
 function mesAnterior(){
-    fechaCalendario.setMonth(fechaCalendario.getMonth() - 1);
+    fechaCalendario = new Date(fechaCalendario.getFullYear(), fechaCalendario.getMonth() - 1, 1);
     verMiCalendario();
 }
 
 function mesSiguiente(){
-    fechaCalendario.setMonth(fechaCalendario.getMonth() + 1);
+    fechaCalendario = new Date(fechaCalendario.getFullYear(), fechaCalendario.getMonth() + 1, 1);
     verMiCalendario();
 }
 
@@ -302,19 +311,22 @@ document.addEventListener('click', function(event) {
     }
 });
 
-document.addEventListener('DOMContentLoaded', () => {
-    // Si es perfil familiar estricto, ocultamos el panel y añadimos la etiqueta de familiar
-    if (esPerfilFamiliar()) {
-        const panelUsuario = document.getElementById('panelUsuario');
-        if (panelUsuario) {
-            panelUsuario.style.display = 'none';
-        }
-        const infoUsr = document.getElementById('infoUsuario');
-        if (infoUsr && typeof usuarioActual !== 'undefined') {
-            infoUsr.innerHTML = `👤 <strong>${usuarioActual.nombre}</strong> (Familiar)`;
-        }
-    }
+// Perfil familiar: oculta el panel y marca la cabecera. Se llama desde iniciarApp(),
+// cuando usuarioActual ya está cargado.
+function aplicarModoFamiliar() {
+    if (!esPerfilFamiliar()) return;
 
+    const panelUsuario = document.getElementById('panelUsuario');
+    if (panelUsuario) {
+        panelUsuario.style.display = 'none';
+    }
+    const infoUsr = document.getElementById('infoUsuario');
+    if (infoUsr) {
+        infoUsr.innerHTML = `👤 <strong>${usuarioActual.nombre}</strong> (Familiar)`;
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
     const contenedorUsuario = document.querySelector('.usuarioCabecera');
     if (contenedorUsuario) {
         contenedorUsuario.addEventListener('click', function(e) {
