@@ -53,6 +53,24 @@
         </button>
     </div>
 
+    <!-- Solo administradores: resetear el PIN de un empleado (se muestra desde app.js) -->
+    <div id="filaAdminPin" style="display: none; margin-bottom: 8px;">
+        <button id="btnToggleResetPin" type="button" class="panel-btn-tab" onclick="toggleSeccionPanel('resetpin')" style="width: 100%; padding: 8px 12px; font-size: 0.85rem; background: #e2e8f0; color: #1e293b; border: 1px solid #cbd5e1; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s;">
+            🔑 Resetear PIN de un empleado
+        </button>
+    </div>
+
+    <div id="seccionResetPin" class="panel-subseccion" style="display: none; background: #f8fafc; padding: 10px 12px; border-radius: 8px; border: 1px solid #e2e8f0; margin-top: 6px;">
+        <p style="margin: 0 0 8px 0; font-size: 0.8rem; color: #64748b;">Se generará un PIN provisional. La persona tendrá que elegir uno nuevo al entrar.</p>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+            <input type="text" id="resetPinObjetivo" list="listaInicialesEmpleados" placeholder="Iniciales del empleado" autocomplete="off" style="padding: 6px 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.85rem; text-transform: uppercase;">
+            <datalist id="listaInicialesEmpleados"></datalist>
+            <input type="password" id="resetPinAdmin" inputmode="numeric" placeholder="Tu PIN de administrador" autocomplete="current-password" style="padding: 6px 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.85rem;">
+            <button id="btnEjecutarResetPin" type="button" onclick="ejecutarResetPin()" style="padding: 8px 14px; font-size: 0.85rem; background: #1f4e79; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">Generar PIN provisional</button>
+            <div id="resetPinResultado" style="font-size: 0.85rem;"></div>
+        </div>
+    </div>
+
    <!-- Sub-sección 1: Búsqueda por día -->
 <div id="seccionBusqueda" class="panel-subseccion" style="display: none; background: #f8fafc; padding: 10px 12px; border-radius: 8px; border: 1px solid #e2e8f0; margin-top: 6px;">
     <div class="panel-controles" style="display: flex; gap: 8px;">
@@ -143,6 +161,7 @@
 <script src="js/turnos.js"></script>
 <script src="js/calendario.js"></script>
 <script src="js/CalendarioMensual.js"></script>
+<script src="js/adminPin.js"></script>
 <script src="js/app.js"></script>
 
 </body>
