@@ -9,6 +9,11 @@ function esSupervisor(usuario) {
 function esEmpleado(usuario) {
     return usuario.rol === "empleado";
 }
+
+function esFamiliar(usuario) {
+    return usuario.rol === "familiar";
+}
+
 function puedeGestionarUsuarios(usuario) {
     return usuario.rol === "administrador";
 }

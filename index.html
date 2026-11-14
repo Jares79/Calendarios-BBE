@@ -5,10 +5,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="css/styles.css">
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
     <title>Calendario BBE</title>
 </head>
 
-<body>
+<body class="cargando">
 
 <!-- Contenedor superior fijo (Sticky puro, sin romper el flujo del DOM) -->
 <div class="header-fijo-container">
@@ -49,6 +52,13 @@
         </button>
     </div>
 
+    <!-- Solo administradores: empleados, accesos y ciclos de turno (se muestra desde app.js) -->
+    <div id="filaAdmin" style="display: none; margin-bottom: 8px;">
+        <button type="button" class="panel-btn-tab" onclick="verGestionAdmin()" style="width: 100%; padding: 8px 12px; font-size: 0.85rem; background: #e2e8f0; color: #1e293b; border: 1px solid #cbd5e1; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s;">
+            👥 Empleados y accesos
+        </button>
+    </div>
+
    <!-- Sub-sección 1: Búsqueda por día -->
 <div id="seccionBusqueda" class="panel-subseccion" style="display: none; background: #f8fafc; padding: 10px 12px; border-radius: 8px; border: 1px solid #e2e8f0; margin-top: 6px;">
     <div class="panel-controles" style="display: flex; gap: 8px;">
@@ -61,20 +71,9 @@
     <!-- Sub-sección 2: Calendario Anual -->
     <div id="seccionAnual" class="panel-subseccion" style="display: none; background: #f8fafc; padding: 10px 12px; border-radius: 8px; border: 1px solid #e2e8f0; margin-top: 6px;">
         <div class="panel-controles" style="display: flex; gap: 6px; flex-wrap: wrap;">
-            <select id="colectivoAnual" style="flex: 1; min-width: 130px; padding: 6px 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.85rem;">
-                <option value="jefes">👨‍✈️ Jefes de Turno (7)</option>
-                <option value="control">🎛️ Operadores de Control (7)</option>
-                <option value="campo">🔧 Operadores de Campo (7)</option>
-                <option value="todos">👥 Todos (21)</option>
-            </select>
+            <select id="colectivoAnual" style="flex: 1; min-width: 130px; padding: 6px 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.85rem;"></select>
             
-            <select id="anioAnualSelect" class="select-anio" style="width: 75px; padding: 6px 4px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.85rem;">
-                <option value="2026">2026</option>
-                <option value="2027">2027</option>
-                <option value="2028">2028</option>
-                <option value="2029">2029</option>
-                <option value="2030">2030</option>
-            </select>
+            <select id="anioAnualSelect" class="select-anio" style="width: 75px; padding: 6px 4px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.85rem;"></select>
 
             <button class="panel-btn" onclick="verCalendarioDesdeMenu()" style="padding: 6px 12px; font-size: 0.85rem; background: #1f4e79; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">Ver anual</button>
         </div>
@@ -105,19 +104,7 @@
             <option value="11">Diciembre</option>
         </select>
 
-        <select id="anioSelector">
-            <option value="2025">2025</option>
-            <option value="2026">2026</option>
-            <option value="2027">2027</option>
-            <option value="2028">2028</option>
-            <option value="2029">2029</option>
-            <option value="2030">2030</option>
-            <option value="2031">2031</option>
-            <option value="2032">2032</option>
-            <option value="2033">2033</option>
-            <option value="2034">2034</option>
-            <option value="2035">2035</option>
-        </select>
+        <select id="anioSelector"></select>
 
         <div class="accionesMes">
             <button onclick="irAHoy()">📅 Hoy</button>
@@ -135,10 +122,11 @@
 
 <script src="js/usuarios.js"></script>
 <script src="js/permisos.js"></script>
-<script src="js/empleados.js"></script>
+<script src="js/datos.js"></script>
 <script src="js/turnos.js"></script>
 <script src="js/calendario.js"></script>
 <script src="js/CalendarioMensual.js"></script>
+<script src="js/admin.js"></script>
 <script src="js/app.js"></script>
 
 </body>
