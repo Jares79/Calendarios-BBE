@@ -1,53 +1,42 @@
 // js/usuarios.js
+// El PIN se valida en el servidor (función login_usuario, ver supabase/seguridad.sql).
+// El navegador nunca lee la tabla "usuarios" ni recibe PINs.
 
-// Asegúrate de incluir el script de Supabase en tu index.html si no lo tienes:
-// <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-const SUPABASE_URL = 'https://ackvysmudvkywgxosvoc.supabase.co'; // Reemplaza con tu URL
-const SUPABASE_ANON_KEY = 'sb_publishable_dGHi0h5wgEi2cSQL9RL1Pg_hVWob3X9'; // Reemplaza con tu ANON KEY
+const SUPABASE_URL = 'https://ackvysmudvkywgxosvoc.supabase.co';
+// Clave publishable: puede ir en el cliente porque la seguridad la dan RLS y la función RPC.
+const SUPABASE_ANON_KEY = 'sb_publishable_dGHi0h5wgEi2cSQL9RL1Pg_hVWob3X9';
 
 const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
 async function loginSupabase(inicialesInput, pinInput) {
     if (!supabaseClient) {
         console.error("Supabase no está inicializado.");
+        alert("No se pudo conectar con el servidor.");
         return null;
     }
 
-    const inputClean = inicialesInput.trim().toUpperCase();
-    const pinClean = pinInput.trim();
-
-    // Detectar si es familiar (termina en _F)
-    const esFamiliar = inputClean.endsWith('_F');
-    const inicialesReal = esFamiliar ? inputClean.replace('_F', '') : inputClean;
-
     try {
-        const { data, error } = await supabaseClient
-            .from('usuarios')
-            .select('*')
-            .eq('iniciales', inicialesReal)
-            .single();
+        const { data, error } = await supabaseClient.rpc('login_usuario', {
+            p_iniciales: inicialesInput,
+            p_pin: pinInput
+        });
 
-        if (error || !data) {
-            alert("Usuario no encontrado. Comprueba tus iniciales.");
+        if (error) {
+            console.error("Error en el login:", error);
+            alert("Error de conexión con el servidor.");
             return null;
         }
 
-        // Validar PIN
-        if (data.pin !== pinClean) {
-            alert("PIN incorrecto.");
+        if (!data || !data.ok) {
+            if (data && data.motivo === 'bloqueado') {
+                alert("Demasiados intentos fallidos. Espera 15 minutos e inténtalo de nuevo.");
+            } else {
+                alert("Iniciales o PIN incorrectos.");
+            }
             return null;
         }
 
-        // Construir objeto de sesión con el rol adaptado (familiar = solo lectura)
-        const usuarioSesion = {
-            iniciales: esFamiliar ? `${data.iniciales}_F` : data.iniciales,
-            nombre: data.nombre,
-            rol: esFamiliar ? 'familiar' : data.rol,
-            empleadoAsociado: data.empleado_asociado || data.nombre
-        };
-
-        return usuarioSesion;
+        return data.usuario;
     } catch (err) {
         console.error("Error en el login:", err);
         alert("Error de conexión con el servidor.");

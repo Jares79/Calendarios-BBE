@@ -87,6 +87,11 @@ function iniciarApp() {
         badgeRol.textContent = usuarioActual.rol.toUpperCase();
     }
 
+    // 4b. Modo familiar: oculta el panel y marca la cabecera (ya con usuarioActual cargado)
+    if (typeof aplicarModoFamiliar === 'function') {
+        aplicarModoFamiliar();
+    }
+
     // 5. Renderizamos su calendario
     if (typeof verMiCalendario === 'function') {
         verMiCalendario();
