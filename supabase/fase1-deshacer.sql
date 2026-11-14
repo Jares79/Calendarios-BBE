@@ -11,6 +11,8 @@ drop function if exists public.admin_crear_empleado(text, text, text, date, text
 drop function if exists public.admin_editar_empleado(uuid, text, text, text, date, boolean, text);
 drop function if exists public.admin_crear_acceso(uuid, text);
 drop function if exists public.admin_resetear_acceso(text);
+drop function if exists public.admin_eliminar_empleado(uuid);
+drop function if exists public.admin_eliminar_familiar(uuid);
 drop function if exists public._crear_acceso(uuid, text);
 drop function if exists public._crear_auth_usuario(text, text);
 drop function if exists public._pin_aleatorio();

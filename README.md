@@ -25,8 +25,9 @@ Web app para consultar los turnos de la plantilla (jefes de turno, operadores de
 
 - **Añadir un empleado**: botón "➕ Añadir empleado". La app muestra un PIN provisional que hay que dárselo en persona.
 - **Cambiar nombre, iniciales, colectivo o fecha de inicio**: botón "✏️ Editar". Desmarcar "Activo" lo da de baja (no sale en los calendarios y no puede entrar) sin borrar nada.
+- **Eliminar un empleado**: botón "🗑️ Eliminar" (definitivo: borra su ficha y todos sus accesos). Para que alguien deje de aparecer sin perder su ficha, mejor la baja. No puedes eliminarte a ti mismo.
 - **PIN olvidado**: botón "🔑 PIN" genera uno provisional.
-- **Acceso familiar**: botón "👪 Crear familiar". Crea las iniciales con `_F` al final (por ejemplo `JAM_F`) y un PIN propio.
+- **Acceso familiar**: botón "👪 Crear familiar". Crea las iniciales con `_F` al final (por ejemplo `JAM_F`) y un PIN propio. "🗑️ Quitar familiar" elimina solo ese acceso.
 - **Cambiar un ciclo o los días de solape**: al final de la misma pantalla.
 
 ## Estructura del proyecto
@@ -51,6 +52,7 @@ Ejecutar en Supabase → SQL Editor, en este orden:
 
 1. `supabase/fase1-1-estructura.sql`: tablas `colectivos`, `empleados` y `perfiles`, permisos por filas (RLS) y funciones del administrador.
 2. `supabase/fase1-2-migrar-usuarios.sql`: pasa los usuarios de la tabla antigua `usuarios` al sistema de sesiones, conservando sus PIN.
+3. `supabase/fase1-3-eliminar.sql`: funciones para eliminar empleados y accesos de familiar.
 
 `supabase/fase1-deshacer.sql` vuelve atrás la Fase 1 (no toca la tabla `usuarios`). La carpeta `supabase/historico/` guarda los scripts del login anterior.
 

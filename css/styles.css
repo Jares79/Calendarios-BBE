@@ -725,3 +725,11 @@ body.cargando .header-fijo-container {
     font-family: monospace;
     font-size: 0.9rem;
 }
+
+.admin-fila button.btn-peligro {
+    background: #b91c1c;
+}
+
+.admin-fila button.btn-peligro:hover {
+    background: #991b1b;
+}

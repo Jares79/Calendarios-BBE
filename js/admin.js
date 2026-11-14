@@ -12,7 +12,7 @@ const MOTIVOS_ADMIN = {
     ya_existe: "Esa persona ya tiene acceso.",
     datos_invalidos: "Revisa los datos: iniciales de 2 a 8 letras, nombre, colectivo y fecha de inicio.",
     iniciales_duplicadas: "Ya existe alguien con esas iniciales.",
-    no_propio: "No puedes quitarte a ti mismo el acceso ni el rol de administrador.",
+    no_propio: "No puedes hacerlo con tu propio usuario (darte de baja, quitarte el rol de administrador o eliminarte).",
     rol_invalido: "Rol no válido."
 };
 
@@ -121,8 +121,12 @@ function filaEmpleado(emp, colectivo) {
                 ? el("button", { text: "🔑 PIN", onclick: () => resetearPin(principal.iniciales, emp.nombre) })
                 : el("button", { text: "🔓 Dar acceso", onclick: () => crearAcceso(emp.id, "empleado") }),
             familiar
-                ? el("button", { text: "👪 PIN familiar", onclick: () => resetearPin(familiar.iniciales, emp.nombre + " (familiar)") })
-                : el("button", { text: "👪 Crear familiar", onclick: () => crearAcceso(emp.id, "familiar") })
+                ? [
+                    el("button", { text: "👪 PIN familiar", onclick: () => resetearPin(familiar.iniciales, emp.nombre + " (familiar)") }),
+                    el("button", { class: "btn-peligro", text: "🗑️ Quitar familiar", onclick: () => eliminarFamiliar(emp) })
+                ]
+                : el("button", { text: "👪 Crear familiar", onclick: () => crearAcceso(emp.id, "familiar") }),
+            el("button", { class: "btn-peligro", text: "🗑️ Eliminar", onclick: () => eliminarEmpleado(emp) })
         )
     );
 }
@@ -187,6 +191,41 @@ async function crearAcceso(empleadoId, rol) {
     }
     await recargarGestionAdmin();
     mostrarPinProvisional(data);
+}
+
+async function eliminarEmpleado(emp) {
+    const aviso = `¿Eliminar DEFINITIVAMENTE a ${emp.nombre} (${emp.iniciales})?\n\nSe borrará su ficha y todos sus accesos, y no se puede deshacer.\n\nSi solo quieres que deje de aparecer en los calendarios, pulsa Cancelar, usa Editar y desmarca "Activo".`;
+    if (!confirm(aviso)) return;
+
+    const { data, error } = await supabaseClient.rpc("admin_eliminar_empleado", { p_id: emp.id });
+    if (error) {
+        console.error(error);
+        mostrarAviso("Error de conexión con el servidor.", true);
+        return;
+    }
+    if (!data || !data.ok) {
+        mostrarAviso(MOTIVOS_ADMIN[data && data.motivo] || "No se pudo eliminar.", true);
+        return;
+    }
+    await recargarGestionAdmin();
+    mostrarAviso(`${emp.nombre} eliminado.`, false);
+}
+
+async function eliminarFamiliar(emp) {
+    if (!confirm(`¿Quitar el acceso de familiar de ${emp.nombre}? Dejará de poder entrar con su PIN.`)) return;
+
+    const { data, error } = await supabaseClient.rpc("admin_eliminar_familiar", { p_empleado_id: emp.id });
+    if (error) {
+        console.error(error);
+        mostrarAviso("Error de conexión con el servidor.", true);
+        return;
+    }
+    if (!data || !data.ok) {
+        mostrarAviso(MOTIVOS_ADMIN[data && data.motivo] || "No se pudo quitar el acceso familiar.", true);
+        return;
+    }
+    await recargarGestionAdmin();
+    mostrarAviso(`Acceso familiar de ${emp.nombre} eliminado.`, false);
 }
 
 // --- Formulario de empleado (alta y edición) ---
