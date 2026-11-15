@@ -9,13 +9,24 @@ const ANIO_MAX = 2035;
 // Los empleados dados de baja solo los ve el administrador, y no aparecen en los calendarios.
 let colectivos = [];
 
+// festivos: Map "AAAA-MM-DD" -> nombre (convierten una P o una I del ciclo en F)
+let festivos = new Map();
+// intensivas: [{ id, desde, hasta, nota }] (en esas fechas la P pasa a I)
+let intensivas = [];
+// excepciones: Map "empleadoId|AAAA-MM-DD" -> código (turnos puestos a mano)
+const excepciones = new Map();
+const aniosCargados = new Set();
+const cargasEnCurso = new Map();
+
 async function cargarDatos() {
-    const [rc, re] = await Promise.all([
+    const [rc, re, rf, ri] = await Promise.all([
         supabaseClient.from("colectivos").select("*").order("orden"),
-        supabaseClient.from("empleados").select("*").order("orden")
+        supabaseClient.from("empleados").select("*").order("orden"),
+        supabaseClient.from("festivos").select("fecha, nombre").order("fecha"),
+        supabaseClient.from("intensivas").select("id, desde, hasta, nota").order("desde")
     ]);
-    if (rc.error || re.error) {
-        console.error("Error al cargar datos:", rc.error || re.error);
+    if (rc.error || re.error || rf.error || ri.error) {
+        console.error("Error al cargar datos:", rc.error || re.error || rf.error || ri.error);
         return false;
     }
 
@@ -38,7 +49,49 @@ async function cargarDatos() {
                 orden: e.orden
             }))
     }));
+
+    festivos = new Map(rf.data.map(f => [f.fecha, f.nombre]));
+    intensivas = ri.data.map(i => ({ id: i.id, desde: i.desde, hasta: i.hasta, nota: i.nota }));
+
+    // Cambios manuales: el año en curso y los dos de al lado; el resto se pide al navegar
+    const anio = new Date().getFullYear();
+    await Promise.all([anio - 1, anio, anio + 1].map(asegurarAnio));
     return true;
+}
+
+// Carga (una sola vez) los cambios manuales de un año. Devuelve true si todo fue bien.
+async function asegurarAnio(anio) {
+    if (aniosCargados.has(anio)) return true;
+    if (cargasEnCurso.has(anio)) return cargasEnCurso.get(anio);
+
+    const carga = (async () => {
+        const desde = `${anio}-01-01`;
+        const hasta = `${anio}-12-31`;
+        const trozo = 1000;
+        for (let inicio = 0; ; inicio += trozo) {
+            const { data, error } = await supabaseClient
+                .from("excepciones")
+                .select("empleado_id, fecha, codigo")
+                .gte("fecha", desde)
+                .lte("fecha", hasta)
+                .order("fecha")
+                .order("empleado_id")
+                .range(inicio, inicio + trozo - 1);
+            if (error) {
+                console.error("Error al cargar cambios manuales:", error);
+                return false;
+            }
+            data.forEach(r => excepciones.set(claveExcepcion(r.empleado_id, r.fecha), r.codigo));
+            if (data.length < trozo) break;
+        }
+        aniosCargados.add(anio);
+        return true;
+    })();
+
+    cargasEnCurso.set(anio, carga);
+    const ok = await carga;
+    cargasEnCurso.delete(anio);
+    return ok;
 }
 
 function buscarColectivo(codigo) {

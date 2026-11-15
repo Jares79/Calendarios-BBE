@@ -16,14 +16,16 @@ function agregarResumen(resumen, nombre, turno) {
 }
 
 // --- BÚSQUEDA POR DÍA ---
-function consultar() {
+async function consultar() {
     ocultarDetalleDia();
+    terminarModoEdicion();
 
     const valor = document.getElementById("fecha").value;
     if (!valor) {
         alert("Selecciona una fecha");
         return;
     }
+    await asegurarAnio(Number(valor.slice(0, 4)));
 
     const resumen = {};
 
@@ -46,10 +48,9 @@ function consultar() {
 
     html += `<h3 class="grupo-titulo resumen-titulo">Resumen del día</h3>`;
 
-    ["Mañana", "Tarde", "Noche", "Partida", "Intensiva", "Solape", "Fiesta"].forEach(turno => {
+    Object.values(TURNOS).forEach(({ texto: turno, clase }) => {
         if (!resumen[turno]) return;
-        const clase = Object.values(TURNOS).find(t => t.texto === turno).clase;
-        html += `<div class="resumen-turno ${clase}"><span class="resumen-nombre">${turno}</span><div class="chips">`;
+        html += `<div class="resumen-turno ${clase}"><span class="resumen-nombre">${esc(turno)}</span><div class="chips">`;
         resumen[turno].forEach(persona => {
             html += `<span class="chip">${esc(persona)}</span>`;
         });
@@ -73,6 +74,7 @@ function cerrarVistaResultado() {
     document.getElementById("resultado").style.display = "none";
     document.getElementById("cardCalendario").style.display = "block";
     document.body.classList.remove("vista-resultado");
+    verMiCalendario();
     window.scrollTo(0, 0);
 }
 
@@ -84,6 +86,15 @@ function ocultarDetalleDia() {
 // --- DETALLE DE UN DÍA (clic en una celda): hoja que sube desde abajo ---
 function seleccionarDia(fechaISO, empleadoId) {
     ocultarDetalleDia();
+
+    // En modo edición, tocar un día de tu calendario abre el selector de turnos
+    if (modoEdicion) {
+        const mio = obtenerEmpleadoActual();
+        if (mio && mio.id === empleadoId) {
+            abrirSelectorTurno(fechaISO);
+            return;
+        }
+    }
 
     const empleado = buscarEmpleadoPorId(empleadoId);
     if (!empleado) return;
@@ -105,7 +116,7 @@ function seleccionarDia(fechaISO, empleadoId) {
     const panel = el("div", { id: "panelDetalleDia", class: "detalle-dia " + info.clase, role: "dialog", "aria-label": "Detalle del día" },
         el("div", { class: "detalle-cabecera" },
             el("div", { class: "detalle-titulo" },
-                el("span", { class: "detalle-letra", text: info.codigo }),
+                el("span", { class: "detalle-letra" + claseLargo(info), text: info.codigo }),
                 el("div", { class: "detalle-textos" },
                     el("strong", { text: info.texto }),
                     el("span", { class: "detalle-fecha", text: fechaLarga(fechaISO) })
@@ -116,6 +127,10 @@ function seleccionarDia(fechaISO, empleadoId) {
         el("p", { class: "detalle-linea" },
             el("span", { class: "detalle-etiqueta", text: "Empleado" }),
             `${empleado.nombre} · ${colectivo.puesto}`
+        ),
+        el("p", { class: "detalle-linea" },
+            el("span", { class: "detalle-etiqueta", text: "Origen" }),
+            textoOrigen(info)
         ),
         compis.length
             ? el("div", { class: "detalle-linea" },
@@ -128,6 +143,13 @@ function seleccionarDia(fechaISO, empleadoId) {
     document.body.append(panel);
 }
 
+function textoOrigen(info) {
+    if (info.origen === "manual") return "Cambio manual";
+    if (info.origen === "festivo") return info.nota ? `Festivo: ${info.nota}` : "Festivo";
+    if (info.origen === "intensiva") return "Periodo de intensiva";
+    return "Ciclo de turnos";
+}
+
 // Un solo "oyente" para todas las celdas: los botones llevan data-fecha y data-emp
 document.addEventListener("click", function (evento) {
     const boton = evento.target.closest("button[data-fecha][data-emp]");
@@ -135,11 +157,13 @@ document.addEventListener("click", function (evento) {
 });
 
 // --- CALENDARIO ANUAL ---
-function verCalendario(anioParam, colectivoParam) {
+async function verCalendario(anioParam, colectivoParam) {
     ocultarDetalleDia();
+    terminarModoEdicion();
 
     const selectAnio = document.getElementById("anioAnualSelect");
     const anio = Number(anioParam) || (selectAnio ? Number(selectAnio.value) : new Date().getFullYear());
+    await asegurarAnio(anio);
 
     const selectColectivo = document.getElementById("colectivoAnual");
     const esMovil = window.innerWidth <= 768;
@@ -168,9 +192,9 @@ function verCalendario(anioParam, colectivoParam) {
     `;
 
     html += `<div class="anual-scroll"><table class="tabla-anual-unificada"><thead><tr>`;
-    html += `<th class="col-fecha">Fecha</th><th class="col-dia">Día</th>`;
+    html += `<th class="col-fecha"><span>Fecha</span></th><th class="col-dia"><span>Día</span></th>`;
     columnas.forEach(emp => {
-        html += `<th class="th-vertical">${esc(emp.nombre)}</th>`;
+        html += `<th class="th-vertical"><span>${esc(emp.nombre)}</span></th>`;
     });
     html += `</tr></thead><tbody>`;
 
@@ -198,7 +222,7 @@ function verCalendario(anioParam, colectivoParam) {
             const info = infoTurno(iso, emp);
             html += `
                 <td class="celda-turno">
-                    <button type="button" class="td-celda-turno ${info.clase}" data-fecha="${iso}" data-emp="${esc(emp.id)}" title="${esc(emp.nombre)} · ${formatearFecha(iso)} (${nombreDia}): ${esc(info.texto)}">${esc(inicial(info))}</button>
+                    <button type="button" class="td-celda-turno ${info.clase}${claseLargo(info)}${info.manual ? " editado" : ""}" data-fecha="${iso}" data-emp="${esc(emp.id)}" title="${esc(emp.nombre)} · ${formatearFecha(iso)} (${nombreDia}): ${esc(info.texto)}">${esc(inicial(info))}</button>
                 </td>
             `;
         });

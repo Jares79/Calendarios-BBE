@@ -62,7 +62,7 @@ function mostrarPantallaLogin() {
         <form id="formLogin" class="acceso-form">
             <label class="campo">
                 <span>Iniciales</span>
-                <input type="text" id="inputIniciales" placeholder="Ej: JAM" required autocomplete="username" autocapitalize="characters" class="input-iniciales" />
+                <input type="text" id="inputIniciales" placeholder="Ej: ABC" required autocomplete="username" autocapitalize="characters" class="input-iniciales" />
             </label>
 
             <label class="campo">
@@ -167,6 +167,7 @@ function mostrarPantallaCambioPin() {
 }
 
 async function iniciarApp() {
+    aplicarColoresUsuario(usuarioActual.colores);   // los colores elegidos por esta persona
     const cargados = await cargarDatos();
     if (!cargados) {
         mostrarPantallaError("No se pudieron cargar los datos de la plantilla.");

@@ -19,7 +19,29 @@ Web app para consultar los turnos de la plantilla (jefes de turno, operadores de
 | M | Mañana | P | Partida |
 | T | Tarde | I | Intensiva |
 | N | Noche | S | Solape |
-| F | Fiesta | | |
+| F | Fiesta | V | Vacaciones |
+| E | Excesos | J | Permiso justificado |
+| LD | Libre disposición | | |
+
+M, T, N, F, P, I y S pueden salir del ciclo. V, E, J y LD solo se ponen a mano.
+
+### Qué turno aparece cada día (de más a menos prioridad)
+
+1. **Un cambio puesto a mano** por esa persona (siempre gana).
+2. **Festivo**: convierte en F una P o una I que salga del ciclo (M, T y N no cambian).
+3. **Intensiva**: convierte en I cualquier P dentro de los periodos marcados.
+4. **El ciclo** de su colectivo, desde su fecha de inicio.
+
+## Para todos los usuarios (menú desplegable)
+
+- **Editar calendario**: cada uno edita solo el suyo; los demás ven sus cambios. Toca un día para elegir el turno, o "Varios días" para un rango de fechas. "Volver al ciclo" deshace un cambio. Los días cambiados llevan un puntito.
+- **Editar colores**: paleta amplia (y selector libre) para cada turno. Los colores se guardan en la cuenta de cada persona y solo los ve ella.
+- **Buscar un día** y **Calendario anual**.
+
+## Tareas del administrador
+
+- **Festivos**: añade o quita festivos del año (nombre opcional). Valen para toda la plantilla.
+- **Intensivas**: añade periodos (de una fecha a otra, o un solo día dejando "Hasta" vacío). El botón "Poner 15/06 – 15/09" rellena el verano.
 
 ## Tareas habituales (menú de administrador → "👥 Empleados y accesos")
 
@@ -57,12 +79,24 @@ js/usuarios.js      Sesión (Supabase Auth): login, cambio de PIN, cierre de ses
 js/datos.js         Carga de colectivos y empleados; utilidades para pintar texto de forma segura
 js/turnos.js        Cálculo de turnos (fechas en texto AAAA-MM-DD, sin zonas horarias)
 js/calendario.js    Búsqueda por día, detalle de un día y calendario anual
-js/CalendarioMensual.js  Mi calendario, menú de usuario
-js/admin.js         Menú de administrador
+js/CalendarioMensual.js  Mi calendario, menú de usuario, ajuste del mes a la pantalla del móvil
+js/edicion.js       Editor de tu calendario (un día o un rango)
+js/colores.js       Editor de colores de los turnos
+js/admin.js         Menú de administrador: empleados y accesos
+js/admin-fechas.js  Menú de administrador: festivos e intensivas
 js/permisos.js      Qué puede hacer cada rol (solo interfaz; el servidor vuelve a comprobarlo)
 js/app.js           Arranque de la app
 supabase/           SQL de la base de datos (ver abajo)
 ```
+
+## Tablas de la base de datos
+
+- `empleados`: la ficha de trabajo de cada persona (nombre, colectivo, inicio de su ciclo).
+- `perfiles`: el acceso a la app (una fila por cuenta, por ejemplo `JAM` y `JAM_F`), con su rol y sus colores. Va unido a Supabase Auth, donde está el PIN cifrado.
+- `colectivos`: el ciclo de turnos de cada colectivo.
+- `excepciones`: turnos cambiados a mano (empleado, fecha, turno).
+- `festivos` e `intensivas`: los que mete el administrador.
+- `usuarios` y `login_intentos`: del login antiguo; ya no se usan.
 
 ## Base de datos (Supabase)
 
@@ -71,8 +105,9 @@ Ejecutar en Supabase → SQL Editor, en este orden:
 1. `supabase/fase1-1-estructura.sql`: tablas `colectivos`, `empleados` y `perfiles`, permisos por filas (RLS) y funciones del administrador.
 2. `supabase/fase1-2-migrar-usuarios.sql`: pasa los usuarios de la tabla antigua `usuarios` al sistema de sesiones, conservando sus PIN.
 3. `supabase/fase1-3-eliminar.sql`: funciones para eliminar empleados y accesos de familiar.
+4. `supabase/fase3-excepciones.sql`: tablas `excepciones` (cambios manuales), `festivos` e `intensivas`, y los colores de cada usuario.
 
-`supabase/fase1-deshacer.sql` vuelve atrás la Fase 1 (no toca la tabla `usuarios`). La carpeta `supabase/historico/` guarda los scripts del login anterior.
+`supabase/fase3-deshacer.sql` borra lo de la Fase 3 y `supabase/fase1-deshacer.sql` vuelve atrás la Fase 1 (no toca la tabla `usuarios`). La carpeta `supabase/historico/` guarda los scripts del login anterior.
 
 ### Ajustes de Supabase Auth (una sola vez)
 

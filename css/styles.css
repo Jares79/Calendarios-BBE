@@ -43,7 +43,11 @@
     --f-bg: #e3e9f0;  --f-fg: #7d8ea0;
     --p-bg: #4f6b86;  --p-fg: #ffffff;
     --i-bg: #b7d3e6;  --i-fg: #12304a;
-    --s-bg: #9b2f78;  --s-fg: #ffffff;
+    --s-bg: #0e9fb3;  --s-fg: #ffffff;
+    --v-bg: #2e9e5b;  --v-fg: #ffffff;
+    --e-bg: #a6e3bb;  --e-fg: #0f3d22;
+    --j-bg: #9b2f78;  --j-fg: #ffffff;
+    --ld-bg: #fff3a6; --ld-fg: #4a4200;  --ld-borde: #d9bc00;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -72,7 +76,11 @@
         --f-bg: #1b2b3d;  --f-fg: #6c8095;
         --p-bg: #6a89a8;
         --i-bg: #5b86a3;  --i-fg: #08131d;
-        --s-bg: #c9569a;
+        --s-bg: #2bb8cc;
+        --v-bg: #3fb06c;
+        --e-bg: #6fc78d;  --e-fg: #0a2b18;
+        --j-bg: #c9569a;
+        --ld-bg: #e8d45a; --ld-fg: #2e2900;  --ld-borde: #fff3a6;
     }
 }
 
@@ -84,6 +92,10 @@
 .partida   { --bg: var(--p-bg); --fg: var(--p-fg); }
 .intensiva { --bg: var(--i-bg); --fg: var(--i-fg); }
 .solape    { --bg: var(--s-bg); --fg: var(--s-fg); }
+.vacaciones { --bg: var(--v-bg); --fg: var(--v-fg); }
+.excesos   { --bg: var(--e-bg); --fg: var(--e-fg); }
+.permiso   { --bg: var(--j-bg); --fg: var(--j-fg); }
+.libredisp { --bg: var(--ld-bg); --fg: var(--ld-fg); --borde: var(--ld-borde); }
 
 *, *::before, *::after { box-sizing: border-box; }
 
@@ -416,6 +428,7 @@ body.vista-resultado #leyenda { display: none; }
     border-radius: 10px;
     background: var(--bg);
     color: var(--fg);
+    box-shadow: inset 0 0 0 2px var(--borde, transparent);
 }
 .chip-sem { font-size: 0.7rem; font-weight: 600; opacity: 0.8; }
 .chip-num { font-size: 0.9rem; font-weight: 600; line-height: 1.1; }
@@ -439,6 +452,7 @@ body.vista-resultado #leyenda { display: none; }
     border-radius: 8px;
     background: var(--bg);
     color: var(--fg);
+    box-shadow: inset 0 0 0 2px var(--borde, transparent);
     font-family: var(--fuente-titulo);
     font-size: 1.15rem;
     font-weight: 700;
@@ -516,6 +530,8 @@ body.vista-resultado #leyenda { display: none; }
     background: var(--bg);
     color: var(--fg);
     text-align: left;
+    box-shadow: inset 0 0 0 2px var(--borde, transparent);
+    position: relative;
 }
 
 .numero-dia { font-size: 0.82rem; font-weight: 600; line-height: 1; opacity: 0.85; align-self: flex-start; }
@@ -531,8 +547,32 @@ body.vista-resultado #leyenda { display: none; }
 .dia-calendario.fiesta .turno-dia { font-weight: 600; }
 
 .dia-calendario.hoy {
-    box-shadow: 0 0 0 2px var(--superficie), 0 0 0 4px var(--acento);
+    box-shadow: inset 0 0 0 2px var(--borde, transparent), 0 0 0 2px var(--superficie), 0 0 0 4px var(--acento);
 }
+
+/* Código de dos letras (LD): letra más pequeña */
+.largo .turno-dia, .largo .chip-letra, .largo.turno-dia { font-size: 1.25rem; }
+.dia-calendario.largo .turno-dia { font-size: clamp(1rem, 4.6vw, 1.5rem); }
+.hoy-letra.largo { font-size: 3.4rem; }
+.detalle-letra.largo { font-size: 1.5rem; }
+.leyenda-letra.largo { font-size: 0.95rem; }
+.td-celda-turno.largo { font-size: 0.7rem; }
+
+/* Punto en las celdas con un cambio puesto a mano */
+.dia-calendario.editado::after,
+.td-celda-turno.editado::after {
+    content: "";
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    opacity: 0.75;
+}
+.td-celda-turno { position: relative; }
+.td-celda-turno.editado::after { top: 2px; right: 2px; width: 4px; height: 4px; }
 
 @media (min-width: 960px) {
     .calendario-grid { gap: 8px; }
@@ -575,6 +615,7 @@ body.vista-resultado #leyenda { display: none; }
     border-radius: 14px;
     background: var(--bg);
     color: var(--fg);
+    box-shadow: inset 0 0 0 2px var(--borde, transparent);
     font-family: var(--fuente-titulo);
     font-size: 2.2rem;
     font-weight: 700;
@@ -634,6 +675,7 @@ body.vista-resultado #leyenda { display: none; }
     font-weight: 600;
     background: var(--bg);
     color: var(--fg);
+    box-shadow: inset 0 0 0 1px var(--borde, transparent);
 }
 
 .resumen-turno { display: flex; gap: 10px; align-items: flex-start; margin-top: 10px; }
@@ -677,27 +719,31 @@ body.vista-resultado #leyenda { display: none; }
     font-weight: 600;
 }
 
-.tabla-anual-unificada thead th { box-shadow: 0 -2px 0 #14406f; }
+.tabla-anual-unificada thead th {
+    height: 100px;
+    vertical-align: bottom;
+    box-shadow: 0 -2px 0 #14406f, 1px 0 0 #14406f;
+}
 
-.th-vertical {
+/* El texto vertical gira dentro de la celda, no la celda entera (así no quedan rendijas) */
+.th-vertical > span {
+    display: inline-block;
     writing-mode: vertical-rl;
     transform: rotate(180deg);
-    text-align: left;
     white-space: nowrap;
-    height: 96px;
-    padding: 4px 0;
+    padding: 6px 0;
     font-size: 0.72rem;
 }
 
 .tabla-anual-unificada .col-fecha { width: 52px; position: sticky; left: 0; z-index: 4; }
 .tabla-anual-unificada .col-dia { width: 40px; position: sticky; left: 52px; z-index: 4; }
 .tabla-anual-unificada thead .col-fecha, .tabla-anual-unificada thead .col-dia {
-    writing-mode: horizontal-tb;
-    transform: none;
-    height: auto;
     text-align: center;
-    padding: 6px 0;
     z-index: 5;
+}
+.tabla-anual-unificada thead .col-fecha > span, .tabla-anual-unificada thead .col-dia > span {
+    display: inline-block;
+    padding-bottom: 8px;
 }
 
 .celda-fecha {
@@ -723,6 +769,7 @@ body.vista-resultado #leyenda { display: none; }
     border-radius: 5px;
     background: var(--bg);
     color: var(--fg);
+    box-shadow: inset 0 0 0 1px var(--borde, transparent);
     font-family: var(--fuente-titulo);
     font-size: 0.95rem;
     font-weight: 700;
@@ -811,7 +858,7 @@ body.vista-resultado #leyenda { display: none; }
 
 .admin-acciones { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
 .admin-acciones button, .admin-fila button { padding: 6px 10px; font-size: 0.82rem; }
-.admin-fila button.btn-peligro { background: var(--peligro); }
+.admin-fila button.btn-peligro, .btn-peligro { background: var(--peligro); }
 
 .admin-aviso { padding: 10px 14px; border-radius: 12px; margin-bottom: 14px; font-size: 0.92rem; }
 .admin-aviso.admin-ok { background: var(--ok-fondo); border: 1px solid var(--ok-linea); color: var(--ok-tinta); }
@@ -839,7 +886,7 @@ body.vista-resultado #leyenda { display: none; }
 /* --- Móvil --- */
 @media (max-width: 560px) {
     .topbar-interior { padding: 8px 12px; }
-    .marca h1 { font-size: 1.3rem; }
+    .marca h1 { font-size: clamp(1.05rem, 5.2vw, 1.3rem); }
     .logoCabecera { height: 28px; }
     .marca-logo { padding: 3px 6px; }
     .marca { gap: 8px; }
@@ -858,12 +905,186 @@ body.vista-resultado #leyenda { display: none; }
     .resumen-nombre { text-align: left; }
 }
 
-@media (max-width: 420px) {
+@media (max-width: 379px) {
     .nombre-usuario { display: none; }
-    #infoUsuario { padding-right: 10px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
     button { transition: none; }
     #miCalendario { transition: none; }
+}
+
+
+/* --- EDITOR DE CALENDARIO --- */
+.barra-edicion {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 10px 12px;
+    margin-bottom: 12px;
+    background: var(--aviso-fondo);
+    color: var(--aviso-tinta);
+    border-radius: 12px;
+}
+.barra-edicion-texto { display: flex; flex-direction: column; line-height: 1.25; }
+.barra-edicion-texto span { font-size: 0.85rem; }
+.barra-edicion-acciones { display: flex; gap: 8px; flex-wrap: wrap; }
+.barra-edicion-acciones button { padding: 8px 14px; }
+
+body.modo-edicion .dia-calendario { outline: 2px dashed var(--acento); outline-offset: -4px; }
+body.modo-edicion .dia-calendario.hoy { outline-offset: -4px; }
+
+.hoja-edicion { max-height: 85vh; max-height: 85dvh; overflow-y: auto; }
+
+.rejilla-turnos {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.opcion-turno {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: 12px;
+    background: var(--bg);
+    color: var(--fg);
+    text-align: left;
+    box-shadow: inset 0 0 0 2px var(--borde, transparent);
+}
+.opcion-turno.elegido { outline: 3px solid var(--tinta); outline-offset: 2px; }
+.opcion-letra { font-family: var(--fuente-titulo); font-size: 1.6rem; font-weight: 700; line-height: 1; min-width: 1.1em; }
+.opcion-turno.largo .opcion-letra { font-size: 1.15rem; }
+.opcion-turno { min-width: 0; }
+.opcion-nombre { font-size: 0.74rem; font-weight: 600; line-height: 1.15; min-width: 0; overflow-wrap: anywhere; }
+
+.btn-ciclo { margin-top: 2px; }
+.rango-fechas { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+.rango-fechas input { width: 100%; }
+
+.toast {
+    position: fixed;
+    left: 50%;
+    bottom: calc(20px + env(safe-area-inset-bottom));
+    transform: translateX(-50%) translateY(20px);
+    z-index: 120;
+    max-width: calc(100% - 32px);
+    background: var(--tinta);
+    color: var(--fondo);
+    padding: 10px 18px;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 0.92rem;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.toast.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast.toast-error { background: var(--peligro); color: #ffffff; }
+
+/* --- EDITOR DE COLORES --- */
+.nota-colores { margin-bottom: 12px; font-size: 0.9rem; }
+
+.selector-turnos { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; }
+
+.ficha-turno {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: 12px;
+    background: var(--bg);
+    color: var(--fg);
+    text-align: left;
+    box-shadow: inset 0 0 0 2px var(--borde, transparent);
+}
+.ficha-turno.elegido { outline: 3px solid var(--tinta); outline-offset: 2px; }
+.ficha-letra { font-family: var(--fuente-titulo); font-size: 1.5rem; font-weight: 700; line-height: 1; min-width: 1.1em; }
+.ficha-turno.largo .ficha-letra { font-size: 1.1rem; }
+.ficha-turno { min-width: 0; }
+.ficha-nombre { font-size: 0.74rem; font-weight: 600; line-height: 1.15; min-width: 0; overflow-wrap: anywhere; }
+
+.paleta { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; max-width: 640px; }
+@media (min-width: 600px) { .paleta { grid-template-columns: repeat(12, minmax(0, 1fr)); } }
+.muestra {
+    aspect-ratio: 1;
+    padding: 0;
+    border-radius: 10px;
+    border: 1px solid rgba(0, 0, 0, 0.18);
+}
+.muestra.elegida { outline: 3px solid var(--tinta); outline-offset: 2px; }
+
+.color-libre-fila { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 16px; }
+.campo-inline { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 0.9rem; }
+.color-libre { width: 52px; height: 40px; padding: 2px; cursor: pointer; }
+
+/* --- Festivos e intensivas (administrador) --- */
+.formulario-fechas { margin-top: 12px; }
+.fila-campos { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; align-items: end; }
+.formulario-fechas input { width: 100%; }
+
+/* --- Menú en dos columnas en móvil --- */
+@media (max-width: 560px) {
+    .panel-opciones { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .panel-btn-tab { padding: 10px; gap: 8px; font-size: 0.9rem; line-height: 1.2; }
+}
+
+/* --- MÓVIL: el mes entero cabe en la pantalla --- */
+@media (max-width: 767px) {
+    #leyenda { display: none; }
+
+    .calendario-grid.altura-fija {
+        grid-template-rows: auto repeat(var(--semanas, 6), var(--alto-celda, auto));
+    }
+    .calendario-grid.altura-fija .dia-calendario {
+        aspect-ratio: auto;
+        height: 100%;
+        min-height: 0;
+        padding: 3px 6px;
+    }
+    .calendario-grid.altura-fija .numero-dia { font-size: 0.72rem; }
+    .calendario-grid.altura-fija .turno-dia {
+        font-size: clamp(1.05rem, calc(var(--alto-celda, 48px) * 0.5), 2rem);
+    }
+    .calendario-grid.altura-fija .dia-calendario.largo .turno-dia {
+        font-size: clamp(0.85rem, calc(var(--alto-celda, 48px) * 0.34), 1.3rem);
+    }
+
+    .hoy-bloque { padding: 10px 16px; }
+    .hoy-nombre { font-size: 1.6rem; }
+    .hoy-letra { font-size: 3.2rem; }
+    .hoy-proximos-caja { padding: 8px 12px 12px; }
+    .hoy-subtitulo { margin-bottom: 6px; }
+    body.pantalla-baja .hoy-proximos-caja { display: none; }
+
+    /* Teléfonos muy bajos: el bloque Hoy se reduce a una franja fina */
+    body.pantalla-muy-baja .hoy-bloque { padding: 6px 14px; }
+    body.pantalla-muy-baja .hoy-etiqueta,
+    body.pantalla-muy-baja .hoy-fecha { display: none; }
+    body.pantalla-muy-baja .hoy-nombre { font-size: 1.25rem; }
+    body.pantalla-muy-baja .hoy-letra { font-size: 2.2rem; }
+    body.pantalla-muy-baja .contenedor { padding-top: 8px; }
+    body.pantalla-muy-baja .layout { gap: 8px; }
+    body.sin-hoy #resumenHoy { display: none; }
+
+    .barraMes { margin-bottom: 8px; }
+    .barra-edicion { padding: 8px 10px; margin-bottom: 8px; }
+}
+
+/* Cabecera móvil: el botón de usuario más ancho y el de salir discreto */
+@media (max-width: 560px) {
+    #infoUsuario { min-width: 92px; justify-content: space-between; padding: 4px 14px 4px 4px; }
+    .nombre-usuario { max-width: 64px; }
+    button.cerrarSesion { padding: 8px 6px; }
+}
+
+@media (max-width: 340px) {
+    .marca h1 { font-size: 1.1rem; }
+    .marca { gap: 6px; }
+    #infoUsuario { min-width: 0; padding-right: 10px; }
 }
