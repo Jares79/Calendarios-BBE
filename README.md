@@ -30,10 +30,28 @@ Web app para consultar los turnos de la plantilla (jefes de turno, operadores de
 - **Acceso familiar**: botón "👪 Crear familiar". Crea las iniciales con `_F` al final (por ejemplo `JAM_F`) y un PIN propio. "🗑️ Quitar familiar" elimina solo ese acceso.
 - **Cambiar un ciclo o los días de solape**: al final de la misma pantalla.
 
+## Instalar en el móvil
+
+La web es una app instalable (PWA):
+
+- **Android (Chrome):** menú ⋮ → "Instalar aplicación" o "Añadir a pantalla de inicio".
+- **iPhone (Safari):** botón Compartir → "Añadir a pantalla de inicio".
+
+Se abre a pantalla completa con su icono. Los datos siempre se piden a Supabase, así que hace falta conexión para ver los turnos.
+
+## Diseño
+
+- Los colores siguen la luz del día: Mañana (amarillo), Tarde (naranja), Noche (índigo). La Fiesta es un gris suave para que el ritmo de trabajo destaque.
+- Modo oscuro automático según el sistema del móvil o del ordenador.
+- Todos los colores y tipografías están como variables al principio de `css/styles.css`.
+- Tipografías: Barlow y Barlow Condensed, cargadas desde Google Fonts.
+
 ## Estructura del proyecto
 
 ```
 index.html          Página principal
+manifest.webmanifest  Datos de la app instalable
+sw.js               Service worker (guarda los archivos de la web; si cambias archivos, sube el número VERSION)
 css/styles.css      Estilos
 js/usuarios.js      Sesión (Supabase Auth): login, cambio de PIN, cierre de sesión
 js/datos.js         Carga de colectivos y empleados; utilidades para pintar texto de forma segura

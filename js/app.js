@@ -3,10 +3,20 @@
 
 let usuarioActual = null;
 
-const ESTILO_PANTALLA = "display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #eef2f7; padding: 20px;";
-const ESTILO_TARJETA = "width: 100%; max-width: 350px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.1); border-radius: 12px; padding: 25px;";
-const ESTILO_INPUT = "width: 100%; padding: 10px; margin-top: 4px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 1rem;";
-const ESTILO_BOTON = "padding: 12px; background: #1f4e79; color: white; border: none; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer;";
+// Marco común de las pantallas de acceso (login, cambio de PIN, errores)
+function pantallaAcceso(contenido) {
+    document.body.classList.remove("cargando");
+    document.body.innerHTML = `
+        <div class="pantalla-acceso">
+            <div class="tarjeta-acceso">
+                <span class="marca-logo acceso-logo"><img src="img/LOGO_BBE_SOLO.png" class="logoCabecera" alt="BBE"></span>
+                <div class="acceso-ritmo" aria-hidden="true">
+                    <span class="manana">M</span><span class="tarde">T</span><span class="noche">N</span><span class="fiesta">F</span>
+                </div>
+                ${contenido}
+            </div>
+        </div>`;
+}
 
 document.addEventListener("DOMContentLoaded", async () => {
     const r = await obtenerPerfilActual();
@@ -37,42 +47,34 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 function mostrarPantallaError(mensaje) {
-    document.body.innerHTML = `
-        <div style="${ESTILO_PANTALLA}">
-            <div class="card" style="${ESTILO_TARJETA}">
-                <img src="img/LOGO_BBE_SOLO.png" style="height: 50px; margin-bottom: 10px;" alt="BBE Logo">
-                <p style="color: #b91c1c;">${esc(mensaje)}</p>
-                <button type="button" onclick="location.reload()" style="${ESTILO_BOTON}">Reintentar</button>
-            </div>
-        </div>`;
+    pantallaAcceso(`
+        <h2>Algo ha fallado</h2>
+        <p class="acceso-texto error-texto">${esc(mensaje)}</p>
+        <button type="button" class="btn-ancho" onclick="location.reload()">Reintentar</button>
+    `);
 }
 
 function mostrarPantallaLogin() {
-    document.body.innerHTML = `
-        <div style="${ESTILO_PANTALLA}">
-            <div class="card" style="${ESTILO_TARJETA}">
-                <img src="img/LOGO_BBE_SOLO.png" style="height: 50px; margin-bottom: 10px;" alt="BBE Logo">
-                <h2 style="margin-bottom: 5px; color: #1f4e79;">Calendario BBE</h2>
-                <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 20px;">Introduce tus iniciales y PIN para continuar</p>
+    pantallaAcceso(`
+        <h2>Calendario BBE</h2>
+        <p class="acceso-texto">Entra con tus iniciales y tu PIN</p>
 
-                <form id="formLogin" style="display: flex; flex-direction: column; gap: 15px;">
-                    <div style="text-align: left;">
-                        <label style="font-size: 0.8rem; font-weight: bold; color: #475569;">Iniciales:</label>
-                        <input type="text" id="inputIniciales" placeholder="Ej: JAM o JAM_F" required autocomplete="username" autocapitalize="characters" style="${ESTILO_INPUT} text-transform: uppercase; font-weight: bold;" />
-                    </div>
+        <form id="formLogin" class="acceso-form">
+            <label class="campo">
+                <span>Iniciales</span>
+                <input type="text" id="inputIniciales" placeholder="Ej: JAM" required autocomplete="username" autocapitalize="characters" class="input-iniciales" />
+            </label>
 
-                    <div style="text-align: left;">
-                        <label style="font-size: 0.8rem; font-weight: bold; color: #475569;">PIN:</label>
-                        <input type="password" id="inputPin" placeholder="••••" required inputmode="numeric" autocomplete="current-password" style="${ESTILO_INPUT}" />
-                    </div>
+            <label class="campo">
+                <span>PIN</span>
+                <input type="password" id="inputPin" placeholder="••••••" required inputmode="numeric" autocomplete="current-password" />
+            </label>
 
-                    <p id="errorLogin" style="color: #b91c1c; font-size: 0.85rem; margin: 0; min-height: 1.1em;"></p>
+            <p id="errorLogin" class="error-texto" role="alert"></p>
 
-                    <button type="submit" id="btnEntrar" style="${ESTILO_BOTON}">Entrar</button>
-                </form>
-            </div>
-        </div>
-    `;
+            <button type="submit" id="btnEntrar" class="btn-ancho">Entrar</button>
+        </form>
+    `);
 
     document.getElementById("formLogin").addEventListener("submit", async (e) => {
         e.preventDefault();
@@ -111,32 +113,26 @@ function mostrarPantallaLogin() {
 }
 
 function mostrarPantallaCambioPin() {
-    document.body.classList.remove("cargando");
-    document.body.innerHTML = `
-        <div style="${ESTILO_PANTALLA}">
-            <div class="card" style="${ESTILO_TARJETA}">
-                <img src="img/LOGO_BBE_SOLO.png" style="height: 50px; margin-bottom: 10px;" alt="BBE Logo">
-                <h2 style="margin-bottom: 5px; color: #1f4e79;">Elige tu PIN</h2>
-                <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 20px;">Es tu primer acceso: crea un PIN personal de 6 a 10 números.</p>
+    pantallaAcceso(`
+        <h2>Elige tu PIN</h2>
+        <p class="acceso-texto">Es tu primer acceso: crea un PIN personal de 6 a 10 números.</p>
 
-                <form id="formCambioPin" style="display: flex; flex-direction: column; gap: 15px;">
-                    <div style="text-align: left;">
-                        <label style="font-size: 0.8rem; font-weight: bold; color: #475569;">PIN nuevo:</label>
-                        <input type="password" id="inputPinNuevo" inputmode="numeric" autocomplete="new-password" maxlength="10" required style="${ESTILO_INPUT}" />
-                    </div>
+        <form id="formCambioPin" class="acceso-form">
+            <label class="campo">
+                <span>PIN nuevo</span>
+                <input type="password" id="inputPinNuevo" inputmode="numeric" autocomplete="new-password" maxlength="10" required />
+            </label>
 
-                    <div style="text-align: left;">
-                        <label style="font-size: 0.8rem; font-weight: bold; color: #475569;">Repite el PIN nuevo:</label>
-                        <input type="password" id="inputPinRepetido" inputmode="numeric" autocomplete="new-password" maxlength="10" required style="${ESTILO_INPUT}" />
-                    </div>
+            <label class="campo">
+                <span>Repite el PIN nuevo</span>
+                <input type="password" id="inputPinRepetido" inputmode="numeric" autocomplete="new-password" maxlength="10" required />
+            </label>
 
-                    <p id="errorCambioPin" style="color: #b91c1c; font-size: 0.85rem; margin: 0; min-height: 1.1em;"></p>
+            <p id="errorCambioPin" class="error-texto" role="alert"></p>
 
-                    <button type="submit" id="btnGuardarPin" style="${ESTILO_BOTON}">Guardar y entrar</button>
-                </form>
-            </div>
-        </div>
-    `;
+            <button type="submit" id="btnGuardarPin" class="btn-ancho">Guardar y entrar</button>
+        </form>
+    `);
 
     document.getElementById("formCambioPin").addEventListener("submit", async (e) => {
         e.preventDefault();
@@ -177,12 +173,11 @@ async function iniciarApp() {
         return;
     }
 
-    // Modo familiar: franja de aviso fija arriba
+    // Modo familiar: franja de aviso arriba
     if (usuarioActual.rol === "familiar") {
-        const aviso = document.createElement("div");
-        aviso.style.cssText = "background: #fff3cd; color: #856404; padding: 8px 12px; text-align: center; font-weight: bold; font-size: 0.85rem; border-bottom: 1px solid #ffeeba; position: sticky; top: 0; z-index: 1001;";
-        aviso.append("👁️ ", el("strong", { text: "Modo Familiar (Solo Lectura)" }),
-            " — Consultando calendario de: " + (usuarioActual.empleadoNombre || usuarioActual.nombre));
+        const aviso = el("div", { class: "banner-familiar" },
+            el("strong", { text: "Modo familiar · solo lectura" }),
+            " — calendario de " + (usuarioActual.empleadoNombre || usuarioActual.nombre));
         document.body.prepend(aviso);
     }
 
@@ -192,6 +187,7 @@ async function iniciarApp() {
     if (badgeRol) badgeRol.textContent = usuarioActual.rol.toUpperCase();
 
     prepararPanelUsuario();
+    pintarLeyenda();
     aplicarModoFamiliar();   // oculta el menú y marca la cabecera
     prepararPanelAdmin();    // solo administradores
 
@@ -201,4 +197,12 @@ async function iniciarApp() {
 async function cerrarSesion() {
     await cerrarSesionSupabase();
     location.reload();
+}
+
+// App instalable: el service worker solo guarda los archivos de la propia web para abrirla más rápido.
+// Los datos siempre se piden a Supabase.
+if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+        navigator.serviceWorker.register("sw.js").catch(err => console.warn("Service worker no registrado:", err));
+    });
 }
