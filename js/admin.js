@@ -52,16 +52,16 @@ async function verGestionAdmin() {
 
     const contenedor = document.getElementById("resultado");
     contenedor.style.display = "block";
-    contenedor.style.width = "100%";
     document.getElementById("cardCalendario").style.display = "none";
-    contenedor.replaceChildren(el("p", { text: "Cargando..." }));
+    document.body.classList.add("vista-resultado");
+    contenedor.replaceChildren(el("p", { class: "aviso-vacio", text: "Cargando..." }));
     window.scrollTo(0, 0);
 
     const [datosOk, accesosOk] = await Promise.all([cargarDatos(), cargarAccesos()]);
     if (!datosOk || !accesosOk) {
         contenedor.replaceChildren(
-            el("p", { style: "color:#b91c1c;", text: "No se pudieron cargar los datos. Inténtalo de nuevo." }),
-            el("button", { text: "✖ Volver", onclick: cerrarVistaResultado })
+            el("p", { class: "aviso-vacio", text: "No se pudieron cargar los datos. Inténtalo de nuevo." }),
+            el("button", { class: "btn-secundario", text: "Volver", onclick: cerrarVistaResultado })
         );
         return;
     }
@@ -73,14 +73,14 @@ function pintarGestionAdmin() {
 
     adminAviso = el("div", { id: "adminAviso", class: "admin-aviso", style: "display:none;" });
 
-    const cabecera = el("div", { style: "display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; gap:8px;" },
-        el("h2", { style: "margin:0; border:none; padding:0;", text: "👥 Empleados y accesos" }),
-        el("button", { style: "background:#64748b; padding:8px 14px; font-size:13px;", text: "✖ Volver", onclick: cerrarVistaResultado })
+    const cabecera = el("div", { class: "resultado-cabecera" },
+        el("h2", { text: "Empleados y accesos" }),
+        el("button", { type: "button", class: "btn-secundario", text: "Volver", onclick: cerrarVistaResultado })
     );
 
     const formulario = el("div", { id: "adminFormulario" });
     const botonNuevo = el("button", {
-        style: "margin-bottom:14px;", text: "➕ Añadir empleado",
+        class: "admin-nuevo", text: "➕ Añadir empleado",
         onclick: () => mostrarFormularioEmpleado(null)
     });
 
@@ -93,7 +93,7 @@ function pintarGestionAdmin() {
 
     contenedor.replaceChildren(
         cabecera, adminAviso, botonNuevo, formulario, ...listas,
-        el("hr", { style: "margin:24px 0; border:0; border-top:1px solid #e2e8f0;" }),
+        el("hr", { class: "separador" }),
         seccionCiclos()
     );
 }
@@ -235,7 +235,7 @@ function mostrarFormularioEmpleado(emp) {
     const contenedor = document.getElementById("adminFormulario");
 
     const inputNombre = el("input", { type: "text", maxlength: "40", value: emp ? emp.nombre : "", required: true });
-    const inputIniciales = el("input", { type: "text", maxlength: "8", value: emp ? emp.iniciales : "", required: true, style: "text-transform:uppercase;" });
+    const inputIniciales = el("input", { type: "text", maxlength: "8", value: emp ? emp.iniciales : "", required: true, class: "input-iniciales" });
     const selectColectivo = el("select", {}, colectivos.map(c => el("option", { value: c.codigo, text: c.nombre })));
     selectColectivo.value = emp ? emp.colectivo : colectivos[0].codigo;
     const inputInicio = el("input", { type: "date", value: emp ? emp.inicio : "", required: true });
@@ -260,7 +260,7 @@ function mostrarFormularioEmpleado(emp) {
         error,
         el("div", { class: "admin-acciones" },
             el("button", { type: "submit", text: esNuevo ? "Crear empleado" : "Guardar cambios" }),
-            el("button", { type: "button", style: "background:#64748b;", text: "Cancelar", onclick: () => contenedor.replaceChildren() })
+            el("button", { type: "button", class: "btn-secundario", text: "Cancelar", onclick: () => contenedor.replaceChildren() })
         )
     );
 
@@ -320,7 +320,7 @@ function seccionCiclos() {
         el("p", { class: "admin-nota", text: "Cada letra es un día del ciclo (M, T, N, F, P, I, S), separadas por espacios. Al terminar el ciclo vuelve a empezar. Cada empleado lo recorre desde su día de inicio. Cambiarlo modifica los calendarios de todo el colectivo." }),
         colectivos.map(c => {
             const texto = el("textarea", { rows: "4", spellcheck: "false", value: c.patron.join(" ") });
-            const solape = el("input", { type: "number", min: "0", max: "366", value: String(c.diasSolape), style: "width:80px;" });
+            const solape = el("input", { type: "number", min: "0", max: "366", value: String(c.diasSolape), class: "input-corto" });
             const msg = el("span", { class: "admin-nota", text: "" });
 
             const guardar = async () => {
