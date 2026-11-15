@@ -19,15 +19,18 @@ function esPerfilFamiliar() {
     return !!usuarioActual && usuarioActual.rol === "familiar";
 }
 
-// Texto de la cabecera de usuario: "👤 Nombre ▼"
+// Cabecera de usuario: círculo con las iniciales, nombre y flecha del menú
 function pintarCabeceraUsuario(flecha) {
     const cabecera = document.getElementById("infoUsuario");
     if (!cabecera || !usuarioActual) return;
-    cabecera.replaceChildren(
-        "👤 ",
-        el("strong", { text: usuarioActual.nombre }),
-        flecha ? "\u00A0\u00A0\u00A0" + flecha : ""
-    );
+    const iniciales = String(usuarioActual.iniciales || "").replace(/_F$/, "").slice(0, 3);
+    const partes = [
+        el("span", { class: "avatar", text: iniciales }),
+        el("span", { class: "nombre-usuario", text: usuarioActual.nombre })
+    ];
+    if (esPerfilFamiliar()) partes.push(el("span", { class: "etiqueta-familiar", text: "Familiar" }));
+    if (flecha) partes.push(el("span", { class: "flecha", text: flecha }));
+    cabecera.replaceChildren(...partes);
 }
 
 function verMiCalendario() {
@@ -40,10 +43,11 @@ function verMiCalendario() {
 
     const empleado = obtenerEmpleadoActual();
     const contenedor = document.getElementById("miCalendario");
+    pintarResumenHoy();
 
     if (!empleado) {
         contenedor.innerHTML = `
-            <p style="text-align:center; color:#b91c1c; padding:20px 10px;">
+            <p class="aviso-vacio">
                 No se ha encontrado tu ficha de empleado, así que no se puede mostrar el calendario.
                 Avisa al administrador.
             </p>`;
@@ -51,6 +55,7 @@ function verMiCalendario() {
     }
 
     const diasMes = new Date(anio, mes + 1, 0).getDate();
+    const hoyISO = aISO(new Date());
 
     let html = `
     <div class="calendario-grid">
@@ -71,8 +76,9 @@ function verMiCalendario() {
         const iso = aISO(new Date(anio, mes, dia));
         const info = infoTurno(iso, empleado);
 
+        const esHoy = iso === hoyISO ? " hoy" : "";
         html += `
-            <button type="button" class="dia-calendario ${info.clase}" data-fecha="${iso}" data-emp="${esc(empleado.id)}">
+            <button type="button" class="dia-calendario ${info.clase}${esHoy}" data-fecha="${iso}" data-emp="${esc(empleado.id)}" aria-label="${esc(fechaLarga(iso))}: ${esc(info.texto)}">
                 <span class="numero-dia">${dia}</span>
                 <span class="turno-dia">${esc(inicial(info))}</span>
             </button>
@@ -253,13 +259,20 @@ function aplicarModoFamiliar() {
     const panelUsuario = document.getElementById("panelUsuario");
     if (panelUsuario) panelUsuario.style.display = "none";
 
-    const cabecera = document.getElementById("infoUsuario");
-    if (cabecera) {
-        cabecera.replaceChildren("👤 ", el("strong", { text: usuarioActual.nombre }), " (Familiar)");
-    }
+    pintarCabeceraUsuario(null);
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+    const chipUsuario = document.getElementById("infoUsuario");
+    if (chipUsuario) {
+        chipUsuario.addEventListener("keydown", function (e) {
+            if ((e.key === "Enter" || e.key === " ") && !esPerfilFamiliar()) {
+                e.preventDefault();
+                toggleUsuario();
+            }
+        });
+    }
+
     const contenedorUsuario = document.querySelector(".usuarioCabecera");
     if (contenedorUsuario) {
         contenedorUsuario.addEventListener("click", function (e) {
@@ -271,3 +284,65 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 });
+
+
+// --- BLOQUE "HOY" Y LEYENDA ---
+const DIAS_SEMANA_CORTOS = ["D", "L", "M", "X", "J", "V", "S"];
+
+function pintarResumenHoy() {
+    const contenedor = document.getElementById("resumenHoy");
+    if (!contenedor) return;
+
+    const empleado = obtenerEmpleadoActual();
+    if (!empleado) {
+        contenedor.hidden = true;
+        return;
+    }
+
+    const hoy = new Date();
+    const iso = aISO(hoy);
+    const info = infoTurno(iso, empleado);
+
+    const proximos = [];
+    for (let i = 1; i <= 6; i++) {
+        const dia = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() + i);
+        const isoDia = aISO(dia);
+        const infoDia = infoTurno(isoDia, empleado);
+        proximos.push(el("li", { class: "chip-dia " + infoDia.clase, title: `${fechaLarga(isoDia)}: ${infoDia.texto}` },
+            el("span", { class: "chip-sem", text: DIAS_SEMANA_CORTOS[dia.getDay()] }),
+            el("span", { class: "chip-num", text: dia.getDate() }),
+            el("span", { class: "chip-letra", text: infoDia.codigo })
+        ));
+    }
+
+    contenedor.replaceChildren(
+        el("div", { class: "hoy-bloque " + info.clase },
+            el("div", { class: "hoy-textos" },
+                el("span", { class: "hoy-etiqueta", text: "Hoy" }),
+                el("span", { class: "hoy-nombre", text: info.texto }),
+                el("span", { class: "hoy-fecha", text: fechaLarga(iso) })
+            ),
+            el("span", { class: "hoy-letra", text: info.codigo })
+        ),
+        el("div", { class: "hoy-proximos-caja" },
+            el("p", { class: "hoy-subtitulo", text: "Próximos días" }),
+            el("ul", { class: "hoy-proximos" }, proximos)
+        )
+    );
+    contenedor.hidden = false;
+}
+
+function pintarLeyenda() {
+    const contenedor = document.getElementById("leyenda");
+    if (!contenedor) return;
+    contenedor.replaceChildren(
+        el("h2", { text: "Turnos" }),
+        el("ul", { class: "leyenda-lista" },
+            Object.entries(TURNOS).map(([codigo, t]) =>
+                el("li", { class: t.clase },
+                    el("span", { class: "leyenda-letra", text: codigo }),
+                    el("span", { text: t.texto })
+                ))
+        )
+    );
+}

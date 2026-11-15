@@ -58,3 +58,10 @@ function infoTurno(fechaISO, empleado) {
 function inicial(info) {
     return info.codigo || "?";
 }
+
+// "AAAA-MM-DD" -> "sábado, 14 de noviembre"
+function fechaLarga(iso) {
+    const [a, m, d] = iso.split("-").map(Number);
+    const texto = new Date(a, m - 1, d).toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" });
+    return texto.charAt(0).toUpperCase() + texto.slice(1);
+}
