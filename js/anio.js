@@ -8,6 +8,7 @@ let anioVista = null;
 const NOMBRES_MESES = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 
 function verMiAnio(anio) {
+    const viejo = document.getElementById("btnVolverAnio"); if (viejo) viejo.remove();
     const empleado = obtenerEmpleadoActual();
     mostrarVistaAdmin();
     if (!empleado) {
@@ -53,12 +54,11 @@ async function pintarMiAnio(anio) {
             celdas.push(el("button", {
                 type: "button",
                 class: "cuadro-dia " + info.clase + (iso === hoyISO ? " hoy" : ""),
-                "data-fecha": iso, "data-emp": empleado.id,
                 title: titulo, "aria-label": titulo
             }, info.marca ? el("span", { class: "cuadro-marca " + info.marca.clase }) : null));
         }
 
-        meses.push(el("section", { class: "mes-mini" },
+        meses.push(el("section", { class: "mes-mini mes-clicable", onclick: () => abrirMesDesdeAnio(anio, mes) },
             el("h4", { text: NOMBRES_MESES[mes] }),
             el("div", { class: "mes-mini-grid" }, celdas)
         ));
@@ -113,4 +113,20 @@ async function pintarMiAnio(anio) {
         totalesMarcas.length ? el("h3", { class: "grupo-titulo", text: "Semanas con marca" }) : null,
         totalesMarcas.length ? el("ul", { class: "anio-totales" }, totalesMarcas) : null
     );
+}
+
+// Al pulsar un mes del año se abre ese mes (con sus días pulsables) y un botón para volver al año
+function abrirMesDesdeAnio(anio, mes) {
+    fechaCalendario = new Date(anio, mes, 1);
+    cerrarVistaResultado();   // vuelve al calendario mensual y lo pinta
+
+    const antiguo = document.getElementById("btnVolverAnio");
+    if (antiguo) antiguo.remove();
+    const boton = el("button", {
+        id: "btnVolverAnio", type: "button", class: "btn-secundario btn-ancho",
+        text: "← Volver al año " + anio,
+        onclick: () => { boton.remove(); verMiAnio(anio); }
+    });
+    document.getElementById("cardCalendario").prepend(boton);
+    ajustarAlturaCalendario();   // en móvil recalcula para que el mes siga cabiendo
 }
