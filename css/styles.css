@@ -48,6 +48,15 @@
     --e-bg: #a6e3bb;  --e-fg: #0f3d22;
     --j-bg: #9b2f78;  --j-fg: #ffffff;
     --ld-bg: #fff3a6; --ld-fg: #4a4200;  --ld-borde: #d9bc00;
+
+    /* Marcas de semana (mitad de arriba de la celda): guardia y correturnos */
+    --g-bg: #c0392b;   --g-fg: #ffffff;
+    --ctd-bg: #6d4c9f; --ctd-fg: #ffffff;
+    --ct1-bg: #1f7a8c; --ct1-fg: #ffffff;
+    --ct2-bg: #3a7d44; --ct2-fg: #ffffff;
+    --ct3-bg: #a0522d; --ct3-fg: #ffffff;
+    --ct4-bg: #3b5bdb; --ct4-fg: #ffffff;
+    --cty-bg: #5c6b73; --cty-fg: #ffffff;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -81,6 +90,14 @@
         --e-bg: #6fc78d;  --e-fg: #0a2b18;
         --j-bg: #c9569a;
         --ld-bg: #e8d45a; --ld-fg: #2e2900;  --ld-borde: #fff3a6;
+
+        --g-bg: #d9534a;
+        --ctd-bg: #8d6cc0;
+        --ct1-bg: #2b97ab;
+        --ct2-bg: #4c9a58;
+        --ct3-bg: #c26a3d;
+        --ct4-bg: #5877ec;
+        --cty-bg: #7a8b95;
     }
 }
 
@@ -96,6 +113,14 @@
 .excesos   { --bg: var(--e-bg); --fg: var(--e-fg); }
 .permiso   { --bg: var(--j-bg); --fg: var(--j-fg); }
 .libredisp { --bg: var(--ld-bg); --fg: var(--ld-fg); --borde: var(--ld-borde); }
+
+.marca-g   { --bg: var(--g-bg);   --fg: var(--g-fg); }
+.marca-ctd { --bg: var(--ctd-bg); --fg: var(--ctd-fg); }
+.marca-ct1 { --bg: var(--ct1-bg); --fg: var(--ct1-fg); }
+.marca-ct2 { --bg: var(--ct2-bg); --fg: var(--ct2-fg); }
+.marca-ct3 { --bg: var(--ct3-bg); --fg: var(--ct3-fg); }
+.marca-ct4 { --bg: var(--ct4-bg); --fg: var(--ct4-fg); }
+.marca-cty { --bg: var(--cty-bg); --fg: var(--cty-fg); }
 
 *, *::before, *::after { box-sizing: border-box; }
 
@@ -1084,3 +1109,177 @@ body.modo-edicion .dia-calendario.hoy { outline-offset: -4px; }
     .marca { gap: 6px; }
     .avatar { min-width: 48px; }
 }
+
+
+/* =====================================================================
+   Fase 4 · celdas partidas (semanas), vista de año y pantalla de semanas
+   ===================================================================== */
+
+/* --- Celda del mes partida en dos mitades: arriba la marca de la semana, abajo el turno --- */
+.dia-calendario.con-marca {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: 1fr 1fr;
+    padding: 0;
+    overflow: hidden;
+}
+.mitad-arriba, .mitad-abajo {
+    display: flex;
+    align-items: center;
+    min-height: 0;
+    padding: 0 7px;
+}
+.mitad-arriba { justify-content: space-between; gap: 4px; background: var(--bg); color: var(--fg); }
+.mitad-arriba.sin-marca { background: rgba(0, 0, 0, 0.1); color: inherit; }
+.mitad-abajo { justify-content: flex-end; }
+.marca-codigo {
+    font-family: var(--fuente-titulo);
+    font-size: clamp(0.8rem, 3.4vw, 1.15rem);
+    font-weight: 700;
+    line-height: 1;
+    margin-left: auto;
+}
+.con-marca .numero-dia { align-self: auto; }
+.dia-calendario.con-marca .turno-dia { align-self: auto; font-size: clamp(1.05rem, 4.8vw, 1.6rem); }
+.dia-calendario.con-marca.largo .turno-dia { font-size: clamp(0.85rem, 3.8vw, 1.25rem); }
+.dia-calendario.con-marca.editado::after { top: auto; bottom: 4px; right: auto; left: 5px; }
+
+@media (min-width: 960px) {
+    .mitad-arriba, .mitad-abajo { padding: 0 12px; }
+    .marca-codigo { font-size: 1.2rem; }
+    .dia-calendario.con-marca .turno-dia { font-size: 1.9rem; }
+}
+
+@media (max-width: 767px) {
+    .calendario-grid.altura-fija .dia-calendario.con-marca { padding: 0; }
+    .calendario-grid.altura-fija .con-marca .mitad-arriba,
+    .calendario-grid.altura-fija .con-marca .mitad-abajo { padding: 0 5px; }
+    .calendario-grid.altura-fija .con-marca .numero-dia { font-size: 0.62rem; }
+    .calendario-grid.altura-fija .con-marca .marca-codigo {
+        font-size: clamp(0.6rem, calc(var(--alto-celda, 48px) * 0.25), 0.95rem);
+    }
+    .calendario-grid.altura-fija .con-marca .turno-dia,
+    .calendario-grid.altura-fija .dia-calendario.con-marca.largo .turno-dia {
+        font-size: clamp(0.78rem, calc(var(--alto-celda, 48px) * 0.34), 1.3rem);
+    }
+}
+
+/* --- Tabla anual --- */
+.td-celda-turno.con-marca {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: 1fr 1fr;
+    place-items: stretch;
+    overflow: hidden;
+}
+.tm-arriba, .tm-abajo { display: grid; place-items: center; line-height: 1; min-height: 0; }
+.tm-arriba { font-size: 0.5rem; background: var(--bg); color: var(--fg); }
+.tm-arriba.sin-marca { background: rgba(0, 0, 0, 0.1); color: inherit; }
+.tm-abajo { font-size: 0.72rem; }
+
+/* --- Bloque Hoy, próximos días, búsqueda, detalle y leyenda --- */
+.hoy-marca {
+    align-self: flex-start;
+    margin-top: 6px;
+    padding: 2px 10px;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    background: var(--bg);
+    color: var(--fg);
+}
+body.pantalla-muy-baja .hoy-marca { display: none; }
+
+.chip-marca {
+    margin-top: 2px;
+    padding: 0 4px;
+    border-radius: 4px;
+    font-size: 0.6rem;
+    font-weight: 700;
+    line-height: 1.3;
+    background: var(--bg);
+    color: var(--fg);
+}
+.chip-marca.sin-marca { background: rgba(0, 0, 0, 0.12); color: inherit; }
+
+.badges { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+.detalle-linea .badge-turno { align-self: flex-start; display: inline-block; }
+.leyenda-sub { margin-top: 14px; }
+
+/* --- Vista "Mi año" --- */
+.anio-sub { margin: 2px 0 0; color: var(--tinta-suave); font-size: 0.95rem; }
+.anio-nav { display: flex; align-items: center; justify-content: center; gap: 18px; margin-bottom: 12px; }
+.anio-nav-texto { font-family: var(--fuente-titulo); font-size: 1.5rem; min-width: 3.5em; text-align: center; }
+.anio-nav .btn-icono { font-size: 1.6rem; line-height: 1; }
+.anio-nav .btn-icono:disabled { opacity: 0.35; }
+
+.anio-meses {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    max-width: 900px;
+    margin: 0 auto;
+}
+.mes-mini {
+    background: var(--superficie-2);
+    border: 1px solid var(--linea);
+    border-radius: 10px;
+    padding: 6px 6px 8px;
+    min-width: 0;
+}
+.mes-mini h4 { margin: 0 0 5px; font-family: var(--fuente-titulo); font-size: 0.95rem; font-weight: 600; color: var(--tinta-suave); }
+.mes-mini-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px; }
+.cuadro-vacio { aspect-ratio: 1; }
+.cuadro-dia {
+    aspect-ratio: 1;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 3px;
+    background: var(--bg);
+    box-shadow: inset 0 0 0 1px var(--borde, transparent);
+    position: relative;
+    overflow: hidden;
+}
+.cuadro-dia.hoy { outline: 2px solid var(--tinta); outline-offset: 1px; z-index: 1; overflow: visible; border-radius: 3px; }
+.cuadro-marca { position: absolute; left: 0; right: 0; top: 0; height: 50%; background: var(--bg); }
+.cuadro-dia.hoy .cuadro-marca { border-radius: 3px 3px 0 0; }
+
+.anio-totales { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.total-chip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 12px 4px 6px;
+    border-radius: 10px;
+    background: var(--bg);
+    color: var(--fg);
+    box-shadow: inset 0 0 0 2px var(--borde, transparent);
+}
+.total-letra { font-family: var(--fuente-titulo); font-size: 1.3rem; font-weight: 700; min-width: 1.2em; text-align: center; line-height: 1; }
+.total-letra.largo { font-size: 1rem; }
+.total-num { font-weight: 700; font-size: 1.05rem; }
+
+@media (min-width: 960px) {
+    .anio-meses { gap: 12px; }
+    .mes-mini { padding: 10px 12px 12px; }
+    .mes-mini-grid { gap: 3px; }
+}
+
+/* --- Pantalla de semanas --- */
+.seccion-semana { margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--linea); }
+.lista-semanas { display: flex; flex-direction: column; gap: 4px; max-width: 520px; }
+.fila-semana {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 10px;
+    border-radius: 10px;
+    background: var(--superficie-2);
+    border: 1px solid var(--linea);
+    border-left: 6px solid var(--linea);
+}
+.fila-semana.con-codigo { border-left-color: var(--bg); }
+.fila-semana.semana-actual { box-shadow: 0 0 0 2px var(--acento); }
+.semana-fechas { font-weight: 600; flex: 1; }
+.semana-hoy { font-size: 0.75rem; color: var(--acento); font-weight: 700; }
+.fila-semana select { min-width: 84px; }

@@ -5,7 +5,10 @@ function pintar(nombre, info) {
     return `
         <div class="tarjeta-resultado">
             <span class="nombre-empleado">${esc(nombre)}</span>
-            <span class="badge-turno ${info.clase}">${esc(info.texto)}</span>
+            <span class="badges">
+                ${info.marca ? `<span class="badge-turno ${info.marca.clase}">${esc(info.marca.codigo)}</span>` : ""}
+                <span class="badge-turno ${info.clase}">${esc(info.texto)}</span>
+            </span>
         </div>
     `;
 }
@@ -132,6 +135,13 @@ function seleccionarDia(fechaISO, empleadoId) {
             el("span", { class: "detalle-etiqueta", text: "Origen" }),
             textoOrigen(info)
         ),
+        info.marca
+            ? el("p", { class: "detalle-linea" },
+                el("span", { class: "detalle-etiqueta", text: "Semana" }),
+                el("span", { class: "badge-turno " + info.marca.clase, text: info.marca.texto }),
+                ` · del ${formatearFecha(lunesDe(fechaISO))} al ${formatearFecha(domingoDe(fechaISO))}`
+              )
+            : null,
         compis.length
             ? el("div", { class: "detalle-linea" },
                 el("span", { class: "detalle-etiqueta", text: "Mismo turno" }),
@@ -220,9 +230,13 @@ async function verCalendario(anioParam, colectivoParam) {
 
         columnas.forEach(emp => {
             const info = infoTurno(iso, emp);
+            const titulo = `${emp.nombre} · ${formatearFecha(iso)} (${nombreDia}): ${info.texto}${info.marca ? " · " + info.marca.texto : ""}`;
+            const interior = info.partida
+                ? `<span class="tm-arriba ${info.marca ? info.marca.clase : "sin-marca"}">${info.marca ? esc(info.marca.codigo) : ""}</span><span class="tm-abajo">${esc(inicial(info))}</span>`
+                : esc(inicial(info));
             html += `
                 <td class="celda-turno">
-                    <button type="button" class="td-celda-turno ${info.clase}${claseLargo(info)}${info.manual ? " editado" : ""}" data-fecha="${iso}" data-emp="${esc(emp.id)}" title="${esc(emp.nombre)} · ${formatearFecha(iso)} (${nombreDia}): ${esc(info.texto)}">${esc(inicial(info))}</button>
+                    <button type="button" class="td-celda-turno ${info.clase}${claseLargo(info)}${info.manual ? " editado" : ""}${info.partida ? " con-marca" : ""}" data-fecha="${iso}" data-emp="${esc(emp.id)}" title="${esc(titulo)}">${interior}</button>
                 </td>
             `;
         });

@@ -5,7 +5,7 @@
 const ANIO_MIN = 2025;
 const ANIO_MAX = 2035;
 
-// colectivos = [{ codigo, nombre, icono, puesto, patron, diasSolape, empleados: [{ id, nombre, iniciales, inicio, colectivo, activo, orden }] }]
+// colectivos = [{ codigo, nombre, icono, puesto, patron, diasSolape, marcas, empleados: [{ id, nombre, iniciales, inicio, colectivo, activo, orden }] }]
 // Los empleados dados de baja solo los ve el administrador, y no aparecen en los calendarios.
 let colectivos = [];
 
@@ -15,6 +15,9 @@ let festivos = new Map();
 let intensivas = [];
 // excepciones: Map "empleadoId|AAAA-MM-DD" -> código (turnos puestos a mano)
 const excepciones = new Map();
+// semanas: Map "empleadoId|AAAA-MM-DD del lunes" -> código de marca (G, CTD, CT1...), solo en
+// los colectivos con semanas especiales
+const semanas = new Map();
 const aniosCargados = new Set();
 const cargasEnCurso = new Map();
 
@@ -37,6 +40,7 @@ async function cargarDatos() {
         puesto: c.puesto,
         patron: c.patron,
         diasSolape: c.dias_solape,
+        marcas: Array.isArray(c.marcas) ? c.marcas : [],   // marcas semanales permitidas (vacío = sin semanas)
         empleados: re.data
             .filter(e => e.colectivo === c.codigo)
             .map(e => ({
@@ -84,6 +88,27 @@ async function asegurarAnio(anio) {
             data.forEach(r => excepciones.set(claveExcepcion(r.empleado_id, r.fecha), r.codigo));
             if (data.length < trozo) break;
         }
+
+        // Semanas especiales (G, CT1...) que tocan este año. Si la tabla aún no existe en Supabase
+        // (falta ejecutar el SQL de la fase 4) no se rompe nada: simplemente no hay marcas.
+        const desdeSemanas = lunesDe(desde);
+        for (let inicio = 0; ; inicio += trozo) {
+            const { data, error } = await supabaseClient
+                .from("semanas_especiales")
+                .select("empleado_id, semana, codigo")
+                .gte("semana", desdeSemanas)
+                .lte("semana", hasta)
+                .order("semana")
+                .order("empleado_id")
+                .range(inicio, inicio + trozo - 1);
+            if (error) {
+                console.warn("No se pudieron cargar las semanas especiales:", error);
+                break;
+            }
+            data.forEach(r => semanas.set(claveExcepcion(r.empleado_id, r.semana), r.codigo));
+            if (data.length < trozo) break;
+        }
+
         aniosCargados.add(anio);
         return true;
     })();
@@ -139,6 +164,11 @@ function el(etiqueta, props = {}, ...hijos) {
         nodo.append(h.nodeType ? h : document.createTextNode(String(h)));
     });
     return nodo;
+}
+
+// Sustituye el contenido de un elemento ignorando los hijos nulos (replaceChildren pintaría "null")
+function reemplazarHijos(contenedor, ...hijos) {
+    contenedor.replaceChildren(...hijos.flat().filter(h => h !== null && h !== undefined && h !== false));
 }
 
 // Rellena un <select> con los años permitidos

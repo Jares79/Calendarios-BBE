@@ -22,6 +22,22 @@ const TURNOS = {
     LD: { texto: "Libre disposición", clase: "libredisp" }
 };
 
+// Marcas semanales (mitad de arriba de la celda) de los colectivos con semanas especiales:
+// G = guardia (personal de jornada partida) y CTD, CT1... CTY (correturnos).
+// No son turnos del día: van por semana (de lunes a domingo) y no cambian el turno de abajo.
+const MARCAS = {
+    G:   { texto: "Guardia",        clase: "marca-g" },
+    CTD: { texto: "Correturno CTD", clase: "marca-ctd" },
+    CT1: { texto: "Correturno CT1", clase: "marca-ct1" },
+    CT2: { texto: "Correturno CT2", clase: "marca-ct2" },
+    CT3: { texto: "Correturno CT3", clase: "marca-ct3" },
+    CT4: { texto: "Correturno CT4", clase: "marca-ct4" },
+    CTY: { texto: "Correturno CTY", clase: "marca-cty" }
+};
+
+// Turnos y marcas juntos (para el editor de colores)
+const TIPOS_COLOR = { ...TURNOS, ...MARCAS };
+
 // Letras que puede llevar el ciclo de un colectivo (las demás solo se ponen a mano)
 const LETRAS_CICLO = ["M", "T", "N", "F", "P", "I", "S"];
 
@@ -68,6 +84,28 @@ function codigoTurno(fechaISO, empleado, colectivo) {
     return patron[((dias % n) + n) % n];
 }
 
+// Lunes de la semana de una fecha, como "AAAA-MM-DD" (el 1-1-1970 fue jueves)
+function lunesDe(fechaISO) {
+    const n = diaNumero(fechaISO);
+    const diasDesdeLunes = (((n + 3) % 7) + 7) % 7;
+    return new Date((n - diasDesdeLunes) * 86400000).toISOString().slice(0, 10);
+}
+
+function domingoDe(fechaISO) {
+    return new Date((diaNumero(lunesDe(fechaISO)) + 6) * 86400000).toISOString().slice(0, 10);
+}
+
+function esLunes(fechaISO) {
+    return lunesDe(fechaISO) === fechaISO;
+}
+
+function convertirMarca(codigo) {
+    const m = MARCAS[codigo];
+    return m
+        ? { codigo, texto: m.texto, clase: m.clase }
+        : { codigo, texto: codigo, clase: "" };
+}
+
 function claveExcepcion(empleadoId, fechaISO) {
     return empleadoId + "|" + fechaISO;
 }
@@ -101,24 +139,45 @@ function convertirTurno(codigo) {
         : { codigo, texto: codigo, clase: "" };
 }
 
+// Marca semanal (G, CT1...) de un empleado en una fecha, o null. Solo existe en los colectivos
+// con semanas especiales; la semana va de lunes a domingo.
+function marcaDeSemana(fechaISO, empleado, colectivo) {
+    if (!colectivo.marcas.length) return null;
+    const codigo = semanas.get(claveExcepcion(empleado.id, lunesDe(fechaISO)));
+    return codigo ? convertirMarca(codigo) : null;
+}
+
 // Información del turno de un empleado (objeto de datos.js) en una fecha:
-// { codigo, texto, clase, origen: "manual" | "festivo" | "intensiva" | "ciclo", nota, manual }
+// { codigo, texto, clase, origen: "manual" | "festivo" | "intensiva" | "ciclo", nota, manual,
+//   partida: la celda se dibuja partida (colectivos con semanas), marca: mitad de arriba o null }
 function infoTurno(fechaISO, empleado) {
     const colectivo = buscarColectivo(empleado.colectivo);
-    if (!colectivo) return { ...convertirTurno("?"), origen: "ciclo", nota: null, manual: false };
+    if (!colectivo) return { ...convertirTurno("?"), origen: "ciclo", nota: null, manual: false, partida: false, marca: null };
+
+    const partida = colectivo.marcas.length > 0;
+    const marca = marcaDeSemana(fechaISO, empleado, colectivo);
 
     const manual = excepciones.get(claveExcepcion(empleado.id, fechaISO));
     if (manual) {
-        return { ...convertirTurno(manual), origen: "manual", nota: null, manual: true };
+        return { ...convertirTurno(manual), origen: "manual", nota: null, manual: true, partida, marca };
     }
 
     const auto = turnoAutomatico(fechaISO, empleado, colectivo);
-    return { ...convertirTurno(auto.codigo), origen: auto.origen, nota: auto.nota, manual: false };
+    return { ...convertirTurno(auto.codigo), origen: auto.origen, nota: auto.nota, manual: false, partida, marca };
 }
 
 // Letra que se pinta en la celda
 function inicial(info) {
     return info.codigo || "?";
+}
+
+// Contenido de una celda partida en dos mitades (arriba la marca de la semana, abajo el turno).
+// Devuelve HTML con textos ya escapados; las clases salen de constantes.
+function htmlMitades(info, extraArriba) {
+    const claseArriba = info.marca ? info.marca.clase : "sin-marca";
+    const codigoMarca = info.marca ? esc(info.marca.codigo) : "";
+    return `<span class="mitad-arriba ${claseArriba}">${extraArriba || ""}<span class="marca-codigo">${codigoMarca}</span></span>` +
+           `<span class="mitad-abajo"><span class="turno-dia">${esc(inicial(info))}</span></span>`;
 }
 
 // Clase extra para los códigos de dos letras (LD), que necesitan letra más pequeña

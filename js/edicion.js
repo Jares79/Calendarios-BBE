@@ -90,6 +90,7 @@ function abrirSelectorTurno(fechaISO) {
     const empleado = obtenerEmpleadoActual();
     if (!empleado) return;
     const info = infoTurno(fechaISO, empleado);
+    const seccionSemana = crearSeccionSemana(fechaISO, empleado);   // solo en colectivos con semanas
 
     const panel = el("div", { id: "panelDetalleDia", class: "detalle-dia hoja-edicion", role: "dialog", "aria-label": "Cambiar turno" },
         el("div", { class: "detalle-cabecera" },
@@ -99,6 +100,7 @@ function abrirSelectorTurno(fechaISO) {
             ),
             el("button", { type: "button", class: "btn-cerrar", "aria-label": "Cerrar", text: "×", onclick: ocultarDetalleDia })
         ),
+        seccionSemana ? el("p", { class: "detalle-etiqueta", text: "Turno del día (mitad de abajo)" }) : null,
         crearRejillaTurnos((codigo) => {
             ocultarDetalleDia();
             guardarCambiosCalendario([{ fecha: fechaISO, codigo }]);
@@ -111,7 +113,8 @@ function abrirSelectorTurno(fechaISO) {
                 ocultarDetalleDia();
                 guardarCambiosCalendario([{ fecha: fechaISO, codigo: null }]);
             }
-        })
+        }),
+        seccionSemana
     );
     document.body.append(panel);
 }
