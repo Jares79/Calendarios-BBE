@@ -246,11 +246,12 @@ input, select, textarea {
 }
 
 .avatar {
-    width: 32px; height: 32px;
+    min-width: 56px; height: 32px;
+    padding: 0 10px;
     flex: none;
     display: grid;
     place-items: center;
-    border-radius: 50%;
+    border-radius: 999px;
     background: var(--marca);
     color: var(--marca-fg);
     font-family: var(--fuente-titulo);
@@ -890,7 +891,6 @@ body.vista-resultado #leyenda { display: none; }
     .logoCabecera { height: 28px; }
     .marca-logo { padding: 3px 6px; }
     .marca { gap: 8px; }
-    .nombre-usuario { max-width: 76px; }
     button.cerrarSesion span { display: none; }
     button.cerrarSesion { padding: 8px; }
     .contenedor { padding: 12px 10px calc(24px + env(safe-area-inset-bottom)); }
@@ -903,10 +903,6 @@ body.vista-resultado #leyenda { display: none; }
     .selectorMes { top: 62px; }
     .resumen-turno { flex-direction: column; gap: 6px; }
     .resumen-nombre { text-align: left; }
-}
-
-@media (max-width: 379px) {
-    .nombre-usuario { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1076,15 +1072,15 @@ body.modo-edicion .dia-calendario.hoy { outline-offset: -4px; }
     .barra-edicion { padding: 8px 10px; margin-bottom: 8px; }
 }
 
-/* Cabecera móvil: el botón de usuario más ancho y el de salir discreto */
+/* Cabecera móvil: el botón de usuario es un óvalo con las iniciales (sin nombre) */
 @media (max-width: 560px) {
-    #infoUsuario { min-width: 92px; justify-content: space-between; padding: 4px 14px 4px 4px; }
-    .nombre-usuario { max-width: 64px; }
+    .nombre-usuario, .etiqueta-familiar { display: none; }
+    #infoUsuario { min-width: 0; gap: 6px; padding: 3px 12px 3px 3px; }
+    .avatar { min-width: 58px; }
     button.cerrarSesion { padding: 8px 6px; }
 }
 
 @media (max-width: 340px) {
-    .marca h1 { font-size: 1.1rem; }
     .marca { gap: 6px; }
-    #infoUsuario { min-width: 0; padding-right: 10px; }
+    .avatar { min-width: 48px; }
 }
