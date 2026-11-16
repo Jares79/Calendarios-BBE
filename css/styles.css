@@ -1283,3 +1283,6 @@ body.pantalla-muy-baja .hoy-marca { display: none; }
 .semana-fechas { font-weight: 600; flex: 1; }
 .semana-hoy { font-size: 0.75rem; color: var(--acento); font-weight: 700; }
 .fila-semana select { min-width: 84px; }
+
+.mes-clicable { cursor: pointer; }
+#btnVolverAnio { margin-bottom: 10px; }
