@@ -18,8 +18,7 @@ const MOTIVOS_ADMIN = {
 
 function prepararPanelAdmin() {
     if (!usuarioActual || !puedeGestionarUsuarios(usuarioActual)) return;
-    const fila = document.getElementById("filaAdmin");
-    if (fila) fila.style.display = "block";
+    document.querySelectorAll(".solo-admin").forEach(boton => { boton.style.display = ""; });
 }
 
 async function cargarAccesos() {
@@ -47,15 +46,8 @@ function accesoFamiliar(empleadoId) {
 async function verGestionAdmin() {
     if (!usuarioActual || !puedeGestionarUsuarios(usuarioActual)) return;
 
-    cerrarPanelUsuario();
-    ocultarDetalleDia();
-
-    const contenedor = document.getElementById("resultado");
-    contenedor.style.display = "block";
-    document.getElementById("cardCalendario").style.display = "none";
-    document.body.classList.add("vista-resultado");
+    const contenedor = mostrarVistaAdmin();
     contenedor.replaceChildren(el("p", { class: "aviso-vacio", text: "Cargando..." }));
-    window.scrollTo(0, 0);
 
     const [datosOk, accesosOk] = await Promise.all([cargarDatos(), cargarAccesos()]);
     if (!datosOk || !accesosOk) {
@@ -317,7 +309,7 @@ function mostrarFormularioEmpleado(emp) {
 function seccionCiclos() {
     return el("div", { class: "admin-grupo" },
         el("h3", { text: "🔁 Ciclos de turno y días de solape" }),
-        el("p", { class: "admin-nota", text: "Cada letra es un día del ciclo (M, T, N, F, P, I, S), separadas por espacios. Al terminar el ciclo vuelve a empezar. Cada empleado lo recorre desde su día de inicio. Cambiarlo modifica los calendarios de todo el colectivo." }),
+        el("p", { class: "admin-nota", text: "Cada letra es un día del ciclo (M, T, N, F, P, I, S), separadas por espacios. V, E, J y LD no van en el ciclo: se ponen a mano. Al terminar el ciclo vuelve a empezar. Cada empleado lo recorre desde su día de inicio. Cambiarlo modifica los calendarios de todo el colectivo." }),
         colectivos.map(c => {
             const texto = el("textarea", { rows: "4", spellcheck: "false", value: c.patron.join(" ") });
             const solape = el("input", { type: "number", min: "0", max: "366", value: String(c.diasSolape), class: "input-corto" });
@@ -325,7 +317,7 @@ function seccionCiclos() {
 
             const guardar = async () => {
                 const letras = texto.value.toUpperCase().split(/[^A-Z]+/).filter(Boolean).flatMap(t => t.split(""));
-                if (!letras.length || letras.some(l => !TURNOS[l])) {
+                if (!letras.length || letras.some(l => !LETRAS_CICLO.includes(l))) {
                     msg.textContent = "Solo se admiten las letras M, T, N, F, P, I y S.";
                     return;
                 }
