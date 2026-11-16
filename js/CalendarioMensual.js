@@ -197,6 +197,7 @@ function toggleUsuario() {
     if (estaAbierto) {
         panel.style.display = "none";
         pintarCabeceraUsuario("▼");
+        ajustarAlturaCalendario();
     } else {
         panel.style.display = "block";
         pintarCabeceraUsuario("▲");
@@ -218,6 +219,7 @@ function cerrarPanelUsuario() {
     const panel = document.getElementById("panelUsuario");
     if (panel) panel.style.display = "none";
     pintarCabeceraUsuario("▼");
+    ajustarAlturaCalendario();
 }
 
 function ejecutarBusquedaDesdeMenu() {
@@ -368,6 +370,13 @@ function pintarLeyenda() {
 // Se reparte la altura libre entre las filas de semanas; si las celdas quedarían demasiado
 // pequeñas, se va compactando lo de arriba: 1) se oculta la tira de próximos días,
 // 2) el bloque "Hoy" se reduce a una franja, 3) se oculta el bloque "Hoy".
+// Altura que ocupa el menú de usuario si está desplegado (0 si está cerrado)
+function alturaMenuAbierto() {
+    const panel = document.getElementById("panelUsuario");
+    if (!panel || window.getComputedStyle(panel).display === "none") return 0;
+    return panel.getBoundingClientRect().height + (parseFloat(window.getComputedStyle(panel).marginBottom) || 0);
+}
+
 const NIVELES_COMPACTOS = [
     [],
     ["pantalla-baja"],
@@ -402,7 +411,8 @@ function ajustarAlturaCalendario() {
     const altoPorFila = () => {
         const cabecera = grid.querySelector(".dia-cabecera");
         const altoCabecera = cabecera ? cabecera.getBoundingClientRect().height : 24;
-        const arriba = grid.getBoundingClientRect().top + window.scrollY;
+        // Si el menú está desplegado ocupa sitio arriba: se calcula como si estuviera cerrado
+        const arriba = grid.getBoundingClientRect().top + window.scrollY - alturaMenuAbierto();
         const libre = window.innerHeight - arriba - (rellenoAbajo + 30) - altoCabecera - hueco * semanas;
         return libre / semanas;
     };
@@ -423,7 +433,8 @@ function ajustarAlturaCalendario() {
     contenedor.style.setProperty("--alto-celda", alto + "px");
 
     // Comprobación final con la página real: si aún se desborda, se afina fila a fila
-    for (let i = 0; i < 4; i++) {
+    // (solo con el menú cerrado: abierto, la página es más alta a propósito)
+    for (let i = 0; i < 4 && !alturaMenuAbierto(); i++) {
         const exceso = document.documentElement.scrollHeight - window.innerHeight;
         if (exceso <= 0 || alto <= ALTO_CELDA_MINIMO) break;
         alto = Math.max(ALTO_CELDA_MINIMO, alto - Math.ceil(exceso / semanas));
