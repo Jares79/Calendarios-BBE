@@ -1456,3 +1456,48 @@ body.modo-cambio .dia-calendario.hoy { outline-offset: -4px; }
 .acciones-cambio { display: flex; gap: 8px; flex-wrap: wrap; max-width: 560px; }
 .acciones-cambio button { flex: 1; }
 .detalle-linea .estado-cambio { align-self: flex-start; width: fit-content; }
+
+/* =====================================================================
+   Fase 6 · horas, resumen y coincidencias
+   ===================================================================== */
+.fila-horas {
+    display: flex; align-items: center; gap: 10px; padding: 6px 10px; margin-bottom: 6px;
+    background: var(--superficie-2); border: 1px solid var(--linea); border-radius: 10px;
+}
+.fila-horas-letra {
+    width: 34px; height: 34px; display: grid; place-items: center; flex: none;
+    border-radius: 8px; background: var(--bg); color: var(--fg); font-family: var(--fuente-titulo); font-weight: 700;
+}
+.fila-horas-nombre { flex: 1; min-width: 0; }
+.fila-horas-nombre small { color: var(--tinta-suave); }
+.fila-horas input { text-align: right; }
+.input-medio { width: 130px; }
+.fila-horas-unidad { width: 3em; color: var(--tinta-suave); font-size: 0.85rem; }
+.fila-guardar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 8px; }
+.admin-aviso-corto { margin: 0; font-size: 0.9rem; }
+
+.tarjetas-resumen { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin: 10px 0; }
+.dato-resumen {
+    display: flex; flex-direction: column; gap: 2px; padding: 10px 12px;
+    background: var(--superficie-2); border: 1px solid var(--linea); border-radius: 12px;
+}
+.dato-etiqueta { font-size: 0.75rem; color: var(--tinta-suave); }
+.dato-valor { font-size: 1.05rem; line-height: 1.25; }
+.dato-resumen.dato-destacado { border-color: var(--acento); }
+.dato-resumen.dato-aviso, td.dato-aviso { color: var(--peligro); }
+td.dato-destacado { font-weight: 700; }
+
+.tabla-scroll { overflow-x: auto; max-width: 100%; border: 1px solid var(--linea); border-radius: 12px; }
+.tabla-resumen { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
+.tabla-resumen th, .tabla-resumen td { padding: 6px 10px; text-align: left; white-space: nowrap; border-bottom: 1px solid var(--linea); }
+.tabla-resumen th { position: sticky; top: 0; background: var(--superficie-2); font-size: 0.75rem; color: var(--tinta-suave); }
+.tabla-resumen th[class] { background: var(--bg); color: var(--fg); text-align: center; }
+.tabla-resumen td.num, .tabla-resumen th:not(:first-child) { text-align: right; font-variant-numeric: tabular-nums; }
+.tabla-resumen th[class] { text-align: center; }
+.tabla-resumen tfoot td { font-weight: 700; border-top: 2px solid var(--linea); border-bottom: 0; }
+.tabla-resumen td:first-child { position: sticky; left: 0; background: var(--superficie); }
+.tabla-resumen tr.fila-clicable { cursor: pointer; }
+.tabla-resumen tr.fila-clicable:hover td { background: var(--superficie-2); }
+
+.modal-acciones-columna { flex-direction: column; align-items: stretch; }
+.modal-acciones-columna button { width: 100%; }
