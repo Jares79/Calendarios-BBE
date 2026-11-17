@@ -52,6 +52,17 @@ M, T, N, F, P, I y S pueden salir del ciclo. V, E, J y LD solo se ponen a mano.
 - **Acceso familiar**: botón "👪 Crear familiar". Crea las iniciales con `_F` al final (por ejemplo `JAM_F`) y un PIN propio. "🗑️ Quitar familiar" elimina solo ese acceso.
 - **Cambiar un ciclo o los días de solape**: al final de la misma pantalla.
 
+## Fase 4: Mi año y colectivos con semanas
+
+- **Mi año** (menú): los 12 meses a la vez, un cuadradito por día con el color de su turno, selector de año con flechas y recuento de días por turno. Tocar un cuadradito abre el detalle del día.
+- **Colectivos nuevos** (se crean con `supabase/fase4-correturnos.sql`): *Correturnos* y *Personal de jornada partida*, ciclo de 7 días `P P P P I F F` de lunes a domingo. El día de inicio de cada empleado tiene que ser un **lunes** (la app lo comprueba al dar de alta o editar). Se añaden con "Empleados y accesos" como el resto.
+- **Semanas especiales**: el personal de jornada partida tiene semanas de guardia (**G**) y los correturnos semanas **CTD, CT1, CT2, CT3, CT4 y CTY**. En sus calendarios cada celda va partida: arriba la marca de la semana, abajo el turno del día. La marca no cambia el turno.
+  - Cada persona las asigna en el menú → **Semanas** (lista de semanas del año, varias semanas seguidas) o tocando un día en "Editar calendario".
+  - El administrador puede asignarlas a cualquiera y crear un **patrón que se repite** (por ejemplo `CT1 CT2 CT3 CT4 CTD CTY`, con `-` para una semana sin marca).
+  - Los colores de G y de los CT se editan en "Editar colores" (solo aparecen si hay colectivos con semanas).
+- Qué marcas admite cada colectivo está en la columna `colectivos.marcas` (se puede cambiar por SQL).
+- Tablas nuevas: `semanas_especiales` (empleado, lunes de la semana, código). Archivos nuevos: `js/semanas.js` y `js/anio.js`.
+
 ## Instalar en el móvil
 
 La web es una app instalable (PWA):

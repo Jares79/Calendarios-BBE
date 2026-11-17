@@ -267,6 +267,13 @@ function mostrarFormularioEmpleado(emp) {
             return;
         }
 
+        // Los colectivos de ciclo semanal (7 días) empiezan siempre en lunes
+        const colectivoElegido = buscarColectivo(selectColectivo.value);
+        if (colectivoElegido && colectivoElegido.patron.length === 7 && !esLunes(inputInicio.value)) {
+            error.textContent = "El ciclo de este colectivo es semanal: el día de inicio tiene que ser un lunes.";
+            return;
+        }
+
         const botonGuardar = formulario.querySelector("button[type=submit]");
         botonGuardar.disabled = true;
 

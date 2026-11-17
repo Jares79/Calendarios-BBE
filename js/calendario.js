@@ -5,7 +5,10 @@ function pintar(nombre, info) {
     return `
         <div class="tarjeta-resultado">
             <span class="nombre-empleado">${esc(nombre)}</span>
-            <span class="badge-turno ${info.clase}">${esc(info.texto)}</span>
+            <span class="badges">
+                ${info.marca ? `<span class="badge-turno ${info.marca.clase}">${esc(info.marca.codigo)}</span>` : ""}
+                <span class="badge-turno ${info.clase}">${esc(info.texto)}</span>
+            </span>
         </div>
     `;
 }
@@ -87,6 +90,12 @@ function ocultarDetalleDia() {
 function seleccionarDia(fechaISO, empleadoId) {
     ocultarDetalleDia();
 
+    // En la selección de varios días para pedir un cambio, tocar un día lo marca o desmarca
+    if (typeof modoCambio !== "undefined" && modoCambio) {
+        alternarDiaCambio(fechaISO, empleadoId);
+        return;
+    }
+
     // En modo edición, tocar un día de tu calendario abre el selector de turnos
     if (modoEdicion) {
         const mio = obtenerEmpleadoActual();
@@ -132,15 +141,53 @@ function seleccionarDia(fechaISO, empleadoId) {
             el("span", { class: "detalle-etiqueta", text: "Origen" }),
             textoOrigen(info)
         ),
+        info.marca
+            ? el("p", { class: "detalle-linea" },
+                el("span", { class: "detalle-etiqueta", text: "Marca" }),
+                el("span", { class: "badge-turno " + info.marca.clase, text: info.marca.texto }),
+                (info.marca.dia ? " · solo este día" : ` · del ${formatearFecha(lunesDe(fechaISO))} al ${formatearFecha(domingoDe(fechaISO))}`)
+              )
+            : null,
         compis.length
             ? el("div", { class: "detalle-linea" },
                 el("span", { class: "detalle-etiqueta", text: "Mismo turno" }),
                 el("div", { class: "chips" }, compis.map(n => el("span", { class: "chip", text: n })))
               )
+            : null,
+        puedeSolicitarCambioEnFicha(empleado, fechaISO, info)
+            ? el("button", {
+                type: "button", class: "btn-ancho btn-editar-ficha",
+                text: "Solicitar cambio",
+                onclick: () => { ocultarDetalleDia(); setTimeout(() => abrirSolicitudCambio([fechaISO]), 0); }
+            })
+            : null,
+        puedeSolicitarCambioEnFicha(empleado, fechaISO, info)
+            ? el("button", {
+                type: "button", class: "btn-secundario btn-ancho btn-editar-ficha",
+                text: "Cambio de varios días",
+                onclick: () => { ocultarDetalleDia(); setTimeout(() => iniciarModoCambio(fechaISO), 0); }
+            })
+            : null,
+        puedeEditarDesdeFicha(empleado)
+            ? el("button", {
+                type: "button", class: "btn-secundario btn-ancho btn-editar-ficha",
+                text: "Editar este día",
+                // setTimeout: así el mismo clic no cierra al instante el selector recién abierto
+                onclick: () => { activarModoEdicion(); setTimeout(() => abrirSelectorTurno(fechaISO), 0); }
+            })
             : null
     );
 
     document.body.append(panel);
+}
+
+// El botón "Editar este día" de la ficha: solo en tu propio calendario (no familiares)
+// y solo si se está viendo el calendario mensual, no una vista de resultados
+function puedeEditarDesdeFicha(empleado) {
+    const mio = obtenerEmpleadoActual();
+    const resultado = document.getElementById("resultado");
+    return !!mio && mio.id === empleado.id && !esPerfilFamiliar()
+        && !(resultado && resultado.style.display === "block");
 }
 
 function textoOrigen(info) {
@@ -220,9 +267,13 @@ async function verCalendario(anioParam, colectivoParam) {
 
         columnas.forEach(emp => {
             const info = infoTurno(iso, emp);
+            const titulo = `${emp.nombre} · ${formatearFecha(iso)} (${nombreDia}): ${info.texto}${info.marca ? " · " + info.marca.texto : ""}`;
+            const interior = info.partida
+                ? `<span class="tm-arriba ${info.marca ? info.marca.clase : "sin-marca"}">${info.marca ? esc(info.marca.codigo) : ""}</span><span class="tm-abajo">${esc(inicial(info))}</span>`
+                : esc(inicial(info));
             html += `
                 <td class="celda-turno">
-                    <button type="button" class="td-celda-turno ${info.clase}${claseLargo(info)}${info.manual ? " editado" : ""}" data-fecha="${iso}" data-emp="${esc(emp.id)}" title="${esc(emp.nombre)} · ${formatearFecha(iso)} (${nombreDia}): ${esc(info.texto)}">${esc(inicial(info))}</button>
+                    <button type="button" class="td-celda-turno ${info.clase}${claseLargo(info)}${info.manual ? " editado" : ""}${info.partida ? " con-marca" : ""}" data-fecha="${iso}" data-emp="${esc(emp.id)}" title="${esc(titulo)}">${interior}</button>
                 </td>
             `;
         });

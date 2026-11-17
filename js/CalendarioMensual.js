@@ -29,6 +29,7 @@ function pintarCabeceraUsuario(flecha) {
         el("span", { class: "nombre-usuario", text: usuarioActual.nombre })
     ];
     if (esPerfilFamiliar()) partes.push(el("span", { class: "etiqueta-familiar", text: "Familiar" }));
+    if (typeof cambiosSinVer === "number" && cambiosSinVer > 0) partes.push(el("span", { class: "globo", text: String(cambiosSinVer) }));
     if (flecha) partes.push(el("span", { class: "flecha", text: flecha }));
     cabecera.replaceChildren(...partes);
 }
@@ -86,11 +87,15 @@ function verMiCalendario() {
         const info = infoTurno(iso, empleado);
 
         const esHoy = iso === hoyISO ? " hoy" : "";
-        const marcas = claseLargo(info) + (info.manual ? " editado" : "");
+        const marcas = claseLargo(info) + (info.manual ? " editado" : "") + (info.partida ? " con-marca" : "") + (seleccionCambio.has(iso) ? " seleccionado" : "");
+        const textoMarca = info.marca ? ` · ${info.marca.texto}` : "";
+        // Colectivos con semanas: celda partida (arriba la marca de la semana, abajo el turno)
+        const interior = info.partida
+            ? htmlMitades(info, `<span class="numero-dia">${dia}</span>`)
+            : `<span class="numero-dia">${dia}</span><span class="turno-dia">${esc(inicial(info))}</span>`;
         html += `
-            <button type="button" class="dia-calendario ${info.clase}${esHoy}${marcas}" data-fecha="${iso}" data-emp="${esc(empleado.id)}" aria-label="${esc(fechaLarga(iso))}: ${esc(info.texto)}">
-                <span class="numero-dia">${dia}</span>
-                <span class="turno-dia">${esc(inicial(info))}</span>
+            <button type="button" class="dia-calendario ${info.clase}${esHoy}${marcas}" data-fecha="${iso}" data-emp="${esc(empleado.id)}" aria-label="${esc(fechaLarga(iso))}: ${esc(info.texto)}${esc(textoMarca)}">
+                ${interior}
             </button>
         `;
     }
@@ -253,7 +258,7 @@ document.addEventListener("click", function (event) {
     if (panelDetalle) {
         // composedPath() incluye el panel aunque el botón pulsado se haya repintado en el clic
         const dentroDelPanel = panelDetalle.contains(event.target) || event.composedPath().includes(panelDetalle);
-        const esBotonDeTurno = event.target.closest(".dia-calendario") || event.target.closest(".td-celda-turno");
+        const esBotonDeTurno = event.target.closest(".dia-calendario") || event.target.closest(".td-celda-turno") || event.target.closest(".cuadro-dia");
         // Los botones de la barra de edición abren sus propias hojas: no cuentan como "fuera"
         const esBarraEdicion = event.target.closest(".barra-edicion");
         if (!dentroDelPanel && !esBotonDeTurno && !esBarraEdicion) ocultarDetalleDia();
@@ -325,10 +330,13 @@ function pintarResumenHoy() {
         const dia = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() + i);
         const isoDia = aISO(dia);
         const infoDia = infoTurno(isoDia, empleado);
-        proximos.push(el("li", { class: "chip-dia " + infoDia.clase + claseLargo(infoDia), title: `${fechaLarga(isoDia)}: ${infoDia.texto}` },
+        proximos.push(el("li", { class: "chip-dia " + infoDia.clase + claseLargo(infoDia), title: `${fechaLarga(isoDia)}: ${infoDia.texto}${infoDia.marca ? " · " + infoDia.marca.texto : ""}` },
             el("span", { class: "chip-sem", text: DIAS_SEMANA_CORTOS[dia.getDay()] }),
             el("span", { class: "chip-num", text: dia.getDate() }),
-            el("span", { class: "chip-letra", text: infoDia.codigo })
+            el("span", { class: "chip-letra", text: infoDia.codigo }),
+            infoDia.partida
+                ? el("span", { class: "chip-marca " + (infoDia.marca ? infoDia.marca.clase : "sin-marca"), text: infoDia.marca ? infoDia.marca.codigo : "·" })
+                : null
         ));
     }
 
@@ -337,7 +345,8 @@ function pintarResumenHoy() {
             el("div", { class: "hoy-textos" },
                 el("span", { class: "hoy-etiqueta", text: "Hoy" }),
                 el("span", { class: "hoy-nombre", text: info.texto }),
-                el("span", { class: "hoy-fecha", text: fechaLarga(iso) })
+                el("span", { class: "hoy-fecha", text: fechaLarga(iso) }),
+                info.marca ? el("span", { class: "hoy-marca " + info.marca.clase, text: info.marca.texto }) : null
             ),
             el("span", { class: "hoy-letra" + claseLargo(info), text: info.codigo })
         ),
@@ -352,15 +361,20 @@ function pintarResumenHoy() {
 function pintarLeyenda() {
     const contenedor = document.getElementById("leyenda");
     if (!contenedor) return;
-    contenedor.replaceChildren(
+
+    const item = ([codigo, t]) =>
+        el("li", { class: t.clase },
+            el("span", { class: "leyenda-letra" + (codigo.length > 1 ? " largo" : ""), text: codigo }),
+            el("span", { text: t.texto })
+        );
+
+    // Las marcas semanales solo se explican si hay algún colectivo que las use
+    const hayMarcas = colectivos.some(c => c.marcas.length > 0);
+    reemplazarHijos(contenedor,
         el("h2", { text: "Turnos" }),
-        el("ul", { class: "leyenda-lista" },
-            Object.entries(TURNOS).map(([codigo, t]) =>
-                el("li", { class: t.clase },
-                    el("span", { class: "leyenda-letra" + (codigo.length > 1 ? " largo" : ""), text: codigo }),
-                    el("span", { text: t.texto })
-                ))
-        )
+        el("ul", { class: "leyenda-lista" }, Object.entries(TURNOS).map(item)),
+        hayMarcas ? el("h2", { class: "leyenda-sub", text: "Semanas (mitad de arriba de la celda)" }) : null,
+        hayMarcas ? el("ul", { class: "leyenda-lista" }, Object.entries(MARCAS).map(item)) : null
     );
 }
 

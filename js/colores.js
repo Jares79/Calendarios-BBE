@@ -3,7 +3,11 @@
 // así que le siguen aunque cambie de móvil u ordenador. Cada persona solo ve los suyos.
 
 // Código de turno -> prefijo de las variables CSS (--m-bg, --m-fg...)
-const PREFIJO_COLOR = { M: "m", T: "t", N: "n", F: "f", P: "p", I: "i", S: "s", V: "v", E: "e", J: "j", LD: "ld" };
+// (las marcas semanales G, CTD, CT1... también se pueden recolorear)
+const PREFIJO_COLOR = {
+    M: "m", T: "t", N: "n", F: "f", P: "p", I: "i", S: "s", V: "v", E: "e", J: "j", LD: "ld",
+    G: "g", CTD: "ctd", CT1: "ct1", CT2: "ct2", CT3: "ct3", CT4: "ct4", CTY: "cty"
+};
 
 // Paleta amplia: 12 tonos en 4 intensidades + una fila de grises
 const PALETA = (() => {
@@ -112,10 +116,13 @@ function verEditorColores() {
 function pintarEditorColores() {
     const contenedor = document.getElementById("resultado");
     const personalizados = usuarioActual.colores || {};
-    const elegido = TURNOS[turnoColorElegido] ? turnoColorElegido : "M";
+    // Las marcas semanales solo se ofrecen si algún colectivo las usa
+    const hayMarcas = colectivos.some(c => c.marcas.length > 0);
+    const disponibles = hayMarcas ? TIPOS_COLOR : TURNOS;
+    const elegido = disponibles[turnoColorElegido] ? turnoColorElegido : "M";
 
     const turnos = el("div", { class: "selector-turnos", role: "group", "aria-label": "Turno a cambiar" },
-        Object.entries(TURNOS).map(([codigo, t]) =>
+        Object.entries(disponibles).map(([codigo, t]) =>
             el("button", {
                 type: "button",
                 class: "ficha-turno " + t.clase + (codigo.length > 1 ? " largo" : "") + (codigo === elegido ? " elegido" : ""),
@@ -154,7 +161,7 @@ function pintarEditorColores() {
         ),
         el("p", { class: "admin-nota nota-colores", text: "Elige un turno y luego su color. Solo lo verás tú, y se guarda en tu cuenta." }),
         turnos,
-        el("h3", { class: "grupo-titulo", text: `Color de ${TURNOS[elegido].texto}` }),
+        el("h3", { class: "grupo-titulo", text: `Color de ${disponibles[elegido].texto}` }),
         muestras,
         el("div", { class: "color-libre-fila" },
             el("label", { class: "campo-inline" }, el("span", { text: "Otro color" }), selectorLibre),

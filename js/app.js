@@ -191,6 +191,8 @@ async function iniciarApp() {
     pintarLeyenda();
     aplicarModoFamiliar();   // oculta el menú y marca la cabecera
     prepararPanelAdmin();    // solo administradores
+    prepararPanelSemanas();  // solo quien tiene semanas especiales (y el administrador)
+    iniciarCambios();        // solicitudes de cambio entre compañeros (globo de avisos)
 
     verMiCalendario();
 }
