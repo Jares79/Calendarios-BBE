@@ -1286,3 +1286,8 @@ body.pantalla-muy-baja .hoy-marca { display: none; }
 
 .mes-clicable { cursor: pointer; }
 #btnVolverAnio { margin-bottom: 10px; }
+
+.ambito-marca { display: flex; gap: 8px; margin: 6px 0 10px; }
+.ambito-marca .btn-secundario { flex: 1; }
+.ambito-marca .btn-secundario.elegido { background: var(--acento); color: #fff; border-color: var(--acento); }
+.seccion-semana .btn-ancho { margin-top: 8px; }
