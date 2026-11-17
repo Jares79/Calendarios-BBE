@@ -18,6 +18,8 @@ const excepciones = new Map();
 // semanas: Map "empleadoId|AAAA-MM-DD del lunes" -> código de marca (G, CTD, CT1...), solo en
 // los colectivos con semanas especiales
 const semanas = new Map();
+// marcasDia: Map "empleadoId|AAAA-MM-DD" -> código de marca de ese día suelto ("-" = día sin marca)
+const marcasDia = new Map();
 const aniosCargados = new Set();
 const cargasEnCurso = new Map();
 
@@ -106,6 +108,24 @@ async function asegurarAnio(anio) {
                 break;
             }
             data.forEach(r => semanas.set(claveExcepcion(r.empleado_id, r.semana), r.codigo));
+            if (data.length < trozo) break;
+        }
+
+        // Marcas de días sueltos (mismo criterio: si la tabla no existe, se ignora)
+        for (let inicio = 0; ; inicio += trozo) {
+            const { data, error } = await supabaseClient
+                .from("marcas_dia")
+                .select("empleado_id, fecha, codigo")
+                .gte("fecha", desde)
+                .lte("fecha", hasta)
+                .order("fecha")
+                .order("empleado_id")
+                .range(inicio, inicio + trozo - 1);
+            if (error) {
+                console.warn("No se pudieron cargar las marcas de días sueltos:", error);
+                break;
+            }
+            data.forEach(r => marcasDia.set(claveExcepcion(r.empleado_id, r.fecha), r.codigo));
             if (data.length < trozo) break;
         }
 

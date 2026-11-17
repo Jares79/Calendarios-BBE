@@ -34,7 +34,7 @@ async function pintarMiAnio(anio) {
 
     const hoyISO = aISO(new Date());
     const conteo = new Map();      // código de turno -> días
-    const semanasMarca = new Map(); // código de marca -> semanas (por el lunes)
+    const semanasMarca = new Map(); // código de marca -> días
 
     const meses = [];
     for (let mes = 0; mes < 12; mes++) {
@@ -49,6 +49,7 @@ async function pintarMiAnio(anio) {
             const iso = aISO(new Date(anio, mes, dia));
             const info = infoTurno(iso, empleado);
             conteo.set(info.codigo, (conteo.get(info.codigo) || 0) + 1);
+            if (info.marca) semanasMarca.set(info.marca.codigo, (semanasMarca.get(info.marca.codigo) || 0) + 1);
 
             const titulo = `${fechaLarga(iso)}: ${info.texto}${info.marca ? " · " + info.marca.texto : ""}`;
             celdas.push(el("button", {
@@ -62,15 +63,6 @@ async function pintarMiAnio(anio) {
             el("h4", { text: NOMBRES_MESES[mes] }),
             el("div", { class: "mes-mini-grid" }, celdas)
         ));
-    }
-
-    // Semanas con marca: se cuenta cada semana una vez, según el año de su lunes
-    if (colectivo && colectivo.marcas.length) {
-        for (const lunes of lunesDelAnio(anio)) {
-            if (!lunes.startsWith(anio + "-")) continue;
-            const codigo = semanas.get(claveExcepcion(empleado.id, lunes));
-            if (codigo) semanasMarca.set(codigo, (semanasMarca.get(codigo) || 0) + 1);
-        }
     }
 
     const totales = Object.entries(TURNOS)
@@ -110,7 +102,7 @@ async function pintarMiAnio(anio) {
         el("div", { class: "anio-meses" }, meses),
         el("h3", { class: "grupo-titulo", text: "Días por turno" }),
         el("ul", { class: "anio-totales" }, totales),
-        totalesMarcas.length ? el("h3", { class: "grupo-titulo", text: "Semanas con marca" }) : null,
+        totalesMarcas.length ? el("h3", { class: "grupo-titulo", text: "Días con marca" }) : null,
         totalesMarcas.length ? el("ul", { class: "anio-totales" }, totalesMarcas) : null
     );
 }

@@ -137,9 +137,9 @@ function seleccionarDia(fechaISO, empleadoId) {
         ),
         info.marca
             ? el("p", { class: "detalle-linea" },
-                el("span", { class: "detalle-etiqueta", text: "Semana" }),
+                el("span", { class: "detalle-etiqueta", text: "Marca" }),
                 el("span", { class: "badge-turno " + info.marca.clase, text: info.marca.texto }),
-                ` · del ${formatearFecha(lunesDe(fechaISO))} al ${formatearFecha(domingoDe(fechaISO))}`
+                (info.marca.dia ? " · solo este día" : ` · del ${formatearFecha(lunesDe(fechaISO))} al ${formatearFecha(domingoDe(fechaISO))}`)
               )
             : null,
         compis.length

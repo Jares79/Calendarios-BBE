@@ -76,8 +76,22 @@ async function guardarSemanas(empleado, cambios) {
         else borrar.push(semana);
     });
 
-    if (!subir.length && !borrar.length) {
+    // Poner o quitar una semana entera deja también sin efecto los días sueltos de esa semana
+    const limpiar = [];
+    cambios.forEach(({ semana }) => {
+        for (let i = 0; i < 7; i++) {
+            const f = sumarDias(semana, i);
+            if (marcasDia.has(claveExcepcion(empleado.id, f))) limpiar.push({ fecha: f, codigo: null });
+        }
+    });
+
+    if (!subir.length && !borrar.length && !limpiar.length) {
         mostrarToast("Ya estaba así");
+        return true;
+    }
+    if (limpiar.length && !(await guardarMarcasDia(empleado, limpiar, true))) return false;
+    if (!subir.length && !borrar.length) {
+        mostrarToast("Guardado");
         return true;
     }
 
@@ -113,6 +127,63 @@ async function guardarSemanas(empleado, cambios) {
     return true;
 }
 
+// Marcas de días sueltos. cambios: [{ fecha, codigo }] con codigo = "G" | "CT1"... (marca ese día),
+// "-" (ese día sin marca aunque su semana la tenga) o null (borra el día suelto).
+async function guardarMarcasDia(empleado, cambios, silencioso) {
+    const colectivo = empleado ? colectivoConSemanas(empleado) : null;
+    if (!colectivo) {
+        mostrarToast("Esa persona no tiene semanas especiales.", true);
+        return false;
+    }
+    if (cambios.some(c => c.codigo && c.codigo !== "-" && !colectivo.marcas.includes(c.codigo))) {
+        mostrarToast("Ese código no está permitido para este colectivo.", true);
+        return false;
+    }
+    await Promise.all([...new Set(cambios.map(c => Number(c.fecha.slice(0, 4))))].map(asegurarAnio));
+
+    const subir = [], borrar = [], anterior = new Map();
+    cambios.forEach(({ fecha, codigo }) => {
+        const clave = claveExcepcion(empleado.id, fecha);
+        const actual = marcasDia.get(clave);
+        if ((codigo || undefined) === actual) return;
+        anterior.set(clave, actual);
+        if (codigo) subir.push({ empleado_id: empleado.id, fecha, codigo });
+        else borrar.push(fecha);
+    });
+    if (!subir.length && !borrar.length) {
+        if (!silencioso) mostrarToast("Ya estaba así");
+        return true;
+    }
+
+    subir.forEach(r => marcasDia.set(claveExcepcion(r.empleado_id, r.fecha), r.codigo));
+    borrar.forEach(f => marcasDia.delete(claveExcepcion(empleado.id, f)));
+    refrescarCalendarioPropio();
+
+    let fallo = null;
+    for (let i = 0; i < subir.length && !fallo; i += 200) {
+        const r = await supabaseClient.from("marcas_dia")
+            .upsert(subir.slice(i, i + 200), { onConflict: "empleado_id,fecha" });
+        fallo = r.error;
+    }
+    for (let i = 0; i < borrar.length && !fallo; i += 100) {
+        const r = await supabaseClient.from("marcas_dia")
+            .delete().eq("empleado_id", empleado.id).in("fecha", borrar.slice(i, i + 100));
+        fallo = r.error;
+    }
+    if (fallo) {
+        console.error("Error al guardar marcas de días:", fallo);
+        anterior.forEach((valor, clave) => {
+            if (valor === undefined) marcasDia.delete(clave);
+            else marcasDia.set(clave, valor);
+        });
+        refrescarCalendarioPropio();
+        mostrarToast("No se pudo guardar. Inténtalo de nuevo.", true);
+        return false;
+    }
+    if (!silencioso) mostrarToast("Guardado");
+    return true;
+}
+
 // Repinta el mes si se está viendo (la vista de resultados no se toca)
 function refrescarCalendarioPropio() {
     const tarjeta = document.getElementById("cardCalendario");
@@ -137,23 +208,49 @@ function crearRejillaMarcas(codigos, alElegir, seleccionado) {
     );
 }
 
-// Bloque "Semana" de la hoja de edición de un día: elegir o quitar la marca de esa semana
+// Bloque "Marca" de la hoja de edición de un día: poner o quitar la marca de ese día o de toda su semana
 function crearSeccionSemana(fechaISO, empleado) {
     const colectivo = colectivoConSemanas(empleado);
     if (!colectivo) return null;
     const lunes = lunesDe(fechaISO);
-    const actual = semanas.get(claveExcepcion(empleado.id, lunes)) || null;
+    const marcaHoy = infoTurno(fechaISO, empleado).marca;
+    const semanaTiene = !!semanas.get(claveExcepcion(empleado.id, lunes));
+    const hayDiasSueltos = Array.from({ length: 7 }, (_, i) => sumarDias(lunes, i))
+        .some(f => marcasDia.has(claveExcepcion(empleado.id, f)));
+
+    let ambito = "dia";   // "dia" = solo este día, "semana" = toda la semana
+    const botonDia = el("button", { type: "button", class: "btn-secundario elegido", text: "Solo este día" });
+    const botonSemana = el("button", { type: "button", class: "btn-secundario", text: "Toda la semana" });
+    const elegirAmbito = (nuevo) => {
+        ambito = nuevo;
+        botonDia.classList.toggle("elegido", nuevo === "dia");
+        botonSemana.classList.toggle("elegido", nuevo === "semana");
+    };
+    botonDia.onclick = () => elegirAmbito("dia");
+    botonSemana.onclick = () => elegirAmbito("semana");
 
     return el("div", { class: "seccion-semana" },
-        el("p", { class: "detalle-etiqueta", text: `Semana del ${formatoCorto(lunes)} al ${formatoCorto(domingoDe(fechaISO))} (mitad de arriba)` }),
+        el("p", { class: "detalle-etiqueta", text: `Marca de arriba (semana del ${formatoCorto(lunes)} al ${formatoCorto(domingoDe(fechaISO))})` }),
+        el("div", { class: "ambito-marca" }, botonDia, botonSemana),
         crearRejillaMarcas(colectivo.marcas, (codigo) => {
             ocultarDetalleDia();
-            guardarSemanas(empleado, [{ semana: lunes, codigo }]);
-        }, actual),
+            if (ambito === "dia") guardarMarcasDia(empleado, [{ fecha: fechaISO, codigo }]);
+            else guardarSemanas(empleado, [{ semana: lunes, codigo }]);
+        }, marcaHoy ? marcaHoy.codigo : null),
         el("button", {
             type: "button", class: "btn-secundario btn-ancho",
-            text: "Quitar la marca de esta semana",
-            disabled: actual ? null : true,
+            text: "Quitar la marca solo de este día",
+            disabled: marcaHoy ? null : true,
+            onclick: () => {
+                ocultarDetalleDia();
+                // Si la semana tiene marca, este día se queda "sin marca"; si no, se borra el día suelto
+                guardarMarcasDia(empleado, [{ fecha: fechaISO, codigo: semanaTiene ? "-" : null }]);
+            }
+        }),
+        el("button", {
+            type: "button", class: "btn-secundario btn-ancho",
+            text: "Quitar la marca de toda la semana",
+            disabled: semanaTiene || hayDiasSueltos ? null : true,
             onclick: () => {
                 ocultarDetalleDia();
                 guardarSemanas(empleado, [{ semana: lunes, codigo: null }]);

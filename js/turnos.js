@@ -143,6 +143,9 @@ function convertirTurno(codigo) {
 // con semanas especiales; la semana va de lunes a domingo.
 function marcaDeSemana(fechaISO, empleado, colectivo) {
     if (!colectivo.marcas.length) return null;
+    // Un día suelto manda sobre su semana ("-" = ese día sin marca)
+    const suelta = marcasDia.get(claveExcepcion(empleado.id, fechaISO));
+    if (suelta) return suelta === "-" ? null : { ...convertirMarca(suelta), dia: true };
     const codigo = semanas.get(claveExcepcion(empleado.id, lunesDe(fechaISO)));
     return codigo ? convertirMarca(codigo) : null;
 }
