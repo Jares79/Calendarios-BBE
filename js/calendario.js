@@ -147,10 +147,27 @@ function seleccionarDia(fechaISO, empleadoId) {
                 el("span", { class: "detalle-etiqueta", text: "Mismo turno" }),
                 el("div", { class: "chips" }, compis.map(n => el("span", { class: "chip", text: n })))
               )
+            : null,
+        puedeEditarDesdeFicha(empleado)
+            ? el("button", {
+                type: "button", class: "btn-secundario btn-ancho btn-editar-ficha",
+                text: "Editar este día",
+                // setTimeout: así el mismo clic no cierra al instante el selector recién abierto
+                onclick: () => { activarModoEdicion(); setTimeout(() => abrirSelectorTurno(fechaISO), 0); }
+            })
             : null
     );
 
     document.body.append(panel);
+}
+
+// El botón "Editar este día" de la ficha: solo en tu propio calendario (no familiares)
+// y solo si se está viendo el calendario mensual, no una vista de resultados
+function puedeEditarDesdeFicha(empleado) {
+    const mio = obtenerEmpleadoActual();
+    const resultado = document.getElementById("resultado");
+    return !!mio && mio.id === empleado.id && !esPerfilFamiliar()
+        && !(resultado && resultado.style.display === "block");
 }
 
 function textoOrigen(info) {
