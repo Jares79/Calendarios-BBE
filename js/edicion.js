@@ -199,6 +199,12 @@ async function guardarCambiosCalendario(cambios) {
     const anios = [...new Set(cambios.map(c => Number(c.fecha.slice(0, 4))))];
     await Promise.all(anios.map(asegurarAnio));
 
+    // Avisos antes de tocar el turno: si viene de un cambio con otra persona, o si ese turno ya está cubierto
+    if (typeof revisarAntesDeGuardar === "function") {
+        const decision = await revisarAntesDeGuardar(empleado, colectivo, cambios);
+        if (decision !== "guardar") return false;
+    }
+
     const subir = [];
     const borrar = [];
     const anterior = new Map();

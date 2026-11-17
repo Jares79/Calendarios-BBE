@@ -1,6 +1,7 @@
 // js/cambios.js
 // Solicitudes de cambio de turno entre compañeros del mismo colectivo (jefes de turno,
-// operadores de control y operadores de campo).
+// operadores de control y operadores de campo). Los correturnos pueden pedirlos a los tres, y los de
+// los tres pueden pedírselos a un correturno que esté sustituyendo (turno M, T o N ese día).
 //
 // Es una permuta: el solicitante se queda con el turno del compañero ese día y el compañero con
 // el suyo. Se puede pedir un día suelto (desde la ficha del día) o varios (seleccionándolos en
@@ -22,11 +23,37 @@ let primeraCargaCambios = true;
 const cambiosAplicados = new Set();     // solicitudes aceptadas cuyo efecto ya está en pantalla
 
 // --- Quién puede usarlo ---
+// Los tres colectivos de turnos piden cambios dentro de su colectivo; los correturnos, que a veces
+// sustituyen, pueden pedirlos a cualquiera de los tres colectivos de turnos.
+function esColectivoDeTurnos(colectivo) {
+    return !!colectivo && colectivo.marcas.length === 0;
+}
+
 function puedeUsarCambios() {
     if (!usuarioActual || esPerfilFamiliar()) return false;
     const yo = obtenerEmpleadoActual();
     const colectivo = yo ? buscarColectivo(yo.colectivo) : null;
-    return !!colectivo && colectivo.marcas.length === 0;   // no en correturnos ni jornada partida
+    return esColectivoDeTurnos(colectivo) || (!!colectivo && colectivo.codigo === "correturnos");
+}
+
+// Compañeros a los que puedo pedir un cambio: los de mi colectivo de turnos y, además, los correturnos
+// (solo los días en que un correturno tiene puesto un turno M, T o N: ese día está sustituyendo).
+// Un correturno puede pedirlo a cualquiera de los tres colectivos de turnos.
+function candidatosCambio(yo) {
+    const miColectivo = buscarColectivo(yo.colectivo);
+    const colectivosValidos = esColectivoDeTurnos(miColectivo)
+        ? [miColectivo, ...colectivos.filter(c => c.codigo === "correturnos")]
+        : colectivos.filter(esColectivoDeTurnos);
+    return colectivosValidos.flatMap(c => empleadosActivos(c)).filter(e => e.id !== yo.id);
+}
+
+// ¿Se le puede pedir el cambio a este compañero ese día, con ese turno suyo?
+function turnoOfrecible(yo, empleado, codigo) {
+    if (!CODIGOS_CAMBIABLES.includes(codigo)) return false;
+    if (empleado.colectivo === "correturnos" && esColectivoDeTurnos(buscarColectivo(yo.colectivo))) {
+        return ["M", "T", "N"].includes(codigo);
+    }
+    return true;
 }
 
 function hoyISO() {
@@ -215,19 +242,25 @@ async function abrirSolicitudCambio(fechas) {
     fechas = [...fechas].sort();
     await Promise.all([...new Set(fechas.map(diaConAnio))].map(asegurarAnio));
 
-    const colectivo = buscarColectivo(yo.colectivo);
-    const companeros = empleadosActivos(colectivo).filter(e => e.id !== yo.id);
+    const companeros = candidatosCambio(yo);
+    const variosColectivos = new Set(companeros.map(e => e.colectivo)).size > 1;
+
+    // Desplegable de una fila: si hay varios colectivos (correturnos), las opciones van agrupadas por colectivo
+    const crearOpciones = (lista) => {
+        const opcion = x => el("option", { value: x.emp.id, text: `${x.emp.nombre} · ${x.info.texto}` });
+        if (!variosColectivos) return lista.map(opcion);
+        return colectivos.filter(c => lista.some(x => x.emp.colectivo === c.codigo)).map(c =>
+            el("optgroup", { label: c.nombre }, lista.filter(x => x.emp.colectivo === c.codigo).map(opcion)));
+    };
 
     // Una fila por día: mi turno y, en el desplegable, los compañeros con turno cambiable ese día
     const filas = fechas.map(fecha => {
         const miInfo = infoTurno(fecha, yo);
         const opciones = companeros
             .map(emp => ({ emp, info: infoTurno(fecha, emp) }))
-            .filter(x => CODIGOS_CAMBIABLES.includes(x.info.codigo) && x.info.codigo !== miInfo.codigo);
+            .filter(x => turnoOfrecible(yo, x.emp, x.info.codigo) && x.info.codigo !== miInfo.codigo);
         const select = el("select", { "aria-label": `Compañero para el ${fechaLarga(fecha)}` },
-            opciones.length
-                ? opciones.map(x => el("option", { value: x.emp.id, text: `${x.emp.nombre} · ${x.info.texto}` }))
-                : el("option", { value: "", text: "Nadie disponible" })
+            opciones.length ? crearOpciones(opciones) : el("option", { value: "", text: "Nadie disponible" })
         );
         select.disabled = !opciones.length;
         return { fecha, miInfo, opciones, select };
@@ -258,7 +291,7 @@ async function abrirSolicitudCambio(fechas) {
         const ordenados = companeros.filter(c => cobertura.has(c.id)).sort((a, b) => cobertura.get(b.id) - cobertura.get(a.id));
         if (ordenados.length) {
             todos = el("select", { "aria-label": "Pedir todos los días a" },
-                ordenados.map(c => el("option", { value: c.id, text: `${c.nombre} (${cobertura.get(c.id)} de ${fechas.length} días)` })));
+                ordenados.map(c => el("option", { value: c.id, text: `${c.nombre}${variosColectivos ? " · " + buscarColectivo(c.colectivo).puesto : ""} (${cobertura.get(c.id)} de ${fechas.length} días)` })));
             const aplicar = () => {
                 filas.forEach(f => { if (f.opciones.some(o => o.emp.id === todos.value)) f.select.value = todos.value; });
                 actualizarAvisos();
@@ -400,6 +433,147 @@ function alternarDiaCambio(fechaISO, empleadoId) {
     const boton = document.querySelector(`.dia-calendario[data-fecha="${fechaISO}"]`);
     if (boton) boton.classList.toggle("seleccionado", seleccionCambio.has(fechaISO));
     actualizarContadorCambio();
+}
+
+// --- Antes de guardar un cambio manual en tu calendario ---
+// 1) Si ese turno viene de un cambio con otra persona, tocarlo solo tú deja los dos calendarios sin cuadrar:
+//    se sugiere pedirle que lo deshaga.
+// 2) Si cambias a M, T o N un día en que ese turno ya está cubierto, se avisa.
+let permutas = new Map();   // "empleadoId|fecha" -> { con, recibido, cedido }: cambios hechos con otra persona
+
+async function cargarPermutas() {
+    const { data, error } = await supabaseClient.from("cambios_hechos").select("*");
+    if (error) {   // la tabla aún no existe (falta el script de la fase 7): no se avisa de nada
+        permutas = new Map();
+        return;
+    }
+    permutas = new Map(data.map(r => [claveExcepcion(r.empleado_id, r.fecha),
+        { con: r.con_empleado_id, recibido: r.codigo_recibido, cedido: r.codigo_cedido }]));
+}
+
+// Solo vale mientras el turno siga siendo el recibido en el cambio
+function permutaVigente(empleado, fechaISO) {
+    const p = permutas.get(claveExcepcion(empleado.id, fechaISO));
+    return p && excepciones.get(claveExcepcion(empleado.id, fechaISO)) === p.recibido ? p : null;
+}
+
+function nombresY(lista) {
+    return lista.map(e => e.nombre).join(" y ");
+}
+
+// Aviso de cobertura de un turno de 24 horas (M, T, N), o null
+function avisoCobertura(empleado, colectivo, fechaISO, nuevo) {
+    if (!["M", "T", "N"].includes(nuevo)) return null;
+    const turno = TURNOS[nuevo].texto.toLowerCase();
+    const fecha = formatoCorto(fechaISO);
+    // cuántos tienen ese turno por ciclo y cuántos lo tienen ahora (con cambios manuales)
+    const porCiclo = (c, excluirId) => empleadosActivos(c).filter(e => e.id !== excluirId && turnoAutomatico(fechaISO, e, c).codigo === nuevo).length;
+    const ahora = (c, excluirId) => empleadosActivos(c).filter(e => e.id !== excluirId && infoTurno(fechaISO, e).codigo === nuevo);
+
+    if (esColectivoDeTurnos(colectivo)) {
+        const otros = ahora(colectivo, empleado.id);
+        const habitual = porCiclo(colectivo, empleado.id) + (turnoAutomatico(fechaISO, empleado, colectivo).codigo === nuevo ? 1 : 0);
+        if (otros.length >= 1 && otros.length + 1 > habitual) {
+            return `${fecha}: ${nombresY(otros)} ya ${otros.length > 1 ? "tienen" : "tiene"} el turno de ${turno} en tu colectivo.`;
+        }
+        return null;
+    }
+    if (colectivo.codigo === "correturnos") {
+        // Un correturno cubre un hueco: falta alguien en ese turno en alguno de los colectivos de turnos
+        const huecos = colectivos.filter(esColectivoDeTurnos)
+            .reduce((total, c) => total + Math.max(0, porCiclo(c) - ahora(c).length), 0);
+        const otrosCorre = ahora(colectivo, empleado.id);
+        if (huecos - otrosCorre.length <= 0) {
+            return huecos === 0
+                ? `${fecha}: ahora mismo no falta nadie en el turno de ${turno} en los colectivos de turnos.`
+                : `${fecha}: el hueco del turno de ${turno} ya lo cubre ${nombresY(otrosCorre)}.`;
+        }
+    }
+    return null;
+}
+
+// Pide deshacer los cambios (un cambio nuevo que devuelve a cada uno su turno). Devuelve true si se envió algo.
+async function pedirDeshacer(empleado, afectadas) {
+    const grupos = new Map();
+    const noPosibles = [];
+    afectadas.forEach(a => {
+        const mio = infoTurno(a.fecha, empleado).codigo;
+        const suyo = infoTurno(a.fecha, a.otro).codigo;
+        if (!turnoOfrecible(empleado, a.otro, suyo) || suyo === mio) { noPosibles.push(`${formatoCorto(a.fecha)} (${a.otro.nombre})`); return; }
+        if (!grupos.has(a.otro.id)) grupos.set(a.otro.id, { otro: a.otro, dias: [] });
+        grupos.get(a.otro.id).dias.push({ fecha: a.fecha, codigo_solicitante: mio, codigo_destinatario: suyo });
+    });
+
+    let enviadas = 0, fallo = null;
+    for (const { otro, dias } of grupos.values()) {
+        const fechas = dias.map(d => formatoCorto(d.fecha)).join(", ");
+        const r = await rpcCambio("crear_cambios", {
+            p_destinatario: otro.id, p_dias: dias,
+            p_mensaje: `Te pido deshacer el cambio que hicimos (${fechas}).`
+        });
+        if (r.ok) enviadas++; else fallo = r.motivo;
+    }
+    if (enviadas) {
+        mostrarToast(enviadas === 1 ? "Petición para deshacer enviada" : `${enviadas} peticiones para deshacer enviadas`);
+        tickCambios();
+    }
+    if (fallo) mostrarToast(motivoLegible(fallo), true);
+    if (noPosibles.length) mostrarToast(`No se pudo pedir automáticamente: ${noPosibles.join(", ")}. Habla con esa persona.`, true);
+    return enviadas > 0;
+}
+
+// Devuelve "guardar" (seguir con el cambio), "cancelar" o "deshacer" (se pidió deshacer y no se guarda nada)
+async function revisarAntesDeGuardar(empleado, colectivo, cambios) {
+    if (puedeUsarCambios()) await cargarPermutas();
+    else permutas = new Map();
+
+    const avisos = [], afectadas = [];
+    cambios.forEach(({ fecha, codigo }) => {
+        const nuevo = codigo || turnoAutomatico(fecha, empleado, colectivo).codigo;
+        if (nuevo === infoTurno(fecha, empleado).codigo) return;   // no cambia nada
+        const p = permutaVigente(empleado, fecha);
+        const otro = p ? buscarEmpleadoPorId(p.con) : null;
+        if (p && otro) afectadas.push({ fecha, ...p, otro });
+        const aviso = avisoCobertura(empleado, colectivo, fecha, nuevo);
+        if (aviso) avisos.push(aviso);
+    });
+    if (!afectadas.length && !avisos.length) return "guardar";
+
+    const futuras = afectadas.filter(a => a.fecha > hoyISO());
+    const nombresOtros = [...new Set(futuras.map(a => a.otro.nombre))].join(" y ");
+
+    return new Promise(resolver => {
+        let resuelto = false;
+        const fin = (resultado) => { if (resuelto) return; resuelto = true; cerrarModal(); resolver(resultado); };
+
+        const bloqueCambio = afectadas.length ? el("div", { class: "avisos-cambio" },
+            el("strong", { text: "Esto afecta a otra persona" }),
+            el("ul", {}, afectadas.map(a => el("li", { text:
+                `${formatoCorto(a.fecha)}: tu turno (${a.recibido}) viene de un cambio con ${a.otro.nombre}. Si lo cambias solo tú, ${a.otro.nombre} se quedaría con tu ${a.cedido} y los dos calendarios dejarían de cuadrar.` +
+                (a.fecha > hoyISO() ? "" : " Ya no se puede pedir deshacerlo (es hoy o una fecha pasada).") }))),
+            el("span", { class: "admin-nota", text: "Lo mejor es pedirle que deshaga el cambio." })
+        ) : null;
+        const bloqueCobertura = avisos.length ? el("div", { class: "avisos-cambio" },
+            el("strong", { text: "Ojo con la cobertura" }),
+            el("ul", {}, avisos.map(a => el("li", { text: a }))),
+            el("span", { class: "admin-nota", text: "Es solo un aviso: puedes guardarlo igualmente." })
+        ) : null;
+
+        const botonDeshacer = futuras.length ? el("button", { type: "button", text: `Pedir a ${nombresOtros} que lo deshaga`,
+            onclick: async () => { if (await pedirDeshacer(empleado, futuras)) fin("deshacer"); } }) : null;
+
+        const modal = abrirModal(
+            el("h3", { text: "Antes de guardar" }),
+            bloqueCambio, bloqueCobertura,
+            futuras.length ? el("p", { class: "admin-nota", text: "Si pides deshacerlo, ahora no se guarda ningún cambio de los que ibas a hacer." }) : null,
+            el("div", { class: "modal-acciones modal-acciones-columna" },
+                botonDeshacer,
+                el("button", { type: "button", class: "btn-secundario", text: afectadas.length ? "Cambiar solo el mío" : "Guardar igualmente", onclick: () => fin("guardar") }),
+                el("button", { type: "button", class: "btn-secundario", text: "Cancelar", onclick: () => fin("cancelar") })
+            )
+        );
+        modal.addEventListener("click", (e) => { if (e.target === modal) fin("cancelar"); });
+    });
 }
 
 // --- Pantalla "Cambios" ---

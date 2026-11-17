@@ -61,13 +61,20 @@ function verAjustes() {
         return boton;
     });
 
-    contenedor.replaceChildren(
+    const hayResumen = typeof puedeVerResumen === "function" && puedeVerResumen();
+    reemplazarHijos(contenedor,
         el("div", { class: "resultado-cabecera" },
             el("h2", { text: "Ajustes" }),
             el("button", { type: "button", class: "btn-secundario", text: "Volver", onclick: cerrarVistaResultado })
         ),
         el("h3", { class: "grupo-titulo", text: "Apariencia" }),
         el("p", { class: "admin-nota", text: "Se guarda en este dispositivo. \"Según el sistema\" sigue el modo claro u oscuro de tu móvil u ordenador." }),
-        el("div", { class: "opciones-tema" }, botones)
+        el("div", { class: "opciones-tema" }, botones),
+        hayResumen ? el("h3", { class: "grupo-titulo", text: "Resumen" }) : null,
+        hayResumen ? el("div", { class: "opciones-tema" },
+            el("button", { type: "button", class: "opcion-tema", onclick: () => verResumen("resumen") },
+                "Resumen del año: horas, vacaciones y excesos"),
+            el("button", { type: "button", class: "opcion-tema", onclick: () => verResumen("coincidencias") },
+                "Coincidencias con compañeros")) : null
     );
 }
