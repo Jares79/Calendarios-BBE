@@ -1291,3 +1291,5 @@ body.pantalla-muy-baja .hoy-marca { display: none; }
 .ambito-marca .btn-secundario { flex: 1; }
 .ambito-marca .btn-secundario.elegido { background: var(--acento); color: #fff; border-color: var(--acento); }
 .seccion-semana .btn-ancho { margin-top: 8px; }
+
+.btn-editar-ficha { margin-top: 12px; }
