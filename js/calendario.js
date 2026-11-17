@@ -90,6 +90,12 @@ function ocultarDetalleDia() {
 function seleccionarDia(fechaISO, empleadoId) {
     ocultarDetalleDia();
 
+    // En la selección de varios días para pedir un cambio, tocar un día lo marca o desmarca
+    if (typeof modoCambio !== "undefined" && modoCambio) {
+        alternarDiaCambio(fechaISO, empleadoId);
+        return;
+    }
+
     // En modo edición, tocar un día de tu calendario abre el selector de turnos
     if (modoEdicion) {
         const mio = obtenerEmpleadoActual();
@@ -147,6 +153,20 @@ function seleccionarDia(fechaISO, empleadoId) {
                 el("span", { class: "detalle-etiqueta", text: "Mismo turno" }),
                 el("div", { class: "chips" }, compis.map(n => el("span", { class: "chip", text: n })))
               )
+            : null,
+        puedeSolicitarCambioEnFicha(empleado, fechaISO, info)
+            ? el("button", {
+                type: "button", class: "btn-ancho btn-editar-ficha",
+                text: "Solicitar cambio",
+                onclick: () => { ocultarDetalleDia(); setTimeout(() => abrirSolicitudCambio([fechaISO]), 0); }
+            })
+            : null,
+        puedeSolicitarCambioEnFicha(empleado, fechaISO, info)
+            ? el("button", {
+                type: "button", class: "btn-secundario btn-ancho btn-editar-ficha",
+                text: "Cambio de varios días",
+                onclick: () => { ocultarDetalleDia(); setTimeout(() => iniciarModoCambio(fechaISO), 0); }
+            })
             : null,
         puedeEditarDesdeFicha(empleado)
             ? el("button", {

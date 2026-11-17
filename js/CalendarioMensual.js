@@ -29,6 +29,7 @@ function pintarCabeceraUsuario(flecha) {
         el("span", { class: "nombre-usuario", text: usuarioActual.nombre })
     ];
     if (esPerfilFamiliar()) partes.push(el("span", { class: "etiqueta-familiar", text: "Familiar" }));
+    if (typeof cambiosSinVer === "number" && cambiosSinVer > 0) partes.push(el("span", { class: "globo", text: String(cambiosSinVer) }));
     if (flecha) partes.push(el("span", { class: "flecha", text: flecha }));
     cabecera.replaceChildren(...partes);
 }
@@ -86,7 +87,7 @@ function verMiCalendario() {
         const info = infoTurno(iso, empleado);
 
         const esHoy = iso === hoyISO ? " hoy" : "";
-        const marcas = claseLargo(info) + (info.manual ? " editado" : "") + (info.partida ? " con-marca" : "");
+        const marcas = claseLargo(info) + (info.manual ? " editado" : "") + (info.partida ? " con-marca" : "") + (seleccionCambio.has(iso) ? " seleccionado" : "");
         const textoMarca = info.marca ? ` · ${info.marca.texto}` : "";
         // Colectivos con semanas: celda partida (arriba la marca de la semana, abajo el turno)
         const interior = info.partida

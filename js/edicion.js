@@ -22,6 +22,7 @@ function mostrarToast(texto, esError) {
 // --- Entrar y salir del modo edición ---
 function activarModoEdicion() {
     cerrarPanelUsuario();
+    if (typeof terminarModoCambio === "function") terminarModoCambio();
     ocultarDetalleDia();
 
     // Si había una vista de resultados abierta (anual, búsqueda...), se vuelve al calendario
@@ -40,6 +41,7 @@ function activarModoEdicion() {
 }
 
 function terminarModoEdicion() {
+    if (typeof terminarModoCambio === "function") terminarModoCambio();
     modoEdicion = false;
     document.body.classList.remove("modo-edicion");
     const barra = document.getElementById("barraEdicion");
