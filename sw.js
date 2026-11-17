@@ -7,7 +7,7 @@
 // si no hay red, lo último guardado. Para forzar que todos descarguen de nuevo los
 // archivos, cambia el número de VERSION.
 
-const VERSION = "bbe-v6";
+const VERSION = "bbe-v7";
 
 const ARCHIVOS = [
     "./",
@@ -21,6 +21,7 @@ const ARCHIVOS = [
     "js/calendario.js",
     "js/CalendarioMensual.js",
     "js/anio.js",
+    "js/tema.js",
     "js/admin.js",
     "js/admin-fechas.js",
     "js/edicion.js",
