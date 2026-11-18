@@ -8,6 +8,7 @@ const ANIO_MAX = 2035;
 // colectivos = [{ codigo, nombre, icono, puesto, patron, diasSolape, tipo, empleados: [{ id, nombre, iniciales, inicio, colectivo, activo, orden, marcas }] }]
 // tipo: 'turnos' (jefes de turno, operadores de control y de campo), 'correturnos' u 'otro'.
 // marcas: marcas de arriba de la celda que ese empleado puede usar (D, CTD, CT1... CTY); vacío = celda entera.
+// verHoras: el administrador le activa el resumen de horas anuales y excesos (los colectivos de turnos lo ven siempre).
 // Los empleados dados de baja solo los ve el administrador, y no aparecen en los calendarios.
 let colectivos = [];
 
@@ -55,7 +56,8 @@ async function cargarDatos() {
                 colectivo: e.colectivo,
                 activo: e.activo,
                 orden: e.orden,
-                marcas: Array.isArray(e.marcas) ? e.marcas : []
+                marcas: Array.isArray(e.marcas) ? e.marcas : [],
+                verHoras: e.ver_horas === true
             }))
     }));
 

@@ -159,3 +159,12 @@ Los nombres exactos de los menús pueden cambiar con las versiones del panel.
 - **Tipo de colectivo** (`colectivos.tipo`): `turnos` (jefes de turno, operadores de control y de campo), `correturnos` u `otro`. Determina quién puede pedir cambios.
 - Se eliminan la pantalla "Semanas" y las coincidencias con compañeros. La sección Horas pasa de Ajustes al menú.
 - SQL: `supabase/fase9-reorganizacion.sql` (ver `supabase/LEEME-orden.md` para el orden de todos los scripts).
+
+## Fase 10: baja (B), resumen de la pantalla principal y horas anuales por persona
+
+- **Baja (B)**: turno nuevo que se pone a mano (un día o un rango). Se ve en el calendario y **sigue sumando las horas previstas**: las del ajuste manual de ese día si lo hay y, si no, las del turno que tocaba por ciclo, intensiva o festivo. Si al pasar a B el día traía un turno puesto a mano con otras horas, esas horas se conservan como ajuste. Quien tiene B no genera avisos de cobertura a los demás. Color editable (por defecto rosa).
+- **Colores CT1 a CT4**: por defecto comparten el color de CT1; cada usuario puede darle uno propio a cada uno en "Editar colores". CTD y CTY mantienen el suyo.
+- **Resumen bajo "Hoy"** (sustituye a los próximos días): vacaciones y libre disposición (LD) *apuntados / disponibles* del año en curso y, para los colectivos de turnos (y para quien el administrador active), horas anuales, excesos puestos (días) y excesos disponibles (días y horas). En móviles muy bajitos se oculta para que el mes quepa entero.
+- **Horas anuales**: ya no las pone el administrador; cada persona escribe las suyas (solo el total del año) en **Ajustes → Mis horas anuales**. El administrador las ve en Horas → Todos.
+- **Administrador**: "Horas y convenio" tiene ahora los días de LD al año (por defecto 2) junto a los de vacaciones; en la ficha de un empleado de un colectivo que no es de turnos hay una casilla para enseñarle el resumen de horas.
+- SQL: `supabase/fase10-baja-resumen.sql` (añade B a los turnos y colores permitidos, `config_horas.dias_ld`, `empleados.ver_horas`, permisos de horas anuales por persona y repara `horas_dia`). Los avisos de error al guardar horas ahora incluyen el código técnico.

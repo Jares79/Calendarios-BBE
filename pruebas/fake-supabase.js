@@ -72,6 +72,7 @@
       const no = (m) => ({ data:{ ok:false, motivo:m }, error:null });
       if (name==='mi_perfil') return { data:{ iniciales:U.iniciales, nombre:'Usuario', rol:U.rol, empleadoId:U.empleadoId, empleadoNombre:'X', debeCambiarPin:false, colores:{} }, error:null };
       window.__writes.push(['rpc', name]);
+      if (name==='admin_guardar_ver_horas') { if (U.rol!=='administrador') return no('no_autorizado'); const e = emp(a.p_empleado); if (!e) return no('no_encontrado'); e.ver_horas = a.p_ver; return ok(); }
       if (name==='admin_guardar_marcas') { if (U.rol!=='administrador') return no('no_autorizado'); const e = emp(a.p_empleado); e.marcas = a.p_marcas; return ok(); }
       if (name==='limpiar_cambios') {
         db.cambios_solicitudes.forEach(s => { if (s.estado==='pendiente' && s.primer_dia <= hoy) { s.estado='caducada'; s.cerrada_en=nowIso; s.visto_solicitante=false; s.visto_destinatario=false; } });

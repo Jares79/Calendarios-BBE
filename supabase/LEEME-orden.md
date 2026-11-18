@@ -2,8 +2,8 @@
 
 Se ejecutan en Supabase > SQL Editor (botón Run), cada uno de una sola vez. Son aditivos y se pueden repetir,
 **salvo que no hay que volver a ejecutar uno anterior después de uno posterior** (los posteriores redefinen funciones).
-Orden en una base de datos nueva: 1 → 9. En la base de datos del administrador ya están ejecutados los de la fase 1 a la 8
-y falta el 9 (el 9 migra lo anterior y es el que deja el estado final).
+Orden en una base de datos nueva: 1 → 13. En la base de datos del administrador están ejecutados los de la fase 1 a la 9
+y falta el 10 (`fase10-baja-resumen.sql`, que es el que deja el estado final).
 
 | Orden | Archivo | Qué hace |
 |---|---|---|
@@ -18,7 +18,8 @@ y falta el 9 (el 9 migra lo anterior y es el que deja el estado final).
 | 9 | `fase6-horas.sql` | Tablas de horas (primera versión, sin año) y `crear_cambios` con los correturnos. La fase 9 las migra. |
 | 10 | `fase7-permutas.sql` | Tabla `cambios_hechos` (cambios aceptados, 30 días) y `responder_cambio` ampliado: sirve para avisar si uno deshace por su cuenta un cambio de dos. |
 | 11 | `fase8-horas-dia.sql` | Tabla `horas_dia`: ajuste manual de las horas de un día. |
-| 12 | **`fase9-reorganizacion.sql`** | **Estado final.** Tipo de colectivo (`colectivos.tipo`), marcas por persona (`empleados.marcas`, G pasa a D, función `admin_guardar_marcas`), `crear_cambios` por tipo de colectivo, y horas por año (`horas_turno`, `config_horas`, `horas_anuales` con año). |
+| 12 | `fase9-reorganizacion.sql` | Tipo de colectivo (`colectivos.tipo`), marcas por persona (`empleados.marcas`, G pasa a D, función `admin_guardar_marcas`), `crear_cambios` por tipo de colectivo, y horas por año (`horas_turno`, `config_horas`, `horas_anuales` con año). |
+| 13 | **`fase10-baja-resumen.sql`** | **Estado final.** Turno B (baja) en `excepciones` y en los colores, `config_horas.dias_ld`, `empleados.ver_horas` (+ `admin_guardar_ver_horas`), las horas anuales las escribe cada persona, y crea o repara `horas_dia`. |
 
 Otros: `fase1-deshacer.sql`, `fase3-deshacer.sql`, `fase4-deshacer`... (`*-deshacer.sql`) deshacen cada fase; `historico/` y
 `seguridad.sql`, `pin-cambio.sql`, `admin-resetear-pin.sql` son del login antiguo (ya no se usan).
@@ -30,5 +31,5 @@ Otros: `fase1-deshacer.sql`, `fase3-deshacer.sql`, `fase4-deshacer`... (`*-desha
 - `excepciones`(empleado_id, fecha, codigo): cambios manuales de turno. `festivos`, `intensivas`.
 - `semanas_especiales`(empleado_id, semana = lunes, codigo) y `marcas_dia`(empleado_id, fecha, codigo | "-"): marcas de arriba de la celda.
 - `cambios_solicitudes`, `cambios_dias`, `cambios_mensajes`, `cambios_hechos`: cambios entre compañeros.
-- `horas_turno`(anio, codigo, horas), `config_horas`(anio, horas_dia_exceso, dias_vacaciones), `horas_anuales`(empleado_id, anio, horas), `horas_dia`(empleado_id, fecha, horas).
+- `horas_turno`(anio, codigo, horas), `config_horas`(anio, horas_dia_exceso, dias_vacaciones), `horas_anuales`(empleado_id, anio, horas), `horas_dia`(empleado_id, fecha, horas). Desde la fase 10: `config_horas.dias_ld`, `empleados.ver_horas` y el código de turno `B`.
 - Todas con RLS. Las escrituras delicadas van por funciones `security definer`.

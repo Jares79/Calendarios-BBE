@@ -32,10 +32,20 @@ async function cargarHoras(forzar) {
         return false;
     }
     horasTurno = new Map(t.data.map(r => [`${r.anio}|${r.codigo}`, Number(r.horas)]));
-    configHoras = new Map(c.data.map(r => [Number(r.anio), { horas_dia_exceso: Number(r.horas_dia_exceso), dias_vacaciones: Number(r.dias_vacaciones) }]));
+    configHoras = new Map(c.data.map(r => [Number(r.anio), {
+        horas_dia_exceso: Number(r.horas_dia_exceso), dias_vacaciones: Number(r.dias_vacaciones),
+        dias_ld: r.dias_ld === undefined || r.dias_ld === null ? 2 : Number(r.dias_ld)
+    }]));
     horasAnuales = new Map(a.data.map(r => [`${r.empleado_id}|${r.anio}`, Number(r.horas)]));
     horasCargadas = true;
     return true;
+}
+
+// Texto corto con el motivo técnico de un fallo de Supabase, para que se pueda localizar el problema
+function detalleError(error) {
+    if (!error) return "";
+    const motivo = error.code || error.message || "";
+    return motivo ? ` (${String(motivo).slice(0, 60)})` : "";
 }
 
 function horasDeTurno(anio, codigo) {
@@ -43,7 +53,7 @@ function horasDeTurno(anio, codigo) {
 }
 
 function configDe(anio) {
-    return configHoras.get(anio) || { horas_dia_exceso: 8, dias_vacaciones: 23 };
+    return configHoras.get(anio) || { horas_dia_exceso: 8, dias_vacaciones: 23, dias_ld: 2 };
 }
 
 function anualesDe(empleadoId, anio) {
@@ -57,6 +67,14 @@ function horasConfiguradas(anio) {
 
 function formatoHoras(h) {
     return Number(h).toLocaleString("es-ES", { maximumFractionDigits: 2 });
+}
+
+// ¿Se le enseñan las horas anuales y los excesos? Los colectivos de turnos siempre; el resto,
+// solo si el administrador lo activa en la ficha del empleado.
+function veHoras(empleado) {
+    if (!empleado) return false;
+    const c = buscarColectivo(empleado.colectivo);
+    return !!c && (c.tipo === "turnos" || empleado.verHoras === true);
 }
 
 function textoColectivo(empleado) {
@@ -126,7 +144,7 @@ async function verHorasAdmin(anio, plantilla) {
         guardarTurnos.disabled = true;
         const { error } = await supabaseClient.from("horas_turno").upsert(filas, { onConflict: "anio,codigo" });
         guardarTurnos.disabled = false;
-        if (error) { console.error(error); avisoTurnos.textContent = "No se pudo guardar."; avisoTurnos.className = "admin-aviso-corto error-texto"; return; }
+        if (error) { console.error(error); avisoTurnos.textContent = "No se pudo guardar." + detalleError(error); avisoTurnos.className = "admin-aviso-corto error-texto"; return; }
         filas.forEach(f => horasTurno.set(`${anio}|${f.codigo}`, f.horas));
         avisoTurnos.textContent = "Guardado."; avisoTurnos.className = "admin-aviso-corto admin-ok";
     });
@@ -136,54 +154,23 @@ async function verHorasAdmin(anio, plantilla) {
     inputExceso.value = String(config0.horas_dia_exceso);
     const inputVacaciones = el("input", { type: "number", min: "0", max: "365", step: "1", inputmode: "numeric", class: "input-corto", "aria-label": "Días de vacaciones al año" });
     inputVacaciones.value = String(config0.dias_vacaciones);
+    const inputLD = el("input", { type: "number", min: "0", max: "365", step: "1", inputmode: "numeric", class: "input-corto", "aria-label": "Días de libre disposición al año" });
+    inputLD.value = String(config0.dias_ld);
     const avisoConfig = el("p", { class: "admin-aviso-corto", role: "status" });
     const guardarConfig = el("button", { type: "button", text: `Guardar ${anio}` });
     guardarConfig.addEventListener("click", async () => {
         const he = Number(inputExceso.value.replace(",", "."));
         const dv = Number(inputVacaciones.value);
-        if (!Number.isFinite(he) || he <= 0 || he > 24 || !Number.isInteger(dv) || dv < 0 || dv > 365) {
+        const dl = Number(inputLD.value);
+        if (!Number.isFinite(he) || he <= 0 || he > 24 || !Number.isInteger(dv) || dv < 0 || dv > 365 || !Number.isInteger(dl) || dl < 0 || dl > 365) {
             avisoConfig.textContent = "Revisa los valores."; avisoConfig.className = "admin-aviso-corto error-texto"; return;
         }
         guardarConfig.disabled = true;
-        const { error } = await supabaseClient.from("config_horas").upsert({ anio, horas_dia_exceso: he, dias_vacaciones: dv }, { onConflict: "anio" });
+        const { error } = await supabaseClient.from("config_horas").upsert({ anio, horas_dia_exceso: he, dias_vacaciones: dv, dias_ld: dl }, { onConflict: "anio" });
         guardarConfig.disabled = false;
-        if (error) { console.error(error); avisoConfig.textContent = "No se pudo guardar."; avisoConfig.className = "admin-aviso-corto error-texto"; return; }
-        configHoras.set(anio, { horas_dia_exceso: he, dias_vacaciones: dv });
+        if (error) { console.error(error); avisoConfig.textContent = "No se pudo guardar." + detalleError(error); avisoConfig.className = "admin-aviso-corto error-texto"; return; }
+        configHoras.set(anio, { horas_dia_exceso: he, dias_vacaciones: dv, dias_ld: dl });
         avisoConfig.textContent = "Guardado."; avisoConfig.className = "admin-aviso-corto admin-ok";
-    });
-
-    // 3) Horas anuales por empleado
-    const entradasAnuales = new Map();
-    const filasAnuales = colectivos.flatMap(c => empleadosActivos(c).map(emp => {
-        const input = el("input", { type: "number", min: "0", max: "9999", step: "0.5", inputmode: "decimal", class: "input-medio", placeholder: "sin definir", "aria-label": `Horas anuales de ${emp.nombre}` });
-        const previa = anualesDe(emp.id, origen);
-        if (previa !== null) input.value = String(previa);
-        entradasAnuales.set(emp.id, input);
-        return el("label", { class: "fila-horas fila-horas-emp" },
-            el("span", { class: "fila-horas-nombre" }, el("strong", { text: emp.nombre }), el("small", { text: ` · ${c.nombre}` })),
-            input, el("span", { class: "fila-horas-unidad", text: "h" }));
-    }));
-    const avisoAnuales = el("p", { class: "admin-aviso-corto", role: "status" });
-    const guardarAnuales = el("button", { type: "button", text: `Guardar horas anuales de ${anio}` });
-    guardarAnuales.addEventListener("click", async () => {
-        const subir = [], borrar = [];
-        for (const [id, input] of entradasAnuales) {
-            const texto = input.value.trim().replace(",", ".");
-            const actual = anualesDe(id, anio);
-            if (texto === "") { if (actual !== null) borrar.push(id); continue; }
-            const h = Number(texto);
-            if (!Number.isFinite(h) || h < 0 || h > 9999) { avisoAnuales.textContent = `Revisa las horas de ${buscarEmpleadoPorId(id).nombre}.`; avisoAnuales.className = "admin-aviso-corto error-texto"; return; }
-            if (actual !== h) subir.push({ empleado_id: id, anio, horas: h });
-        }
-        guardarAnuales.disabled = true;
-        let error = null;
-        if (subir.length) error = (await supabaseClient.from("horas_anuales").upsert(subir, { onConflict: "empleado_id,anio" })).error;
-        if (!error && borrar.length) error = (await supabaseClient.from("horas_anuales").delete().eq("anio", anio).in("empleado_id", borrar)).error;
-        guardarAnuales.disabled = false;
-        if (error) { console.error(error); avisoAnuales.textContent = "No se pudo guardar."; avisoAnuales.className = "admin-aviso-corto error-texto"; return; }
-        subir.forEach(r => horasAnuales.set(`${r.empleado_id}|${anio}`, r.horas));
-        borrar.forEach(id => horasAnuales.delete(`${id}|${anio}`));
-        avisoAnuales.textContent = "Guardado."; avisoAnuales.className = "admin-aviso-corto admin-ok";
     });
 
     const copiar = el("button", { type: "button", class: "btn-secundario", text: `Copiar los valores de ${anio - 1}`,
@@ -198,14 +185,13 @@ async function verHorasAdmin(anio, plantilla) {
             el("p", { class: "admin-nota", text: "Las horas que cuenta cada día de ese turno al sumar las del año. Pon 0 en los que no deben sumar (por ejemplo E, si los excesos no cuentan como trabajados; F no suma nunca)." }),
             filasTurno, el("div", { class: "fila-guardar" }, guardarTurnos, avisoTurnos)),
         el("div", { class: "admin-grupo" },
-            el("h3", { text: `Excesos y vacaciones · ${anio}` }),
+            el("h3", { text: `Excesos, vacaciones y libre disposición · ${anio}` }),
             el("label", { class: "fila-horas" }, el("span", { class: "fila-horas-nombre", text: "Horas que equivale un día de excesos (E)" }), inputExceso, el("span", { class: "fila-horas-unidad", text: "h" })),
             el("label", { class: "fila-horas" }, el("span", { class: "fila-horas-nombre", text: "Días de vacaciones al año" }), inputVacaciones, el("span", { class: "fila-horas-unidad", text: "días" })),
-            el("div", { class: "fila-guardar" }, guardarConfig, avisoConfig)),
-        el("div", { class: "admin-grupo" },
-            el("h3", { text: `Horas anuales de cada empleado · ${anio}` }),
-            el("p", { class: "admin-nota", text: "Las horas anuales de convenio de cada persona en ese año. Cada uno solo ve las suyas. Déjalo vacío si aún no lo sabes." }),
-            filasAnuales, el("div", { class: "fila-guardar" }, guardarAnuales, avisoAnuales))
+            el("label", { class: "fila-horas" }, el("span", { class: "fila-horas-nombre", text: "Días de libre disposición (LD) al año" }), inputLD, el("span", { class: "fila-horas-unidad", text: "días" })),
+            el("div", { class: "fila-guardar" }, guardarConfig, avisoConfig))
+        ,
+        el("p", { class: "admin-nota", text: "Las horas anuales de convenio las pone cada persona en sus Ajustes. Aquí las verás en la pantalla Horas (pestaña Todos)." })
     );
 }
 
@@ -311,6 +297,11 @@ async function verResumen(pestana) {
     reemplazarHijos(contenedor, cabecera, barra, selectorPersona, aviso, cuerpo);
 }
 
+function yoId() {
+    const yo = obtenerEmpleadoActual();
+    return yo ? yo.id : null;
+}
+
 function dato(etiqueta, valor, clase) {
     return el("div", { class: "dato-resumen " + (clase || "") },
         el("span", { class: "dato-etiqueta", text: etiqueta }),
@@ -325,18 +316,19 @@ async function cuerpoResumenPersona(empleado, anio) {
     const vac = configDe(anio).dias_vacaciones;
 
     const tarjetas = el("div", { class: "tarjetas-resumen" },
-        dato("Horas anuales (convenio)", anuales === null ? "Sin definir" : `${formatoHoras(anuales)} h`),
+        dato("Horas anuales (convenio)", anuales === null ? (empleado.id === yoId() ? "Sin definir · ponlas en Ajustes" : "Sin definir") : `${formatoHoras(anuales)} h`),
         dato("Horas computables del año", `${formatoHoras(total.horas)} h`),
         dato("Excesos pendientes de pedir", textoExceso(pendiente, anio), pendiente !== null && pendiente < 0 ? "dato-aviso" : "dato-destacado"),
         dato("Vacaciones (V)", `${dias("V")} de ${vac} · quedan ${Math.max(0, vac - dias("V"))}`, dias("V") > vac ? "dato-aviso" : ""),
         dato("Excesos puestos (E)", `${dias("E")} ${dias("E") === 1 ? "día" : "días"}`),
         dato("Solapes (S)", `${dias("S")} ${dias("S") === 1 ? "día" : "días"}`),
         dato("Permisos justificados (J)", `${dias("J")} ${dias("J") === 1 ? "día" : "días"}`),
-        dato("Libre disposición (LD)", `${dias("LD")} ${dias("LD") === 1 ? "día" : "días"}`)
+        dato("Libre disposición (LD)", `${dias("LD")} de ${configDe(anio).dias_ld} · quedan ${Math.max(0, configDe(anio).dias_ld - dias("LD"))}`, dias("LD") > configDe(anio).dias_ld ? "dato-aviso" : ""),
+        dato("Bajas (B)", `${dias("B")} ${dias("B") === 1 ? "día" : "días"}`)
     );
 
     // Tabla por meses: solo las columnas de turnos que aparecen en el año
-    const columnas = CODIGOS_HORAS.filter(c => dias(c) > 0);
+    const columnas = [...CODIGOS_HORAS, "B"].filter(c => dias(c) > 0);
     const nombreMes = (i) => new Date(2000, i, 1).toLocaleDateString("es-ES", { month: "short" }).replace(".", "");
     const tabla = el("div", { class: "tabla-scroll" }, el("table", { class: "tabla-resumen" },
         el("thead", {}, el("tr", {},
@@ -353,7 +345,7 @@ async function cuerpoResumenPersona(empleado, anio) {
     return el("div", {},
         el("h3", { class: "grupo-titulo", text: `${empleado.nombre} · ${anio}` }),
         tarjetas,
-        el("p", { class: "admin-nota", text: "Las horas incluyen los días previstos del año (ciclo, festivos, intensivas y tus cambios) y los ajustes de horas que hayas hecho en algún día. Los excesos que ya has puesto en el calendario ya están descontados de las horas computables." }),
+        el("p", { class: "admin-nota", text: "Las horas incluyen los días previstos del año (ciclo, festivos, intensivas y tus cambios) y los ajustes de horas que hayas hecho en algún día. Las bajas (B) suman las horas que tenías previstas. Los excesos que ya has puesto en el calendario ya están descontados de las horas computables." }),
         el("h3", { class: "grupo-titulo", text: "Por meses" }),
         tabla
     );
@@ -409,13 +401,22 @@ async function asegurarHorasDia(anio) {
 }
 
 // Horas que computa un día: el ajuste manual si lo hay; si no, las del turno
+// Una baja (B) sigue sumando las horas previstas: las del ajuste manual si lo hay y, si no, las del
+// turno que tocaba por ciclo, intensiva o festivo.
 function horasDeDia(empleado, fechaISO, codigo) {
     const ajuste = horasDia.get(claveExcepcion(empleado.id, fechaISO));
-    return ajuste !== undefined ? ajuste : horasDeTurno(Number(fechaISO.slice(0, 4)), codigo);
+    if (ajuste !== undefined) return ajuste;
+    const anio = Number(fechaISO.slice(0, 4));
+    if (codigo === "B") {
+        const colectivo = buscarColectivo(empleado.colectivo);
+        return colectivo ? horasDeTurno(anio, turnoAutomatico(fechaISO, empleado, colectivo).codigo) : 0;
+    }
+    return horasDeTurno(anio, codigo);
 }
 
 // Texto de las horas de un turno para las rejillas ("8 h"), o "" si aún no se conocen
 function textoHorasTurno(codigo) {
+    if (codigo === "B") return "las previstas";
     const clave = `${anioHorasEnUso}|${codigo}`;
     return horasCargadas && horasTurno.has(clave) ? `${formatoHoras(horasTurno.get(clave))} h` : "";
 }
@@ -457,7 +458,7 @@ async function guardarHorasDia(empleado, cambios, silencioso) {
     if (fallo) {
         console.error("Error al guardar las horas:", fallo);
         anterior.forEach((valor, clave) => { if (valor === undefined) horasDia.delete(clave); else horasDia.set(clave, valor); });
-        mostrarToast("No se pudieron guardar las horas. Inténtalo de nuevo.", true);
+        mostrarToast("No se pudieron guardar las horas. Inténtalo de nuevo." + detalleError(fallo), true);
         return false;
     }
     if (!silencioso) mostrarToast("Horas guardadas");
@@ -529,4 +530,116 @@ function crearBloqueHorasRango(empleado) {
             return guardarHorasDia(empleado, cambios);
         }
     };
+}
+
+// ======================================================================
+// Mis horas anuales: cada persona pone las suyas en sus Ajustes (solo el total del año)
+// ======================================================================
+let ajustesAnio = null;
+
+async function pintarHorasAnualesAjustes(contenedor) {
+    const yo = obtenerEmpleadoActual();
+    if (!yo || esPerfilFamiliar() || !veHoras(yo)) { contenedor.replaceChildren(); return; }
+    if (ajustesAnio === null) ajustesAnio = anioInicialAdmin();
+    const anio = ajustesAnio;
+
+    if (!(await cargarHoras())) {
+        reemplazarHijos(contenedor, el("h3", { class: "grupo-titulo", text: "Mis horas anuales" }),
+            el("p", { class: "error-texto", text: "No se pudieron cargar los datos de horas. Puede que falte ejecutar el script de la fase 10 en Supabase." }));
+        return;
+    }
+
+    const actual = anualesDe(yo.id, anio);
+    const input = el("input", { type: "number", min: "0", max: "9999", step: "0.5", inputmode: "decimal", class: "input-medio", placeholder: "sin definir", "aria-label": `Mis horas anuales de ${anio}` });
+    if (actual !== null) input.value = String(actual);
+    const aviso = el("p", { class: "admin-aviso-corto", role: "status" });
+    const guardar = el("button", { type: "button", text: `Guardar mis horas de ${anio}` });
+
+    guardar.addEventListener("click", async () => {
+        const texto = input.value.trim().replace(",", ".");
+        const previa = anualesDe(yo.id, anio);
+        const h = texto === "" ? null : Number(texto);
+        if (h !== null && (!Number.isFinite(h) || h < 0 || h > 9999)) {
+            aviso.textContent = "Revisa las horas: entre 0 y 9999."; aviso.className = "admin-aviso-corto error-texto"; return;
+        }
+        guardar.disabled = true;
+        let error = null;
+        if (h === null) {
+            if (previa !== null) error = (await supabaseClient.from("horas_anuales").delete().eq("empleado_id", yo.id).eq("anio", anio)).error;
+        } else {
+            error = (await supabaseClient.from("horas_anuales").upsert({ empleado_id: yo.id, anio, horas: h }, { onConflict: "empleado_id,anio" })).error;
+        }
+        guardar.disabled = false;
+        if (error) {
+            console.error(error);
+            aviso.textContent = "No se pudo guardar." + detalleError(error); aviso.className = "admin-aviso-corto error-texto"; return;
+        }
+        if (h === null) horasAnuales.delete(`${yo.id}|${anio}`); else horasAnuales.set(`${yo.id}|${anio}`, h);
+        aviso.textContent = "Guardado."; aviso.className = "admin-aviso-corto admin-ok";
+    });
+
+    reemplazarHijos(contenedor,
+        el("h3", { class: "grupo-titulo", text: "Mis horas anuales" }),
+        el("p", { class: "admin-nota", text: "Las horas de convenio de todo el año (solo el total). Con ellas se calculan tus excesos disponibles. Solo las ves tú y el administrador." }),
+        el("div", { class: "fila-guardar" }, selectorAnio(anio, (a) => { ajustesAnio = a; pintarHorasAnualesAjustes(contenedor); })),
+        el("label", { class: "fila-horas fila-horas-emp" }, el("span", { class: "fila-horas-nombre", text: `Horas anuales de ${anio}` }), input, el("span", { class: "fila-horas-unidad", text: "h" })),
+        el("div", { class: "fila-guardar" }, guardar, aviso)
+    );
+}
+
+// ======================================================================
+// Resumen de la pantalla principal (debajo de "Hoy"): vacaciones, libre disposición y,
+// para quien corresponda, horas anuales y excesos del año en curso
+// ======================================================================
+let tokenResumenPrincipal = 0;
+
+function miniDato(etiqueta, valor, sub, ancho, clase, alTocar) {
+    return el(alTocar ? "button" : "div", { type: alTocar ? "button" : null, class: `mini-dato mini-${ancho} ${clase || ""}`, onclick: alTocar || null },
+        el("span", { class: "mini-etiqueta", text: etiqueta }),
+        el("strong", { class: "mini-valor", text: valor }),
+        sub ? el("span", { class: "mini-sub", text: sub }) : null);
+}
+
+async function pintarResumenPrincipal(caja, empleado) {
+    const token = ++tokenResumenPrincipal;
+    if (!(await cargarHoras())) { if (token === tokenResumenPrincipal) caja.hidden = true; return; }
+    const anio = new Date().getFullYear();
+    const { total } = await calcularResumen(empleado, anio);
+    if (token !== tokenResumenPrincipal) return;   // llegó otro pintado más reciente
+
+    const cfg = configDe(anio);
+    const dias = (c) => total.dias[c] || 0;
+    const plural = (n) => (Math.abs(n - 1) < 0.005 ? "día" : "días");
+    const tarjetas = [];
+
+    // Apuntados / disponibles
+    const vac = dias("V"), ld = dias("LD");
+    const verHoras = veHoras(empleado);
+    const anchoFila1 = verHoras ? "2" : "3";
+    tarjetas.push(miniDato("Vacaciones", `${vac} / ${Math.max(0, cfg.dias_vacaciones - vac)}`, null, anchoFila1, vac > cfg.dias_vacaciones ? "mini-aviso" : ""));
+    tarjetas.push(miniDato("Libre disposición", `${ld} / ${Math.max(0, cfg.dias_ld - ld)}`, null, anchoFila1, ld > cfg.dias_ld ? "mini-aviso" : ""));
+
+    if (verHoras) {
+        const anuales = anualesDe(empleado.id, anio);
+        const pendiente = excesoPendiente(total.horas, empleado.id, anio);
+        const e = dias("E");
+        tarjetas.push(anuales === null
+            ? miniDato("Horas anuales", "Sin definir", "Tócalo para ponerlas", "2", "mini-aviso", () => verAjustes())
+            : miniDato("Horas anuales", `${formatoHoras(anuales)} h`, null, "2"));
+        tarjetas.push(miniDato("Excesos puestos", `${e} ${plural(e)}`, null, "3"));
+        if (pendiente === null) {
+            tarjetas.push(miniDato("Excesos disponibles", "—", "Faltan tus horas anuales", "3"));
+        } else if (pendiente > 0.005) {
+            const d = Math.round(pendiente / cfg.horas_dia_exceso * 10) / 10;
+            tarjetas.push(miniDato("Excesos disponibles", `${formatoHoras(d)} ${plural(d)}`, `${formatoHoras(Math.round(pendiente * 100) / 100)} h`, "3", "mini-destacado"));
+        } else {
+            tarjetas.push(miniDato("Excesos disponibles", "0 días", pendiente < -0.005 ? `te has pasado ${formatoHoras(Math.round(-pendiente * 100) / 100)} h` : "0 h", "3", pendiente < -0.005 ? "mini-aviso" : ""));
+        }
+    }
+
+    reemplazarHijos(caja,
+        el("p", { class: "hoy-subtitulo", text: `Resumen ${anio} · apuntados / disponibles` }),
+        el("div", { class: "mini-grid" }, tarjetas));
+    caja.hidden = false;
+    if (typeof ajustarAlturaCalendario === "function") ajustarAlturaCalendario();
 }

@@ -224,6 +224,21 @@ async function guardarCambiosCalendario(cambios) {
         if (decision !== "guardar") return false;
     }
 
+    // Una baja (B) mantiene las horas previstas. Si el día traía otras horas que las del ciclo (un turno
+    // puesto a mano) y no hay ajuste de horas, se conservan como ajuste para que la baja siga sumándolas.
+    const conservarHoras = [];
+    if (cambios.some(c => c.codigo === "B") && typeof cargarHoras === "function" && await cargarHoras()) {
+        await Promise.all(anios.map(asegurarHorasDia));
+        cambios.forEach(({ fecha, codigo }) => {
+            if (codigo !== "B") return;
+            const previo = infoTurno(fecha, empleado).codigo;
+            if (previo === "B" || horasDia.has(claveExcepcion(empleado.id, fecha))) return;
+            const eran = horasDeDia(empleado, fecha, previo);
+            const delCiclo = horasDeDia(empleado, fecha, "B");   // sin ajuste: las horas del turno del ciclo
+            if (Math.abs(eran - delCiclo) > 0.001) conservarHoras.push({ fecha, horas: eran });
+        });
+    }
+
     const subir = [];
     const borrar = [];
     const anterior = new Map();
@@ -272,9 +287,12 @@ async function guardarCambiosCalendario(cambios) {
         return false;
     }
 
-    // Cambiar el turno de un día quita su ajuste manual de horas
+    // Cambiar el turno de un día quita su ajuste manual de horas (salvo al pasar a baja, que lo mantiene)
     if (typeof limpiarAjustesHoras === "function") {
-        await limpiarAjustesHoras(empleado, [...subir.map(r => r.fecha), ...borrar]);
+        await limpiarAjustesHoras(empleado, [...subir.filter(r => r.codigo !== "B").map(r => r.fecha), ...borrar]);
+    }
+    if (conservarHoras.length && typeof guardarHorasDia === "function") {
+        await guardarHorasDia(empleado, conservarHoras, true);
     }
 
     mostrarToast(cambios.length > 1 ? "Cambios guardados" : "Guardado");

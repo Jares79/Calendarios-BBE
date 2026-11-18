@@ -242,6 +242,15 @@ function mostrarFormularioEmpleado(emp) {
     selectRol.value = principal ? principal.rol : "empleado";
     if (!esNuevo && !principal) selectRol.disabled = true;
     const checkActivo = el("input", { type: "checkbox", checked: emp ? emp.activo : true });
+    const checkVerHoras = el("input", { type: "checkbox", checked: emp ? emp.verHoras : false });
+    const filaVerHoras = el("label", { class: "admin-campo admin-check" }, checkVerHoras,
+        el("span", { text: "Enseñarle su resumen de horas anuales y excesos (los colectivos de turnos siempre lo ven)" }));
+    const actualizarVerHoras = () => {
+        const c = buscarColectivo(selectColectivo.value);
+        filaVerHoras.style.display = esNuevo || (c && c.tipo === "turnos") ? "none" : "";
+    };
+    selectColectivo.addEventListener("change", actualizarVerHoras);
+    actualizarVerHoras();
     const error = el("p", { class: "admin-error-texto", text: "" });
 
     const campo = (etiqueta, control) => el("label", { class: "admin-campo" }, el("span", { text: etiqueta }), control);
@@ -254,6 +263,7 @@ function mostrarFormularioEmpleado(emp) {
         campo("Día en que empieza su ciclo de turnos", inputInicio),
         campo("Rol en la app", selectRol),
         esNuevo ? null : el("label", { class: "admin-campo admin-check" }, checkActivo, el("span", { text: "Activo (si lo desmarcas, no sale en calendarios y no puede entrar)" })),
+        esNuevo ? null : filaVerHoras,
         error,
         el("div", { class: "admin-acciones" },
             el("button", { type: "submit", text: esNuevo ? "Crear empleado" : "Guardar cambios" }),
@@ -306,6 +316,17 @@ function mostrarFormularioEmpleado(emp) {
         if (!r || !r.ok) {
             error.textContent = MOTIVOS_ADMIN[r && r.motivo] || "No se pudo guardar.";
             return;
+        }
+
+        // Resumen de horas para quien no es de un colectivo de turnos (se guarda aparte)
+        if (!esNuevo && checkVerHoras.checked !== emp.verHoras) {
+            const rv = await supabaseClient.rpc("admin_guardar_ver_horas", { p_empleado: emp.id, p_ver: checkVerHoras.checked });
+            if (rv.error || !rv.data || !rv.data.ok) {
+                console.error(rv.error || rv.data);
+                await recargarGestionAdmin();
+                mostrarAviso("Los cambios se guardaron, pero no se pudo cambiar lo del resumen de horas (falta ejecutar el script de la fase 10 en Supabase).", true);
+                return;
+            }
         }
 
         await recargarGestionAdmin();

@@ -5,7 +5,7 @@
 // Código de turno -> prefijo de las variables CSS (--m-bg, --m-fg...)
 // (las marcas semanales D, CTD, CT1... también se pueden recolorear)
 const PREFIJO_COLOR = {
-    M: "m", T: "t", N: "n", F: "f", P: "p", I: "i", S: "s", V: "v", E: "e", J: "j", LD: "ld",
+    M: "m", T: "t", N: "n", F: "f", P: "p", I: "i", S: "s", V: "v", E: "e", J: "j", LD: "ld", B: "b",
     D: "d", CTD: "ctd", CT1: "ct1", CT2: "ct2", CT3: "ct3", CT4: "ct4", CTY: "cty"
 };
 
@@ -136,6 +136,12 @@ function pintarEditorColores() {
     );
 
     const actual = personalizados[elegido];
+    // CT1 a CT4 comparten color: CT2, CT3 y CT4 siguen a CT1 mientras no tengan uno propio
+    const notaCT = elegido === "CT1"
+        ? "CT1, CT2, CT3 y CT4 comparten color: al cambiar el de CT1 cambian también los que no tengan uno propio."
+        : ["CT2", "CT3", "CT4"].includes(elegido)
+            ? (actual ? `${elegido} tiene su propio color. «Restaurar este turno» lo devuelve al de CT1.` : `${elegido} usa el color de CT1. Elige uno aquí si quieres que sea distinto.`)
+            : null;
     const muestras = el("div", { class: "paleta", role: "group", "aria-label": "Colores" },
         PALETA.map(hex => el("button", {
             type: "button",
@@ -154,7 +160,7 @@ function pintarEditorColores() {
     });
     selectorLibre.addEventListener("change", () => { cambiarColor(elegido, selectorLibre.value.toLowerCase()); pintarEditorColores(); });
 
-    contenedor.replaceChildren(
+    reemplazarHijos(contenedor,
         el("div", { class: "resultado-cabecera" },
             el("h2", { text: "Colores de los turnos" }),
             el("button", { type: "button", class: "btn-secundario", text: "Volver", onclick: cerrarVistaResultado })
@@ -162,6 +168,7 @@ function pintarEditorColores() {
         el("p", { class: "admin-nota nota-colores", text: "Elige un turno y luego su color. Solo lo verás tú, y se guarda en tu cuenta." }),
         turnos,
         el("h3", { class: "grupo-titulo", text: `Color de ${disponibles[elegido].texto}` }),
+        notaCT ? el("p", { class: "admin-nota", text: notaCT }) : null,
         muestras,
         el("div", { class: "color-libre-fila" },
             el("label", { class: "campo-inline" }, el("span", { text: "Otro color" }), selectorLibre),

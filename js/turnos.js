@@ -7,6 +7,7 @@
 //   2. Festivo: convierte en F una P o una I que salga del ciclo.
 //   3. Intensiva: convierte en I cualquier P dentro de los periodos marcados.
 //   4. El ciclo (patrón) de su colectivo, desde su fecha de inicio.
+// La baja (B) se pone siempre a mano: se ve en el calendario y sigue sumando las horas previstas.
 
 const TURNOS = {
     M:  { texto: "Mañana",            clase: "manana" },
@@ -19,7 +20,8 @@ const TURNOS = {
     V:  { texto: "Vacaciones",        clase: "vacaciones" },
     E:  { texto: "Excesos",           clase: "excesos" },
     J:  { texto: "Permiso justificado", clase: "permiso" },
-    LD: { texto: "Libre disposición", clase: "libredisp" }
+    LD: { texto: "Libre disposición", clase: "libredisp" },
+    B:  { texto: "Baja",              clase: "baja" }
 };
 
 // Marcas (mitad de arriba de la celda) de quienes el administrador activa para ello:

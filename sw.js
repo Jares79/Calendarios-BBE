@@ -7,7 +7,7 @@
 // si no hay red, lo último guardado. Para forzar que todos descarguen de nuevo los
 // archivos, cambia el número de VERSION.
 
-const VERSION = "bbe-v12";
+const VERSION = "bbe-v13";
 
 const ARCHIVOS = [
     "./",

@@ -325,22 +325,11 @@ function pintarResumenHoy() {
     const iso = aISO(hoy);
     const info = infoTurno(iso, empleado);
 
-    const proximos = [];
-    for (let i = 1; i <= 6; i++) {
-        const dia = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() + i);
-        const isoDia = aISO(dia);
-        const infoDia = infoTurno(isoDia, empleado);
-        proximos.push(el("li", { class: "chip-dia " + infoDia.clase + claseLargo(infoDia), title: `${fechaLarga(isoDia)}: ${infoDia.texto}${infoDia.marca ? " · " + infoDia.marca.texto : ""}` },
-            el("span", { class: "chip-sem", text: DIAS_SEMANA_CORTOS[dia.getDay()] }),
-            el("span", { class: "chip-num", text: dia.getDate() }),
-            el("span", { class: "chip-letra", text: infoDia.codigo }),
-            infoDia.partida
-                ? el("span", { class: "chip-marca " + (infoDia.marca ? infoDia.marca.clase : "sin-marca"), text: infoDia.marca ? infoDia.marca.codigo : "·" })
-                : null
-        ));
-    }
+    // Resumen del año (vacaciones, LD, horas y excesos) justo debajo de "Hoy"; se rellena al tener los datos
+    const resumenCaja = esPerfilFamiliar() ? null : el("div", { class: "hoy-resumen-caja" },
+        el("p", { class: "hoy-subtitulo", text: "Calculando resumen…" }));
 
-    contenedor.replaceChildren(
+    reemplazarHijos(contenedor,
         el("div", { class: "hoy-bloque " + info.clase },
             el("div", { class: "hoy-textos" },
                 el("span", { class: "hoy-etiqueta", text: "Hoy" }),
@@ -350,12 +339,10 @@ function pintarResumenHoy() {
             ),
             el("span", { class: "hoy-letra" + claseLargo(info), text: info.codigo })
         ),
-        el("div", { class: "hoy-proximos-caja" },
-            el("p", { class: "hoy-subtitulo", text: "Próximos días" }),
-            el("ul", { class: "hoy-proximos" }, proximos)
-        )
+        resumenCaja
     );
     contenedor.hidden = false;
+    if (resumenCaja && typeof pintarResumenPrincipal === "function") pintarResumenPrincipal(resumenCaja, empleado);
 }
 
 function pintarLeyenda() {
