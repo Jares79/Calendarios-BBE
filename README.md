@@ -56,12 +56,30 @@ M, T, N, F, P, I y S pueden salir del ciclo. V, E, J y LD solo se ponen a mano.
 
 - **Mi año** (menú): los 12 meses a la vez, un cuadradito por día con el color de su turno, selector de año con flechas y recuento de días por turno. Tocar un cuadradito abre el detalle del día.
 - **Colectivos nuevos** (se crean con `supabase/fase4-correturnos.sql`): *Correturnos* y *Personal de jornada partida*, ciclo de 7 días `P P P P I F F` de lunes a domingo. El día de inicio de cada empleado tiene que ser un **lunes** (la app lo comprueba al dar de alta o editar). Se añaden con "Empleados y accesos" como el resto.
-- **Semanas especiales**: el personal de jornada partida tiene semanas de guardia (**G**) y los correturnos semanas **CTD, CT1, CT2, CT3, CT4 y CTY**. En sus calendarios cada celda va partida: arriba la marca de la semana, abajo el turno del día. La marca no cambia el turno.
-  - Cada persona las asigna en el menú → **Semanas** (lista de semanas del año, varias semanas seguidas) o tocando un día en "Editar calendario".
-  - El administrador puede asignarlas a cualquiera y crear un **patrón que se repite** (por ejemplo `CT1 CT2 CT3 CT4 CTD CTY`, con `-` para una semana sin marca).
-  - Los colores de G y de los CT se editan en "Editar colores" (solo aparecen si hay colectivos con semanas).
-- Qué marcas admite cada colectivo está en la columna `colectivos.marcas` (se puede cambiar por SQL).
-- Tablas nuevas: `semanas_especiales` (empleado, lunes de la semana, código). Archivos nuevos: `js/semanas.js` y `js/anio.js`.
+- **Marcas de la mitad de arriba de la celda** (D, CTD, CT1... CTY): ver "Fase 9" (se asignan persona a persona). Tablas: `semanas_especiales` (marca de una semana entera, por su lunes) y `marcas_dia` (marca de un día suelto, o "-" = ese día sin marca). Archivos nuevos: `js/semanas.js` y `js/anio.js`.
+
+## Fase 5: solicitudes de cambio entre compañeros
+
+- Solo en los colectivos de turnos (jefes de turno, operadores de control y de campo), entre compañeros del mismo colectivo.
+- Es una **permuta**: cada uno se queda con el turno del otro ese día. Se pide un día desde su ficha ("Solicitar cambio") o varios con "Cambio de varios días" (se eligen en el calendario, cambiando de mes si hace falta). En la ventana se elige a quién se pide cada día y se puede añadir un mensaje.
+- Solo se ofrecen compañeros con turno M, T, N, P, I, S o F ese día. Avisa (sin bloquear) de noche → tarde, tarde → mañana y noche → mañana.
+- Menú **Cambios**: pestañas *Recibidas* y *Mis solicitudes*, con el hilo de mensajes de cada solicitud. El destinatario acepta (se cambian los dos calendarios) o rechaza; el solicitante puede cancelar. Globo de avisos en el menú y junto al nombre.
+- La solicitud caduca el día del primer cambio. Lo aceptado, rechazado, cancelado o caducado se borra a las 24 horas.
+- SQL: `supabase/fase5-cambios.sql` (obligatorio) y `supabase/fase5-limpieza.sql` (limpieza programada con pg_cron, opcional: la app también limpia al abrir y cada minuto).
+
+## Fase 6 y 8: horas, resumen del año y ajuste por día
+
+- **Horas y convenio** (menú de administrador, **por año**): horas que cuenta cada turno, horas que equivale un día de excesos, días de vacaciones y horas anuales de cada empleado (cada uno solo ve las suyas). Hay un botón para copiar los valores del año anterior.
+- **Horas** (menú, para todos): horas por mes, vacaciones (usadas y restantes), excesos, solapes, permisos justificados y libre disposición, y las **horas y días de excesos que quedan por pedir** (horas computables del año − horas anuales). El administrador elige a cualquiera y tiene la pestaña "Todos".
+- **Editor de calendario**: cada turno muestra las horas que computa y, en un día, se puede **ajustar a mano** cuántas horas computa (p. ej. una baja que computa como el turno que tocaba). Cambiar el turno de ese día borra el ajuste. Tabla `horas_dia`.
+- Los **correturnos** pueden pedir cambios a los tres colectivos de turnos, y estos a un correturno que esté sustituyendo (turno M, T o N ese día).
+
+## Fase 7: avisos al tocar tu calendario
+
+- **Deshacer un cambio de dos personas**: si cambias a mano un turno que te llegó por un cambio aceptado, la app avisa de que afecta a la otra persona y sugiere pedirle que lo deshaga (se envía como una solicitud nueva). También deja "cambiar solo el mío". Para esto cada cambio aceptado se anota en `cambios_hechos` (se conserva 30 días tras la fecha).
+- **Turno ya cubierto**: al poner M, T o N a mano, avisa si alguien de tu colectivo ya tiene ese turno ese día más allá de lo habitual (lo habitual sale del ciclo, así que cubrir a alguien de vacaciones no avisa). Un correturno recibe el aviso cuando nadie falta en ese turno en los colectivos de turnos.
+- Los colectivos de turnos pueden pedir cambio a un correturno que esté sustituyendo (turno M, T o N ese día).
+- SQL: `supabase/fase7-permutas.sql` (después de las fases 5 y 6; no vuelvas a ejecutar `fase5-cambios.sql` después, porque sustituiría `responder_cambio`).
 
 ## Instalar en el móvil
 
@@ -134,3 +152,10 @@ Los nombres exactos de los menús pueden cambiar con las versiones del panel.
 - La clave `sb_publishable_...` de `js/usuarios.js` puede estar en el código: está pensada para eso. Lo que protege los datos son las sesiones y los permisos por filas (RLS).
 - Los nombres de empleados nunca se insertan como HTML (se pintan con `esc()` o `textContent`).
 - Supabase Auth limita los intentos de acceso por dirección IP, pero ya no bloquea cuentas individuales como hacía el login anterior. Por eso conviene elegir PIN de 8 o más números.
+
+## Fase 9: marcas por persona, tipos de colectivo y horas por año
+
+- **Marcas por persona**: en "Empleados y accesos" → **Disponibilidades y CT**, el administrador marca quién puede usar **D** (Disponible; antes "G", guardia) y las semanas **CTD, CT1, CT2, CT3, CT4, CTY**. Solo a esas personas se les parte la celda en dos mitades y se les ofrecen esas marcas al editar (por semana o por día). Se guardan en `empleados.marcas`.
+- **Tipo de colectivo** (`colectivos.tipo`): `turnos` (jefes de turno, operadores de control y de campo), `correturnos` u `otro`. Determina quién puede pedir cambios.
+- Se eliminan la pantalla "Semanas" y las coincidencias con compañeros. La sección Horas pasa de Ajustes al menú.
+- SQL: `supabase/fase9-reorganizacion.sql` (ver `supabase/LEEME-orden.md` para el orden de todos los scripts).

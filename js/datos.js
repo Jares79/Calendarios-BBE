@@ -5,7 +5,9 @@
 const ANIO_MIN = 2025;
 const ANIO_MAX = 2035;
 
-// colectivos = [{ codigo, nombre, icono, puesto, patron, diasSolape, marcas, empleados: [{ id, nombre, iniciales, inicio, colectivo, activo, orden }] }]
+// colectivos = [{ codigo, nombre, icono, puesto, patron, diasSolape, tipo, empleados: [{ id, nombre, iniciales, inicio, colectivo, activo, orden, marcas }] }]
+// tipo: 'turnos' (jefes de turno, operadores de control y de campo), 'correturnos' u 'otro'.
+// marcas: marcas de arriba de la celda que ese empleado puede usar (D, CTD, CT1... CTY); vacío = celda entera.
 // Los empleados dados de baja solo los ve el administrador, y no aparecen en los calendarios.
 let colectivos = [];
 
@@ -42,7 +44,7 @@ async function cargarDatos() {
         puesto: c.puesto,
         patron: c.patron,
         diasSolape: c.dias_solape,
-        marcas: Array.isArray(c.marcas) ? c.marcas : [],   // marcas semanales permitidas (vacío = sin semanas)
+        tipo: c.tipo || (c.codigo === "correturnos" ? "correturnos" : c.codigo === "jornada" ? "otro" : "turnos"),
         empleados: re.data
             .filter(e => e.colectivo === c.codigo)
             .map(e => ({
@@ -52,7 +54,8 @@ async function cargarDatos() {
                 inicio: e.inicio,
                 colectivo: e.colectivo,
                 activo: e.activo,
-                orden: e.orden
+                orden: e.orden,
+                marcas: Array.isArray(e.marcas) ? e.marcas : []
             }))
     }));
 

@@ -50,7 +50,7 @@
     --ld-bg: #fff3a6; --ld-fg: #4a4200;  --ld-borde: #d9bc00;
 
     /* Marcas de semana (mitad de arriba de la celda): guardia y correturnos */
-    --g-bg: #c0392b;   --g-fg: #ffffff;
+    --d-bg: #c0392b;   --d-fg: #ffffff;
     --ctd-bg: #6d4c9f; --ctd-fg: #ffffff;
     --ct1-bg: #1f7a8c; --ct1-fg: #ffffff;
     --ct2-bg: #3a7d44; --ct2-fg: #ffffff;
@@ -95,7 +95,7 @@
         --j-bg: #c9569a;
         --ld-bg: #e8d45a; --ld-fg: #2e2900;  --ld-borde: #fff3a6;
 
-        --g-bg: #d9534a;
+        --d-bg: #d9534a;
         --ctd-bg: #8d6cc0;
         --ct1-bg: #2b97ab;
         --ct2-bg: #4c9a58;
@@ -136,7 +136,7 @@
     --j-bg: #c9569a;
     --ld-bg: #e8d45a; --ld-fg: #2e2900;  --ld-borde: #fff3a6;
 
-    --g-bg: #d9534a;
+    --d-bg: #d9534a;
     --ctd-bg: #8d6cc0;
     --ct1-bg: #2b97ab;
     --ct2-bg: #4c9a58;
@@ -158,7 +158,7 @@
 .permiso   { --bg: var(--j-bg); --fg: var(--j-fg); }
 .libredisp { --bg: var(--ld-bg); --fg: var(--ld-fg); --borde: var(--ld-borde); }
 
-.marca-g   { --bg: var(--g-bg);   --fg: var(--g-fg); }
+.marca-d   { --bg: var(--d-bg);   --fg: var(--d-fg); }
 .marca-ctd { --bg: var(--ctd-bg); --fg: var(--ctd-fg); }
 .marca-ct1 { --bg: var(--ct1-bg); --fg: var(--ct1-fg); }
 .marca-ct2 { --bg: var(--ct2-bg); --fg: var(--ct2-fg); }
@@ -1501,3 +1501,18 @@ td.dato-destacado { font-weight: 700; }
 
 .modal-acciones-columna { flex-direction: column; align-items: stretch; }
 .modal-acciones-columna button { width: 100%; }
+
+/* Fase 8 · horas en los turnos y ajuste de horas de un día */
+.opcion-turno .opcion-horas { display: block; font-size: 0.7rem; font-weight: 600; opacity: 0.85; }
+.seccion-horas { margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--linea); }
+.seccion-horas .btn-ancho { margin-top: 8px; }
+.seccion-horas select { width: 100%; margin-bottom: 8px; }
+.seccion-horas-actual { margin: 4px 0 8px; }
+.fila-horas-dia { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+
+/* Fase 9 · marcas por persona */
+.fila-marcas { display: flex; flex-direction: column; gap: 6px; padding: 8px 10px; margin-bottom: 6px; background: var(--superficie-2); border: 1px solid var(--linea); border-radius: 10px; }
+.fila-marcas-opciones { display: flex; flex-wrap: wrap; gap: 6px; }
+.opcion-marca { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; border: 2px solid var(--linea); cursor: pointer; font-weight: 700; font-size: 0.85rem; }
+.opcion-marca:has(input:checked) { background: var(--bg); color: var(--fg); border-color: var(--bg); }
+.opcion-marca input { width: 16px; height: 16px; margin: 0; }

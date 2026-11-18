@@ -83,8 +83,13 @@ function pintarGestionAdmin() {
             : el("p", { class: "admin-nota", text: "Sin empleados." })
     ));
 
+    const botonMarcas = el("button", {
+        class: "admin-nuevo btn-secundario", text: "🏷️ Disponibilidades y CT",
+        onclick: verMarcasAdmin
+    });
+
     contenedor.replaceChildren(
-        cabecera, adminAviso, botonNuevo, formulario, ...listas,
+        cabecera, adminAviso, botonNuevo, botonMarcas, formulario, ...listas,
         el("hr", { class: "separador" }),
         seccionCiclos()
     );

@@ -81,17 +81,20 @@ function crearRejillaTurnos(alElegir, seleccionado) {
                 onclick: () => alElegir(codigo)
             },
                 el("span", { class: "opcion-letra", text: codigo }),
-                el("span", { class: "opcion-nombre", text: t.texto })
+                el("span", { class: "opcion-nombre", text: t.texto }),
+                el("span", { class: "opcion-horas", text: typeof textoHorasTurno === "function" ? textoHorasTurno(codigo) : "" })
             ))
     );
 }
 
 // --- Cambiar el turno de un día ---
-function abrirSelectorTurno(fechaISO) {
+async function abrirSelectorTurno(fechaISO) {
     ocultarDetalleDia();
     const empleado = obtenerEmpleadoActual();
     if (!empleado) return;
+    if (typeof prepararHoras === "function") await prepararHoras(fechaISO);   // horas de cada turno y ajustes
     const info = infoTurno(fechaISO, empleado);
+    const seccionHoras = typeof crearSeccionHorasDia === "function" ? crearSeccionHorasDia(fechaISO, empleado) : null;
     const seccionSemana = crearSeccionSemana(fechaISO, empleado);   // solo en colectivos con semanas
 
     const panel = el("div", { id: "panelDetalleDia", class: "detalle-dia hoja-edicion", role: "dialog", "aria-label": "Cambiar turno" },
@@ -116,16 +119,20 @@ function abrirSelectorTurno(fechaISO) {
                 guardarCambiosCalendario([{ fecha: fechaISO, codigo: null }]);
             }
         }),
+        seccionHoras,
         seccionSemana
     );
     document.body.append(panel);
 }
 
 // --- Cambiar varios días a la vez ---
-function abrirEditorRango() {
+async function abrirEditorRango() {
     ocultarDetalleDia();
     const hoy = aISO(new Date());
     let elegido = null;
+    const empleadoActual = obtenerEmpleadoActual();
+    if (typeof prepararHoras === "function") await prepararHoras(hoy);
+    const bloqueHoras = typeof crearBloqueHorasRango === "function" && empleadoActual ? crearBloqueHorasRango(empleadoActual) : null;
 
     const desde = el("input", { type: "date", value: hoy, "aria-label": "Desde" });
     const hasta = el("input", { type: "date", value: hoy, "aria-label": "Hasta" });
@@ -159,18 +166,30 @@ function abrirEditorRango() {
             el("label", { class: "campo" }, el("span", { text: "Hasta" }), hasta)
         ),
         rejilla,
+        bloqueHoras ? bloqueHoras.elemento : null,
         error,
         el("div", { class: "barra-edicion-acciones" },
             el("button", {
                 type: "button", text: "Aplicar turno",
-                onclick: () => {
+                onclick: async () => {
                     const fechas = fechasValidas();
                     if (!fechas) return;
                     if (!elegido) { error.textContent = "Elige un turno."; return; }
                     ocultarDetalleDia();
-                    guardarCambiosCalendario(fechas.map(fecha => ({ fecha, codigo: elegido })));
+                    const guardado = await guardarCambiosCalendario(fechas.map(fecha => ({ fecha, codigo: elegido })));
+                    if (guardado && bloqueHoras) await bloqueHoras.aplicar(fechas);   // las horas se ajustan después del turno
                 }
             }),
+            bloqueHoras ? el("button", {
+                type: "button", class: "btn-secundario", text: "Solo horas",
+                onclick: async () => {
+                    const fechas = fechasValidas();
+                    if (!fechas) return;
+                    if (!bloqueHoras.hayAccion()) { error.textContent = "Elige qué hacer con las horas."; return; }
+                    ocultarDetalleDia();
+                    await bloqueHoras.aplicar(fechas);
+                }
+            }) : null,
             el("button", {
                 type: "button", class: "btn-secundario", text: "Volver al ciclo",
                 onclick: () => {
@@ -251,6 +270,11 @@ async function guardarCambiosCalendario(cambios) {
         verMiCalendario();
         mostrarToast("No se pudo guardar. Inténtalo de nuevo.", true);
         return false;
+    }
+
+    // Cambiar el turno de un día quita su ajuste manual de horas
+    if (typeof limpiarAjustesHoras === "function") {
+        await limpiarAjustesHoras(empleado, [...subir.map(r => r.fecha), ...borrar]);
     }
 
     mostrarToast(cambios.length > 1 ? "Cambios guardados" : "Guardado");

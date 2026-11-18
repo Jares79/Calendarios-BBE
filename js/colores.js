@@ -3,10 +3,10 @@
 // así que le siguen aunque cambie de móvil u ordenador. Cada persona solo ve los suyos.
 
 // Código de turno -> prefijo de las variables CSS (--m-bg, --m-fg...)
-// (las marcas semanales G, CTD, CT1... también se pueden recolorear)
+// (las marcas semanales D, CTD, CT1... también se pueden recolorear)
 const PREFIJO_COLOR = {
     M: "m", T: "t", N: "n", F: "f", P: "p", I: "i", S: "s", V: "v", E: "e", J: "j", LD: "ld",
-    G: "g", CTD: "ctd", CT1: "ct1", CT2: "ct2", CT3: "ct3", CT4: "ct4", CTY: "cty"
+    D: "d", CTD: "ctd", CT1: "ct1", CT2: "ct2", CT3: "ct3", CT4: "ct4", CTY: "cty"
 };
 
 // Paleta amplia: 12 tonos en 4 intensidades + una fila de grises
@@ -116,8 +116,8 @@ function verEditorColores() {
 function pintarEditorColores() {
     const contenedor = document.getElementById("resultado");
     const personalizados = usuarioActual.colores || {};
-    // Las marcas semanales solo se ofrecen si algún colectivo las usa
-    const hayMarcas = colectivos.some(c => c.marcas.length > 0);
+    // Las marcas solo se ofrecen si alguien tiene marcas activadas
+    const hayMarcas = hayMarcasEnUso();
     const disponibles = hayMarcas ? TIPOS_COLOR : TURNOS;
     const elegido = disponibles[turnoColorElegido] ? turnoColorElegido : "M";
 

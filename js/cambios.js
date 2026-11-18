@@ -26,14 +26,18 @@ const cambiosAplicados = new Set();     // solicitudes aceptadas cuyo efecto ya 
 // Los tres colectivos de turnos piden cambios dentro de su colectivo; los correturnos, que a veces
 // sustituyen, pueden pedirlos a cualquiera de los tres colectivos de turnos.
 function esColectivoDeTurnos(colectivo) {
-    return !!colectivo && colectivo.marcas.length === 0;
+    return !!colectivo && colectivo.tipo === "turnos";
+}
+
+function esCorreturnos(colectivo) {
+    return !!colectivo && colectivo.tipo === "correturnos";
 }
 
 function puedeUsarCambios() {
     if (!usuarioActual || esPerfilFamiliar()) return false;
     const yo = obtenerEmpleadoActual();
     const colectivo = yo ? buscarColectivo(yo.colectivo) : null;
-    return esColectivoDeTurnos(colectivo) || (!!colectivo && colectivo.codigo === "correturnos");
+    return esColectivoDeTurnos(colectivo) || esCorreturnos(colectivo);
 }
 
 // Compañeros a los que puedo pedir un cambio: los de mi colectivo de turnos y, además, los correturnos
@@ -42,7 +46,7 @@ function puedeUsarCambios() {
 function candidatosCambio(yo) {
     const miColectivo = buscarColectivo(yo.colectivo);
     const colectivosValidos = esColectivoDeTurnos(miColectivo)
-        ? [miColectivo, ...colectivos.filter(c => c.codigo === "correturnos")]
+        ? [miColectivo, ...colectivos.filter(esCorreturnos)]
         : colectivos.filter(esColectivoDeTurnos);
     return colectivosValidos.flatMap(c => empleadosActivos(c)).filter(e => e.id !== yo.id);
 }
@@ -50,7 +54,7 @@ function candidatosCambio(yo) {
 // ¿Se le puede pedir el cambio a este compañero ese día, con ese turno suyo?
 function turnoOfrecible(yo, empleado, codigo) {
     if (!CODIGOS_CAMBIABLES.includes(codigo)) return false;
-    if (empleado.colectivo === "correturnos" && esColectivoDeTurnos(buscarColectivo(yo.colectivo))) {
+    if (esCorreturnos(buscarColectivo(empleado.colectivo)) && esColectivoDeTurnos(buscarColectivo(yo.colectivo))) {
         return ["M", "T", "N"].includes(codigo);
     }
     return true;
@@ -474,11 +478,11 @@ function avisoCobertura(empleado, colectivo, fechaISO, nuevo) {
         const otros = ahora(colectivo, empleado.id);
         const habitual = porCiclo(colectivo, empleado.id) + (turnoAutomatico(fechaISO, empleado, colectivo).codigo === nuevo ? 1 : 0);
         if (otros.length >= 1 && otros.length + 1 > habitual) {
-            return `${fecha}: ${nombresY(otros)} ya ${otros.length > 1 ? "tienen" : "tiene"} el turno de ${turno} en tu colectivo.`;
+            return `${fecha}: ${nombresY(otros)} ya ${otros.length > 1 ? "tienen" : "tiene"} el turno de ${turno} en tu colectivo (puede que esté de baja y no lo haya puesto).`;
         }
         return null;
     }
-    if (colectivo.codigo === "correturnos") {
+    if (esCorreturnos(colectivo)) {
         // Un correturno cubre un hueco: falta alguien en ese turno en alguno de los colectivos de turnos
         const huecos = colectivos.filter(esColectivoDeTurnos)
             .reduce((total, c) => total + Math.max(0, porCiclo(c) - ahora(c).length), 0);

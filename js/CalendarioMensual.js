@@ -368,12 +368,12 @@ function pintarLeyenda() {
             el("span", { text: t.texto })
         );
 
-    // Las marcas semanales solo se explican si hay algún colectivo que las use
-    const hayMarcas = colectivos.some(c => c.marcas.length > 0);
+    // Las marcas solo se explican si hay alguien con marcas activadas
+    const hayMarcas = hayMarcasEnUso();
     reemplazarHijos(contenedor,
         el("h2", { text: "Turnos" }),
         el("ul", { class: "leyenda-lista" }, Object.entries(TURNOS).map(item)),
-        hayMarcas ? el("h2", { class: "leyenda-sub", text: "Semanas (mitad de arriba de la celda)" }) : null,
+        hayMarcas ? el("h2", { class: "leyenda-sub", text: "Marcas (mitad de arriba de la celda)" }) : null,
         hayMarcas ? el("ul", { class: "leyenda-lista" }, Object.entries(MARCAS).map(item)) : null
     );
 }
