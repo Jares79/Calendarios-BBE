@@ -197,3 +197,13 @@ Los nombres exactos de los menús pueden cambiar con las versiones del panel.
 - `supabase/admin-sin-ficha.sql` desvincula a ADMIN de su ficha de empleado y la borra (el acceso, el PIN y el rol no cambian). Se ejecuta una vez.
 - Atención: el acceso de este administrador deja de salir en Empleados y accesos (el listado es por empleados), así que su PIN no se puede resetear desde la app.
 - Versión del service worker `bbe-v17`. Prueba: `pruebas/t15.py`.
+
+## Fase 15: ajustes de uso (editor, Mi año, leyenda, calendario anual por persona)
+
+- **Editor de turnos**: todas las celdas del mismo tamaño y sin las horas dentro (era lo que las agrandaba); la sección de horas del día queda a la vista.
+- **Mi año**: en pantallas anchas (desde 768 px) cada día muestra la letra del turno (y el código de la marca arriba si la hay).
+- **Acceso**: quitadas las casillas M T N F bajo el logo.
+- **Leyenda y editor**: solo los turnos que cada persona puede poner (`turnosPermitidosDe`: jornada partida no usa M, T, N ni S) y solo sus marcas habilitadas. El editor de colores sigue la misma regla.
+- **Calendario anual por persona**: en la ficha del empleado, el administrador marca qué grupos completos o subgrupos puede ver además del suyo (`empleados.anual_ver`, RPC `admin_guardar_anual_ver`). Sin nada marcado, solo ve su colectivo. El administrador ve todos. Es un control de lo que ofrece la app, no una barrera de privacidad en la base de datos.
+- **Disponibilidades y CT**: desplegables por grupo y subgrupo, como Empleados y accesos.
+- SQL: `supabase/fase15-anual-visibilidad.sql` (después de la fase 12). Versión del service worker `bbe-v18`. Pruebas: `pruebas/t16.py`.

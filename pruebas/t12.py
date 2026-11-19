@@ -69,7 +69,7 @@ with sync_playwright() as p:
     b,pg,errs=nueva(p,JP,DB); pg.click('#infoUsuario'); pg.click('#btnAjustes'); pg.wait_for_timeout(500); print('  jornada partida (sin flag) en ajustes: horas anuales =', pg.locator('.ajustes-horas input').count()); b.close()
     # 6) Baja B
     b,pg,errs=nueva(p,JEF,DB)
-    pg.click('#infoUsuario'); pg.click('#btnEditarCalendario'); pg.click('[data-fecha="2026-11-24"]'); pg.wait_for_selector('.opcion-horas')
+    pg.click('#infoUsuario'); pg.click('#btnEditarCalendario'); pg.click('[data-fecha="2026-11-24"]'); pg.wait_for_selector('.seccion-horas-actual')
     print('6 rejilla incluye B:', pg.locator('#panelDetalleDia .rejilla-turnos').first.locator('.opcion-turno', has_text='Baja').inner_text().replace('\n','|'))
     antes=txt(pg,'2026-11-24'); print('  24 antes:', antes)
     pg.locator('#panelDetalleDia .rejilla-turnos').first.locator('.opcion-turno', has_text='Baja').click(); pg.wait_for_timeout(500)
@@ -81,7 +81,7 @@ with sync_playwright() as p:
     b.close()
     db3=json.loads(json.dumps(DB)); db3['excepciones'].append({'empleado_id':'e-jefe','fecha':'2026-11-25','codigo':'S'})
     b,pg,errs=nueva(p,JEF,db3)
-    pg.click('#infoUsuario'); pg.click('#btnEditarCalendario'); pg.click('[data-fecha="2026-11-25"]'); pg.wait_for_selector('.opcion-horas')
+    pg.click('#infoUsuario'); pg.click('#btnEditarCalendario'); pg.click('[data-fecha="2026-11-25"]'); pg.wait_for_selector('.seccion-horas-actual')
     print('  25 antes:', txt(pg,'2026-11-25'), pg.locator('.seccion-horas-actual').inner_text())
     pg.locator('#panelDetalleDia .rejilla-turnos').first.locator('.opcion-turno', has_text='Baja').click(); pg.wait_for_timeout(500)
     print('  25 con B | horas_dia:', pg.evaluate("window.__db.horas_dia"))
@@ -90,7 +90,7 @@ with sync_playwright() as p:
     for cod,txtb in [('Libre','LD'),('Permiso','J'),('Solape','S')]:
         dbx=json.loads(json.dumps(DB)); dbx['excepciones'].append({'empleado_id':'e-jefe','fecha':'2026-11-25','codigo':'I'})
         b,pg,errs=nueva(p,JEF,dbx)
-        pg.click('#infoUsuario'); pg.click('#btnEditarCalendario'); pg.click('[data-fecha="2026-11-25"]'); pg.wait_for_selector('.opcion-horas')
+        pg.click('#infoUsuario'); pg.click('#btnEditarCalendario'); pg.click('[data-fecha="2026-11-25"]'); pg.wait_for_selector('.seccion-horas-actual')
         op=pg.locator('#panelDetalleDia .rejilla-turnos').first.locator('.opcion-turno', has_text=cod)
         if op.count()==0: print('6b no encuentro', cod); b.close(); continue
         etq=op.first.inner_text().replace('\n','|'); op.first.click(); pg.wait_for_timeout(500)

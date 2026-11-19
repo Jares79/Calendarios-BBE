@@ -196,11 +196,14 @@ function prepararPanelUsuario() {
     const select = document.getElementById("colectivoAnual");
     if (select) {
         select.innerHTML = "";
-        colectivos.forEach(c => {
+        const visibles = colectivosVisiblesAnual();   // solo los que esta persona puede ver
+        visibles.forEach(c => {
             select.append(el("option", { value: c.codigo, text: `${c.icono} ${c.nombre} (${empleadosActivos(c).length})` }));
         });
-        const total = colectivos.reduce((suma, c) => suma + empleadosActivos(c).length, 0);
-        select.append(el("option", { value: "todos", text: `👥 Todos (${total})` }));
+        if (visibles.length > 1) {
+            const total = visibles.reduce((suma, c) => suma + empleadosActivos(c).length, 0);
+            select.append(el("option", { value: "todos", text: `👥 Todos (${total})` }));
+        }
     }
 }
 
@@ -230,8 +233,9 @@ function toggleUsuario() {
         }
 
         const selectColectivo = document.getElementById("colectivoAnual");
-        if (selectColectivo && colectivos.length) {
-            selectColectivo.value = window.innerWidth <= 768 ? colectivos[0].codigo : "todos";
+        const visibles = colectivosVisiblesAnual();
+        if (selectColectivo && visibles.length) {
+            selectColectivo.value = window.innerWidth <= 768 || visibles.length === 1 ? visibles[0].codigo : "todos";
         }
     }
 }
@@ -400,13 +404,14 @@ function pintarLeyenda() {
             el("span", { text: t.texto })
         );
 
-    // Las marcas solo se explican si hay alguien con marcas activadas
-    const hayMarcas = hayMarcasEnUso();
+    // Solo los turnos y las marcas que esta persona puede poner
+    const yo = obtenerEmpleadoActual();
+    const marcas = Object.entries(MARCAS).filter(([codigo]) => yo && yo.marcas.includes(codigo));
     reemplazarHijos(contenedor,
         el("h2", { text: "Turnos" }),
-        el("ul", { class: "leyenda-lista" }, Object.entries(TURNOS).map(item)),
-        hayMarcas ? el("h2", { class: "leyenda-sub", text: "Marcas (mitad de arriba de la celda)" }) : null,
-        hayMarcas ? el("ul", { class: "leyenda-lista" }, Object.entries(MARCAS).map(item)) : null
+        el("ul", { class: "leyenda-lista" }, turnosPermitidosDe(yo).map(item)),
+        marcas.length ? el("h2", { class: "leyenda-sub", text: "Marcas (mitad de arriba de la celda)" }) : null,
+        marcas.length ? el("ul", { class: "leyenda-lista" }, marcas.map(item)) : null
     );
 }
 

@@ -72,7 +72,7 @@ function pintarBarraEdicion() {
 // --- Rejilla de turnos disponibles (la usan el selector de un día y el de un rango) ---
 function crearRejillaTurnos(alElegir, seleccionado) {
     return el("div", { class: "rejilla-turnos", role: "group", "aria-label": "Turnos disponibles" },
-        Object.entries(TURNOS).map(([codigo, t]) =>
+        turnosPermitidosDe(obtenerEmpleadoActual()).map(([codigo, t]) =>
             el("button", {
                 type: "button",
                 class: "opcion-turno " + t.clase + (codigo.length > 1 ? " largo" : "") + (codigo === seleccionado ? " elegido" : ""),
@@ -81,8 +81,7 @@ function crearRejillaTurnos(alElegir, seleccionado) {
                 onclick: () => alElegir(codigo)
             },
                 el("span", { class: "opcion-letra", text: codigo }),
-                el("span", { class: "opcion-nombre", text: t.texto }),
-                el("span", { class: "opcion-horas", text: typeof textoHorasTurno === "function" ? textoHorasTurno(codigo) : "" })
+                el("span", { class: "opcion-nombre", text: t.texto })
             ))
     );
 }

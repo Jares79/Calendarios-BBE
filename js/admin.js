@@ -366,6 +366,47 @@ function mostrarFormularioEmpleado(emp) {
     };
     selectColectivo.addEventListener("change", actualizarVerHoras);
     actualizarVerHoras();
+
+    // Calendario anual: grupos completos o subgrupos sueltos que puede ver (además de su propio colectivo)
+    const anualInicial = emp ? emp.anualVer : [];
+    const cajasAnual = [];   // { token, tipo: "grupo" | "sub", caja, hijos: [], colectivo }
+    const bloqueAnual = el("div", { class: "admin-campo admin-anual" },
+        el("strong", { text: "Calendario anual: qué puede ver" }),
+        el("span", { class: "admin-nota", text: "Siempre ve el de su propio colectivo. Marca grupos completos o subgrupos sueltos. El administrador ve todos." }));
+    GRUPOS.forEach(g => {
+        const cajaGrupo = el("input", { type: "checkbox", "aria-label": `Ver ${g.nombre} completo` });
+        cajaGrupo.checked = anualInicial.includes("g:" + g.codigo);
+        const entradaGrupo = { token: "g:" + g.codigo, tipo: "grupo", caja: cajaGrupo, hijos: [] };
+        cajasAnual.push(entradaGrupo);
+        const subs = colectivos.filter(c => grupoDeColectivo(c) === g.codigo).map(c => {
+            const caja = el("input", { type: "checkbox", "aria-label": `Ver ${c.nombre}` });
+            caja.checked = anualInicial.includes(c.codigo);
+            const entrada = { token: c.codigo, tipo: "sub", caja, colectivo: c };
+            entradaGrupo.hijos.push(entrada);
+            cajasAnual.push(entrada);
+            return el("label", { class: "admin-check admin-anual-sub" }, caja, el("span", { text: `${c.icono} ${c.nombre}` }));
+        });
+        bloqueAnual.append(
+            el("label", { class: "admin-check admin-anual-grupo" }, cajaGrupo, el("span", { text: `${g.icono} ${g.nombre} (completo)` })),
+            el("div", { class: "admin-anual-subs" }, subs));
+    });
+    // Un grupo completo marca y bloquea sus subgrupos; el colectivo propio siempre se ve
+    const actualizarAnual = () => {
+        cajasAnual.filter(x => x.tipo === "grupo").forEach(gr => gr.hijos.forEach(h => {
+            const propio = h.colectivo.codigo === selectColectivo.value;
+            if (gr.caja.checked || propio) h.caja.checked = true;
+            h.caja.disabled = gr.caja.checked || propio;
+        }));
+    };
+    cajasAnual.forEach(x => x.caja.addEventListener("change", actualizarAnual));
+    selectColectivo.addEventListener("change", actualizarAnual);
+    actualizarAnual();
+    const leerAnual = () => {
+        const grupos = cajasAnual.filter(x => x.tipo === "grupo" && x.caja.checked).map(x => x.token);
+        const subs = cajasAnual.filter(x => x.tipo === "sub" && x.caja.checked && !x.caja.disabled).map(x => x.token);
+        return [...grupos, ...subs];
+    };
+
     const error = el("p", { class: "admin-error-texto", text: "" });
 
     const campo = (etiqueta, control) => el("label", { class: "admin-campo" }, el("span", { text: etiqueta }), control);
@@ -379,6 +420,7 @@ function mostrarFormularioEmpleado(emp) {
         campo("Rol en la app", selectRol),
         esNuevo ? null : el("label", { class: "admin-campo admin-check" }, checkActivo, el("span", { text: "Activo (si lo desmarcas, no sale en calendarios y no puede entrar)" })),
         esNuevo ? null : filaVerHoras,
+        esNuevo ? null : bloqueAnual,
         error,
         el("div", { class: "admin-acciones" },
             el("button", { type: "submit", text: esNuevo ? "Crear empleado" : "Guardar cambios" }),
@@ -441,6 +483,20 @@ function mostrarFormularioEmpleado(emp) {
                 await recargarGestionAdmin();
                 mostrarAviso("Los cambios se guardaron, pero no se pudo cambiar lo del resumen de horas (falta ejecutar el script de la fase 10 en Supabase).", true);
                 return;
+            }
+        }
+
+        // Qué calendarios anuales puede ver (se guarda aparte)
+        if (!esNuevo) {
+            const nuevoAnual = leerAnual();
+            if ([...nuevoAnual].sort().join() !== [...emp.anualVer].sort().join()) {
+                const ra = await supabaseClient.rpc("admin_guardar_anual_ver", { p_empleado: emp.id, p_ver: nuevoAnual });
+                if (ra.error || !ra.data || !ra.data.ok) {
+                    console.error(ra.error || ra.data);
+                    await recargarGestionAdmin();
+                    mostrarAviso("Los cambios se guardaron, pero no se pudo cambiar qué calendarios anuales puede ver (falta ejecutar el script de la fase 15 en Supabase).", true);
+                    return;
+                }
             }
         }
 

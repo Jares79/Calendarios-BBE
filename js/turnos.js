@@ -42,6 +42,17 @@ function hayMarcasEnUso() {
     return colectivos.some(c => c.empleados.some(e => e.marcas.length > 0));
 }
 
+// Turnos que cada persona puede poner. Los de jornada partida (sin turnos) no usan M, T, N ni solape (S);
+// el resto de colectivos pueden poner todos.
+const TURNOS_SOLO_DE_TURNOS = ["M", "T", "N", "S"];
+
+function turnosPermitidosDe(empleado) {
+    const todos = Object.entries(TURNOS);
+    const colectivo = empleado ? buscarColectivo(empleado.colectivo) : null;
+    if (colectivo && colectivo.tipo === "otro") return todos.filter(([codigo]) => !TURNOS_SOLO_DE_TURNOS.includes(codigo));
+    return todos;
+}
+
 // Turnos y marcas juntos (para el editor de colores)
 const TIPOS_COLOR = { ...TURNOS, ...MARCAS };
 

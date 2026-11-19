@@ -242,23 +242,31 @@ async function verMarcasAdmin() {
     const codigos = Object.keys(MARCAS);
     const entradas = new Map();   // empleadoId -> { empleado, cajas: Map(codigo -> checkbox) }
 
-    const grupos = colectivos.map(c => el("div", { class: "admin-grupo" },
-        el("h3", { text: `${c.icono} ${c.nombre}` }),
-        c.empleados.filter(e => e.activo).length
-            ? c.empleados.filter(e => e.activo).map(emp => {
-                const cajas = new Map();
-                entradas.set(emp.id, { empleado: emp, cajas });
-                return el("div", { class: "fila-marcas" },
-                    el("strong", { class: "fila-marcas-nombre", text: emp.nombre }),
-                    el("div", { class: "fila-marcas-opciones" }, codigos.map(codigo => {
-                        const caja = el("input", { type: "checkbox", "aria-label": `${MARCAS[codigo].texto} para ${emp.nombre}` });
-                        caja.checked = emp.marcas.includes(codigo);
-                        cajas.set(codigo, caja);
-                        return el("label", { class: "opcion-marca " + MARCAS[codigo].clase, title: MARCAS[codigo].texto }, caja, el("span", { text: codigo }));
-                    })));
-            })
-            : el("p", { class: "admin-nota", text: "Sin empleados activos." })
-    ));
+    const filaMarcas = (emp) => {
+        const cajas = new Map();
+        entradas.set(emp.id, { empleado: emp, cajas });
+        return el("div", { class: "fila-marcas" },
+            el("strong", { class: "fila-marcas-nombre", text: emp.nombre }),
+            el("div", { class: "fila-marcas-opciones" }, codigos.map(codigo => {
+                const caja = el("input", { type: "checkbox", "aria-label": `${MARCAS[codigo].texto} para ${emp.nombre}` });
+                caja.checked = emp.marcas.includes(codigo);
+                cajas.set(codigo, caja);
+                return el("label", { class: "opcion-marca " + MARCAS[codigo].clase, title: MARCAS[codigo].texto }, caja, el("span", { text: codigo }));
+            })));
+    };
+
+    // Por categorías y subgrupos desplegables, como en Empleados y accesos (cerrados al entrar)
+    const grupos = GRUPOS.map(g => {
+        const hijos = colectivos.filter(c => grupoDeColectivo(c) === g.codigo);
+        const total = hijos.reduce((n, c) => n + c.empleados.filter(e => e.activo).length, 0);
+        const subgrupos = hijos.map(c => {
+            const activos = c.empleados.filter(e => e.activo);
+            return desplegableAdmin("m:c:" + c.codigo, `${c.icono} ${c.nombre}`, String(activos.length),
+                "admin-subdesplegable admin-desplegable",
+                activos.length ? activos.map(filaMarcas) : [el("p", { class: "admin-nota", text: "Sin empleados activos." })]);
+        });
+        return desplegableAdmin("m:g:" + g.codigo, `${g.icono} ${g.nombre}`, String(total), "admin-grupo admin-desplegable", subgrupos);
+    });
 
     const aviso = el("p", { class: "admin-aviso-corto", role: "status" });
     const guardar = el("button", { type: "button", text: "Guardar" });

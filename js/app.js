@@ -10,9 +10,6 @@ function pantallaAcceso(contenido) {
         <div class="pantalla-acceso">
             <div class="tarjeta-acceso">
                 <span class="marca-logo acceso-logo"><img src="img/LOGO_BBE_SOLO.png" class="logoCabecera" alt="BBE"></span>
-                <div class="acceso-ritmo" aria-hidden="true">
-                    <span class="manana">M</span><span class="tarde">T</span><span class="noche">N</span><span class="fiesta">F</span>
-                </div>
                 ${contenido}
             </div>
         </div>`;

@@ -1005,6 +1005,7 @@ body.modo-edicion .dia-calendario.hoy { outline-offset: -4px; }
 .rejilla-turnos {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+    grid-auto-rows: 1fr;   /* todas las celdas del mismo tamaño */
     gap: 8px;
     margin-bottom: 12px;
 }
@@ -1024,7 +1025,8 @@ body.modo-edicion .dia-calendario.hoy { outline-offset: -4px; }
 .opcion-letra { font-family: var(--fuente-titulo); font-size: 1.6rem; font-weight: 700; line-height: 1; min-width: 1.1em; }
 .opcion-turno.largo .opcion-letra { font-size: 1.15rem; }
 .opcion-turno { min-width: 0; }
-.opcion-nombre { font-size: 0.74rem; font-weight: 600; line-height: 1.15; min-width: 0; overflow-wrap: anywhere; }
+.opcion-nombre { font-size: 0.7rem; font-weight: 600; line-height: 1.1; min-width: 0; overflow-wrap: break-word; hyphens: auto; }
+.opcion-turno { gap: 6px; padding: 8px; }
 
 .btn-ciclo { margin-top: 2px; }
 .rango-fechas { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
@@ -1500,7 +1502,6 @@ td.dato-destacado { font-weight: 700; }
 .modal-acciones-columna button { width: 100%; }
 
 /* Fase 8 · horas en los turnos y ajuste de horas de un día */
-.opcion-turno .opcion-horas { display: block; font-size: 0.7rem; font-weight: 600; opacity: 0.85; }
 .seccion-horas { margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--linea); }
 .seccion-horas .btn-ancho { margin-top: 8px; }
 .seccion-horas select { width: 100%; margin-bottom: 8px; }
@@ -1628,3 +1629,26 @@ body.sin-calendario #cardCalendario,
 body.sin-calendario #resumenHoy,
 body.sin-calendario #btnMiAnio,
 body.sin-calendario #btnEditarCalendario { display: none !important; }
+
+/* ---- Mi año: letra del turno en cada día (solo cuando hay sitio, en pantallas grandes) ---- */
+.cuadro-letra, .cuadro-marca-letra { display: none; }
+@media (min-width: 768px) {
+    .cuadro-dia { color: var(--fg); }
+    .cuadro-letra {
+        display: flex; position: absolute; left: 0; right: 0; bottom: 0; top: 0;
+        align-items: center; justify-content: center;
+        font-family: var(--fuente-titulo); font-weight: 700; line-height: 1;
+        font-size: clamp(0.62rem, 1.05vw, 0.95rem); pointer-events: none;
+    }
+    .cuadro-dia.con-marca .cuadro-letra { top: 50%; }
+    .cuadro-marca-letra {
+        display: flex; align-items: center; justify-content: center; height: 100%;
+        font-size: clamp(0.45rem, 0.7vw, 0.65rem); font-weight: 700; line-height: 1; color: var(--fg);
+    }
+}
+
+/* ---- Ficha: calendarios anuales que puede ver ---- */
+.admin-anual { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border: 1px solid var(--linea); border-radius: 12px; }
+.admin-anual-grupo { font-weight: 700; margin-top: 4px; }
+.admin-anual-subs { display: flex; flex-direction: column; gap: 4px; padding-left: 26px; }
+.admin-anual .admin-check { display: flex; align-items: center; gap: 8px; }

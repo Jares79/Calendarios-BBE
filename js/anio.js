@@ -54,9 +54,11 @@ async function pintarMiAnio(anio) {
             const titulo = `${fechaLarga(iso)}: ${info.texto}${info.marca ? " · " + info.marca.texto : ""}`;
             celdas.push(el("button", {
                 type: "button",
-                class: "cuadro-dia " + info.clase + (iso === hoyISO ? " hoy" : ""),
+                class: "cuadro-dia " + info.clase + (info.marca ? " con-marca" : "") + (iso === hoyISO ? " hoy" : ""),
                 title: titulo, "aria-label": titulo
-            }, info.marca ? el("span", { class: "cuadro-marca " + info.marca.clase }) : null));
+            },
+                info.marca ? el("span", { class: "cuadro-marca " + info.marca.clase }, el("span", { class: "cuadro-marca-letra", text: info.marca.codigo })) : null,
+                el("span", { class: "cuadro-letra", text: info.codigo })));
         }
 
         meses.push(el("section", { class: "mes-mini mes-clicable", onclick: () => abrirMesDesdeAnio(anio, mes) },

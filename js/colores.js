@@ -117,8 +117,13 @@ function pintarEditorColores() {
     const contenedor = document.getElementById("resultado");
     const personalizados = usuarioActual.colores || {};
     // Las marcas solo se ofrecen si alguien tiene marcas activadas
-    const hayMarcas = hayMarcasEnUso();
-    const disponibles = hayMarcas ? TIPOS_COLOR : TURNOS;
+    const yo = obtenerEmpleadoActual();
+    const misMarcas = Object.fromEntries(Object.entries(MARCAS).filter(([codigo]) => yo && yo.marcas.includes(codigo)));
+    const hayMarcas = Object.keys(misMarcas).length > 0;
+    // Solo los turnos y marcas que esta persona puede poner (sin calendario propio: todos)
+    const disponibles = yo
+        ? { ...Object.fromEntries(turnosPermitidosDe(yo)), ...misMarcas }
+        : TIPOS_COLOR;
     const elegido = disponibles[turnoColorElegido] ? turnoColorElegido : "M";
 
     const turnos = el("div", { class: "selector-turnos", role: "group", "aria-label": "Turno a cambiar" },
