@@ -224,17 +224,19 @@ async function guardarCambiosCalendario(cambios) {
         if (decision !== "guardar") return false;
     }
 
-    // Una baja (B) mantiene las horas previstas. Si el día traía otras horas que las del ciclo (un turno
-    // puesto a mano) y no hay ajuste de horas, se conservan como ajuste para que la baja siga sumándolas.
+    // Baja (B), libre disposición (LD), permiso (J) y solape a mano (S) mantienen las horas previstas. Si el día
+    // traía otras horas que las del ciclo (un turno puesto a mano) y no hay ajuste de horas, se conservan como
+    // ajuste para que el nuevo turno siga sumándolas.
     const conservarHoras = [];
-    if (cambios.some(c => c.codigo === "B") && typeof cargarHoras === "function" && await cargarHoras()) {
+    const sumaPrev = typeof CODIGOS_SUMAN_PREVISTAS !== "undefined" ? CODIGOS_SUMAN_PREVISTAS : [];
+    if (cambios.some(c => sumaPrev.includes(c.codigo)) && typeof cargarHoras === "function" && await cargarHoras()) {
         await Promise.all(anios.map(asegurarHorasDia));
         cambios.forEach(({ fecha, codigo }) => {
-            if (codigo !== "B") return;
+            if (!sumaPrev.includes(codigo)) return;
             const previo = infoTurno(fecha, empleado).codigo;
-            if (previo === "B" || horasDia.has(claveExcepcion(empleado.id, fecha))) return;
+            if (previo === codigo || horasDia.has(claveExcepcion(empleado.id, fecha))) return;
             const eran = horasDeDia(empleado, fecha, previo);
-            const delCiclo = horasDeDia(empleado, fecha, "B");   // sin ajuste: las horas del turno del ciclo
+            const delCiclo = horasDelCiclo(fecha, empleado).horas;   // las horas del turno que tocaba por ciclo
             if (Math.abs(eran - delCiclo) > 0.001) conservarHoras.push({ fecha, horas: eran });
         });
     }
@@ -287,9 +289,9 @@ async function guardarCambiosCalendario(cambios) {
         return false;
     }
 
-    // Cambiar el turno de un día quita su ajuste manual de horas (salvo al pasar a baja, que lo mantiene)
+    // Cambiar el turno de un día quita su ajuste manual de horas (salvo al pasar a B, LD, J o S, que lo mantienen)
     if (typeof limpiarAjustesHoras === "function") {
-        await limpiarAjustesHoras(empleado, [...subir.filter(r => r.codigo !== "B").map(r => r.fecha), ...borrar]);
+        await limpiarAjustesHoras(empleado, [...subir.filter(r => !sumaPrev.includes(r.codigo)).map(r => r.fecha), ...borrar]);
     }
     if (conservarHoras.length && typeof guardarHorasDia === "function") {
         await guardarHorasDia(empleado, conservarHoras, true);

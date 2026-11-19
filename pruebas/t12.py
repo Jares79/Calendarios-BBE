@@ -13,11 +13,20 @@ CTA={'iniciales':'CTA','rol':'empleado','empleadoId':'e-ct'}; JP={'iniciales':'J
 HT=[{'anio':2026,'codigo':c,'horas':h} for c,h in [('M',8),('T',8),('N',8),('P',8),('I',7),('S',8),('V',8),('E',0),('J',8),('LD',8)]]
 DB={'horas_turno':HT,'config_horas':[{'anio':2026,'horas_dia_exceso':8,'dias_vacaciones':23,'dias_ld':2}],'horas_anuales':[{'empleado_id':'e-jefe','anio':2026,'horas':1700}],
     'excepciones':[{'empleado_id':'e-jefe','fecha':'2026-03-10','codigo':'V'},{'empleado_id':'e-jefe','fecha':'2026-03-11','codigo':'V'},{'empleado_id':'e-jefe','fecha':'2026-04-01','codigo':'LD'},{'empleado_id':'e-jefe','fecha':'2026-05-04','codigo':'E'}]}
-def resumen(pg): return [t.replace('\n',' ') for t in pg.locator('.hoy-resumen-caja .mini-dato').all_inner_texts()]
+def abre(pg, grupo, sub):
+    g=pg.locator('summary', has_text=grupo).first
+    if not g.evaluate("e=>e.parentElement.open"): g.click()
+    sg=pg.locator('.admin-subdesplegable > summary', has_text=sub).first
+    if not sg.evaluate("e=>e.parentElement.open"): sg.click()
+def abrir(pg):
+    if pg.locator('.hoy-resumen-caja').is_hidden(): pg.click('.hoy-desplegable'); pg.wait_for_timeout(300)
+def resumen(pg):
+    abrir(pg); return [t.replace('\n',' ') for t in pg.locator('.hoy-resumen-caja .mini-dato').all_inner_texts()]
 with sync_playwright() as p:
     # 1) Resumen principal para un jefe (turnos): 5 tarjetas
     b,pg,errs=nueva(p,JEF,DB)
-    print('1 jefe: no hay próximos días =', pg.locator('.hoy-proximos').count()==0, '|', pg.locator('.hoy-subtitulo').inner_text())
+    print('1 jefe: cerrado por defecto =', pg.locator('.hoy-resumen-caja').is_hidden(), '| aria:', pg.get_attribute('.hoy-desplegable','aria-expanded'), '| pastilla:', pg.locator('.hoy-desplegar').inner_text(), '| no hay próximos días =', pg.locator('.hoy-proximos').count()==0)
+    pg.screenshot(path='/tmp/t12_cerrado.png')
     print('  tarjetas:', resumen(pg))
     pg.screenshot(path='/tmp/t12_jefe.png'); print('  alto calendario celdas:', pg.evaluate("getComputedStyle(document.getElementById('miCalendario')).getPropertyValue('--alto-celda')"), '| clases body:', pg.evaluate("document.body.className")); b.close()
     # 2) Correturno sin flag: solo vacaciones y LD; con flag: todo
@@ -26,14 +35,24 @@ with sync_playwright() as p:
     b,pg,errs=nueva(p,ADM,DB)
     # admin: ficha del correturno con casilla
     pg.click('#infoUsuario'); pg.click('#btnAdminEmpleados'); pg.wait_for_selector('.admin-grupo')
+    print('3a desplegables:', pg.locator('.admin-desplegable').count(), '| abiertos al entrar:', pg.locator('.admin-desplegable[open]').count(), '| resúmenes:', pg.locator('.admin-desplegable > summary').all_inner_texts())
+    abre(pg,'jornada partida','Correturnos')
     pg.locator('.admin-fila', has_text='Corre Uno').locator('text=Editar').first.click(); pg.wait_for_selector('.admin-formulario')
     print('3 casilla ver horas visible en correturno:', pg.locator('.admin-formulario .admin-check', has_text='resumen de horas').is_visible())
     pg.locator('.admin-formulario .admin-check', has_text='resumen de horas').locator('input').check(); pg.click('text=Guardar cambios'); pg.wait_for_timeout(500)
     print('  db ver_horas:', pg.evaluate("window.__db.empleados.find(e=>e.id=='e-ct').ver_horas"))
+    print('  correturnos sigue abierto tras guardar:', pg.locator('.admin-desplegable[open]').count())
+    abre(pg,'Personal a turnos','Jefes')
     pg.locator('.admin-fila', has_text='Jefe Dos').locator('text=Editar').first.click(); pg.wait_for_selector('.admin-formulario')
     print('  casilla en jefe visible:', pg.locator('.admin-formulario .admin-check', has_text='resumen de horas').is_visible())
+    abre(pg,'jornada partida','Sin subgrupo')
+    pg.locator('.admin-fila', has_text='Partida Uno').locator('text=Editar').first.click(); pg.wait_for_selector('.admin-formulario')
+    print('  casilla en jornada partida visible:', pg.locator('.admin-formulario .admin-check', has_text='resumen de horas').is_visible())
+    pg.locator('.admin-formulario .admin-check', has_text='resumen de horas').locator('input').check(); pg.click('text=Guardar cambios'); pg.wait_for_timeout(500)
+    print('  db ver_horas jornada:', pg.evaluate("window.__db.empleados.find(e=>e.id=='e-jp').ver_horas"))
     dbf=pg.evaluate("window.__db"); b.close()
     b,pg,errs=nueva(p,CTA,dbf); print('  correturno con flag:', resumen(pg)); b.close()
+    b,pg,errs=nueva(p,JP,dbf); print('  jornada partida con flag:', resumen(pg)); b.close()
     # 4) Admin: horas y convenio sin horas anuales y con LD
     b,pg,errs=nueva(p,ADM,DB); pg.click('#infoUsuario'); pg.click('#btnAdminHoras'); pg.wait_for_selector('.fila-horas')
     print('4 inputs horas anuales en admin:', pg.locator('input[aria-label^="Horas anuales de"]').count(), '| LD input:', pg.locator('input[aria-label="Días de libre disposición al año"]').input_value())
@@ -47,7 +66,7 @@ with sync_playwright() as p:
     pg.locator('.ajustes-horas input').fill('1650'); pg.click('text=Guardar mis horas de 2026'); pg.wait_for_timeout(300)
     print('  db anuales:', pg.evaluate("window.__db.horas_anuales"), '| aviso:', pg.locator('.ajustes-horas .admin-aviso-corto').inner_text())
     pg.click('text=Volver'); pg.wait_for_timeout(500); print('  resumen tras volver:', resumen(pg)); b.close()
-    b,pg,errs=nueva(p,JP,DB); pg.click('#infoUsuario'); pg.click('#btnAjustes'); pg.wait_for_timeout(500); print('  jornada partida en ajustes: horas anuales =', pg.locator('.ajustes-horas input').count()); b.close()
+    b,pg,errs=nueva(p,JP,DB); pg.click('#infoUsuario'); pg.click('#btnAjustes'); pg.wait_for_timeout(500); print('  jornada partida (sin flag) en ajustes: horas anuales =', pg.locator('.ajustes-horas input').count()); b.close()
     # 6) Baja B
     b,pg,errs=nueva(p,JEF,DB)
     pg.click('#infoUsuario'); pg.click('#btnEditarCalendario'); pg.click('[data-fecha="2026-11-24"]'); pg.wait_for_selector('.opcion-horas')
@@ -67,6 +86,22 @@ with sync_playwright() as p:
     pg.locator('#panelDetalleDia .rejilla-turnos').first.locator('.opcion-turno', has_text='Baja').click(); pg.wait_for_timeout(500)
     print('  25 con B | horas_dia:', pg.evaluate("window.__db.horas_dia"))
     b.close()
+    # 6b) LD, J y S a mano suman las horas previstas; sobre un turno de 7 h (I) las conservan
+    for cod,txtb in [('Libre','LD'),('Permiso','J'),('Solape','S')]:
+        dbx=json.loads(json.dumps(DB)); dbx['excepciones'].append({'empleado_id':'e-jefe','fecha':'2026-11-25','codigo':'I'})
+        b,pg,errs=nueva(p,JEF,dbx)
+        pg.click('#infoUsuario'); pg.click('#btnEditarCalendario'); pg.click('[data-fecha="2026-11-25"]'); pg.wait_for_selector('.opcion-horas')
+        op=pg.locator('#panelDetalleDia .rejilla-turnos').first.locator('.opcion-turno', has_text=cod)
+        if op.count()==0: print('6b no encuentro', cod); b.close(); continue
+        etq=op.first.inner_text().replace('\n','|'); op.first.click(); pg.wait_for_timeout(500)
+        print('6b', txtb, '| rejilla:', etq, '| celda:', txt(pg,'2026-11-25'), '| horas_dia:', pg.evaluate("window.__db.horas_dia"), '| computa:', pg.evaluate("horasDeDia(buscarEmpleadoPorId('e-jefe'),'2026-11-25','%s')" % txtb))
+        b.close()
+    # día sin ajuste previo: LD pasa a sumar las horas del ciclo (N, 8 h); un día F del ciclo suma 0
+    b,pg,errs=nueva(p,JEF,DB)
+    print('6c horas LD sobre ciclo:', pg.evaluate("[horasDeDia(buscarEmpleadoPorId('e-jefe'),'2026-11-25','LD'), horasDeDia(buscarEmpleadoPorId('e-jefe'),'2026-11-27','LD'), horasDelCiclo('2026-11-27',buscarEmpleadoPorId('e-jefe')).codigo]"))
+    b.close()
+    b,pg,errs=nueva(p,ADM,DB); pg.click('#infoUsuario'); pg.click('#btnAdminHoras'); pg.wait_for_selector('.fila-horas')
+    print('6d filas de turnos en Horas y convenio:', [t.split('\n')[0] for t in pg.locator('.fila-horas-nombre').all_inner_texts()][:12]); b.close()
     # 7) Aviso de cobertura: Jefe Dos tiene B su día de mañana; Jefe Tres no recibe aviso al ponerse ese turno
     b,pg,errs=nueva(p,JEF,DB)
     pg.click('#infoUsuario'); pg.click('#btnEditarCalendario')
@@ -82,6 +117,13 @@ with sync_playwright() as p:
     pg.locator('.ficha-turno', has_text='CT1').click(); pg.locator('.muestra').nth(20).click(); pg.wait_for_timeout(700)
     print('  tras cambiar CT1:', {c:get(c) for c in ['ct1','ct2','ct3','ct4']}); b.close()
     # 9) Móviles pequeños: ¿se ve el resumen?
-    for vp in [(360,740),(390,844),(412,915),(375,667)]:
+    for vp in [(360,740),(390,844),(412,915),(375,667),(320,568)]:
         b,pg,errs=nueva(p,JEF,DB,vp=vp)
-        print('9', vp, 'resumen visible:', pg.locator('.hoy-resumen-caja').is_visible(), '| body:', pg.evaluate("document.body.className"), '| scroll sobra:', pg.evaluate("document.documentElement.scrollHeight-window.innerHeight")); b.close()
+        cerrado=pg.evaluate("document.documentElement.scrollHeight-window.innerHeight")
+        print('9', vp, 'barra visible:', pg.locator('.hoy-desplegable').is_visible(), '| cerrado: body', pg.evaluate("document.body.className"), 'sobra', cerrado)
+        pg.click('.hoy-desplegable'); pg.wait_for_timeout(300)
+        print('   abierto: resumen visible', pg.locator('.hoy-resumen-caja').is_visible(), 'tarjetas', pg.locator('.mini-dato').count(), '| sobra', pg.evaluate("document.documentElement.scrollHeight-window.innerHeight"))
+        pg.reload(); pg.wait_for_selector('.dia-calendario'); pg.wait_for_timeout(500)
+        print('   tras recargar sigue abierto:', pg.locator('.hoy-resumen-caja').is_visible())
+        if vp==(320,568): pg.screenshot(path='/tmp/t12_320.png')
+        b.close()

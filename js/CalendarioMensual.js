@@ -311,6 +311,24 @@ document.addEventListener("DOMContentLoaded", () => {
 // --- BLOQUE "HOY" Y LEYENDA ---
 const DIAS_SEMANA_CORTOS = ["D", "L", "M", "X", "J", "V", "S"];
 
+// Estado del desplegable del resumen (se recuerda en el dispositivo; por defecto, cerrado)
+const CLAVE_RESUMEN_ABIERTO = "bbe-resumen-abierto";
+
+function resumenAbierto() {
+    try { return localStorage.getItem(CLAVE_RESUMEN_ABIERTO) === "1"; } catch (e) { return false; }
+}
+
+function alternarResumen() {
+    const barra = document.querySelector(".hoy-desplegable");
+    const caja = document.querySelector(".hoy-resumen-caja");
+    if (!barra || !caja) return;
+    const abrir = caja.hidden;
+    caja.hidden = !abrir;
+    barra.setAttribute("aria-expanded", String(abrir));
+    try { localStorage.setItem(CLAVE_RESUMEN_ABIERTO, abrir ? "1" : "0"); } catch (e) { /* sin almacenamiento */ }
+    ajustarAlturaCalendario();
+}
+
 function pintarResumenHoy() {
     const contenedor = document.getElementById("resumenHoy");
     if (!contenedor) return;
@@ -325,22 +343,31 @@ function pintarResumenHoy() {
     const iso = aISO(hoy);
     const info = infoTurno(iso, empleado);
 
-    // Resumen del año (vacaciones, LD, horas y excesos) justo debajo de "Hoy"; se rellena al tener los datos
-    const resumenCaja = esPerfilFamiliar() ? null : el("div", { class: "hoy-resumen-caja" },
-        el("p", { class: "hoy-subtitulo", text: "Calculando resumen…" }));
+    // Resumen del año (vacaciones, LD, horas y excesos): se despliega desde la barra de hoy; se rellena al tener los datos
+    const desplegable = !esPerfilFamiliar();
+    const abierto = desplegable && resumenAbierto();
+    const resumenCaja = desplegable ? el("div", { class: "hoy-resumen-caja", hidden: !abierto },
+        el("p", { class: "hoy-subtitulo", text: "Calculando resumen…" })) : null;
 
-    reemplazarHijos(contenedor,
-        el("div", { class: "hoy-bloque " + info.clase },
-            el("div", { class: "hoy-textos" },
-                el("span", { class: "hoy-etiqueta", text: "Hoy" }),
-                el("span", { class: "hoy-nombre", text: info.texto }),
-                el("span", { class: "hoy-fecha", text: fechaLarga(iso) }),
-                info.marca ? el("span", { class: "hoy-marca " + info.marca.clase, text: info.marca.texto }) : null
-            ),
-            el("span", { class: "hoy-letra" + claseLargo(info), text: info.codigo })
+    const barra = el(desplegable ? "button" : "div", {
+        type: desplegable ? "button" : null,
+        class: "hoy-bloque " + info.clase + (desplegable ? " hoy-desplegable" : ""),
+        "aria-expanded": desplegable ? String(abierto) : null,
+        onclick: desplegable ? alternarResumen : null
+    },
+        el("div", { class: "hoy-textos" },
+            el("span", { class: "hoy-etiqueta", text: "Hoy" }),
+            el("span", { class: "hoy-nombre", text: info.texto }),
+            el("span", { class: "hoy-fecha", text: fechaLarga(iso) }),
+            info.marca ? el("span", { class: "hoy-marca " + info.marca.clase, text: info.marca.texto }) : null,
+            desplegable ? el("span", { class: "hoy-desplegar" },
+                el("span", { text: "Resumen del año" }),
+                el("span", { class: "hoy-chevron", "aria-hidden": "true", text: "▾" })) : null
         ),
-        resumenCaja
+        el("span", { class: "hoy-letra" + claseLargo(info), text: info.codigo })
     );
+
+    reemplazarHijos(contenedor, barra, resumenCaja);
     contenedor.hidden = false;
     if (resumenCaja && typeof pintarResumenPrincipal === "function") pintarResumenPrincipal(resumenCaja, empleado);
 }
@@ -381,8 +408,7 @@ function alturaMenuAbierto() {
 const NIVELES_COMPACTOS = [
     [],
     ["pantalla-baja"],
-    ["pantalla-baja", "pantalla-muy-baja"],
-    ["pantalla-baja", "pantalla-muy-baja", "sin-hoy"]
+    ["pantalla-baja", "pantalla-muy-baja"]
 ];
 const CLASES_COMPACTAS = ["pantalla-baja", "pantalla-muy-baja", "sin-hoy"];
 const ALTO_CELDA_COMODO = 40;   // por debajo de esto se compacta lo de arriba
@@ -395,7 +421,11 @@ function ajustarAlturaCalendario() {
 
     const quitarCompactacion = () => document.body.classList.remove(...CLASES_COMPACTAS);
 
-    if (!window.matchMedia("(max-width: 767px)").matches) {
+    // Con el resumen del año desplegado la página es más alta a propósito: no se ajusta el mes a la pantalla
+    const cajaResumen = document.querySelector(".hoy-resumen-caja");
+    const resumenDesplegado = !!cajaResumen && !cajaResumen.hidden;
+
+    if (resumenDesplegado || !window.matchMedia("(max-width: 767px)").matches) {
         grid.classList.remove("altura-fija");
         contenedor.style.removeProperty("--alto-celda");
         quitarCompactacion();

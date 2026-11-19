@@ -10,5 +10,6 @@ Requiere Python con `playwright` (`pip install playwright`, `playwright install 
 - `t9.py`: jefes que piden cambio a un correturno que sustituye.
 - `t10.py`: avisos al tocar un cambio hecho (pedir deshacer) y aviso de turno ya cubierto.
 - `t11.py`: marcas por persona, horas por año, horas en el editor y ajuste de horas de un día.
-- `t12.py`: fase 10 (resumen principal, casilla de horas para correturnos, LD, horas anuales en Ajustes, baja B y sus horas, colores CT1-CT4, móviles de distintos tamaños).
+- `t12.py`: fase 10 (resumen principal, casilla de horas para correturnos, LD, horas anuales en Ajustes, baja B, LD, J y S con horas previstas, colores CT1-CT4, desplegable del resumen en móviles de distintos tamaños, empleados por colectivo).
+- `t13.py`: fase 12 (PIN de 6 a 10 dígitos, categorías y subgrupos: crear/renombrar/borrar/asignar, solapes por colectivo y su resumen).
 Los tests de la fase 4 (marcas en el mes, año, semanas) se hicieron a mano y no están como script.

@@ -12,7 +12,13 @@
 // previstos del ciclo. Pendiente de pedir en excesos = horas computables − horas anuales. Los E que ya
 // están puestos en el calendario ya han quitado horas de ese total, así que no se descuentan dos veces.
 
-const CODIGOS_HORAS = ["M", "T", "N", "P", "I", "S", "V", "E", "J", "LD"];
+// Turnos con horas propias (las que fija el administrador en "Horas y convenio")
+const CODIGOS_HORAS = ["M", "T", "N", "P", "I", "S", "V", "E"];
+// Turnos que se pintan pero suman las horas que había previstas ese día (baja, libre disposición, permiso
+// justificado, y el solape cuando se pone a mano). Se pueden ajustar día a día.
+const CODIGOS_SUMAN_PREVISTAS = ["B", "LD", "J", "S"];
+// Columnas de la tabla por meses del resumen de horas
+const COLUMNAS_RESUMEN = ["M", "T", "N", "P", "I", "S", "V", "E", "J", "LD", "B"];
 
 let horasTurno = new Map();      // "año|código" -> horas
 let configHoras = new Map();     // año -> { horas_dia_exceso, dias_vacaciones }
@@ -183,7 +189,9 @@ async function verHorasAdmin(anio, plantilla) {
         el("div", { class: "admin-grupo" },
             el("h3", { text: `Horas de cada turno · ${anio}` }),
             el("p", { class: "admin-nota", text: "Las horas que cuenta cada día de ese turno al sumar las del año. Pon 0 en los que no deben sumar (por ejemplo E, si los excesos no cuentan como trabajados; F no suma nunca)." }),
-            filasTurno, el("div", { class: "fila-guardar" }, guardarTurnos, avisoTurnos)),
+            filasTurno,
+            el("p", { class: "admin-nota", text: "B (baja), LD y J no tienen horas propias: suman las que había previstas ese día (se pueden ajustar en cada día). El solape (S) tiene las suyas cuando sale del ciclo y, si se pone a mano, suma las previstas." }),
+            el("div", { class: "fila-guardar" }, guardarTurnos, avisoTurnos)),
         el("div", { class: "admin-grupo" },
             el("h3", { text: `Excesos, vacaciones y libre disposición · ${anio}` }),
             el("label", { class: "fila-horas" }, el("span", { class: "fila-horas-nombre", text: "Horas que equivale un día de excesos (E)" }), inputExceso, el("span", { class: "fila-horas-unidad", text: "h" })),
@@ -328,7 +336,7 @@ async function cuerpoResumenPersona(empleado, anio) {
     );
 
     // Tabla por meses: solo las columnas de turnos que aparecen en el año
-    const columnas = [...CODIGOS_HORAS, "B"].filter(c => dias(c) > 0);
+    const columnas = COLUMNAS_RESUMEN.filter(c => dias(c) > 0);
     const nombreMes = (i) => new Date(2000, i, 1).toLocaleDateString("es-ES", { month: "short" }).replace(".", "");
     const tabla = el("div", { class: "tabla-scroll" }, el("table", { class: "tabla-resumen" },
         el("thead", {}, el("tr", {},
@@ -401,13 +409,20 @@ async function asegurarHorasDia(anio) {
 }
 
 // Horas que computa un día: el ajuste manual si lo hay; si no, las del turno
-// Una baja (B) sigue sumando las horas previstas: las del ajuste manual si lo hay y, si no, las del
-// turno que tocaba por ciclo, intensiva o festivo.
+// Baja (B), libre disposición (LD), permiso justificado (J) y solape puesto a mano (S) no tienen horas
+// propias: suman las que había previstas ese día. Es el ajuste manual de horas si lo hay y, si no,
+// las del turno que tocaba por ciclo, intensiva o festivo. (Un solape que sale del ciclo sí tiene
+// las suyas, las que fija el administrador.)
+function sumaPrevistas(empleado, fechaISO, codigo) {
+    if (codigo === "B" || codigo === "LD" || codigo === "J") return true;
+    return codigo === "S" && excepciones.has(claveExcepcion(empleado.id, fechaISO));
+}
+
 function horasDeDia(empleado, fechaISO, codigo) {
     const ajuste = horasDia.get(claveExcepcion(empleado.id, fechaISO));
     if (ajuste !== undefined) return ajuste;
     const anio = Number(fechaISO.slice(0, 4));
-    if (codigo === "B") {
+    if (sumaPrevistas(empleado, fechaISO, codigo)) {
         const colectivo = buscarColectivo(empleado.colectivo);
         return colectivo ? horasDeTurno(anio, turnoAutomatico(fechaISO, empleado, colectivo).codigo) : 0;
     }
@@ -416,7 +431,7 @@ function horasDeDia(empleado, fechaISO, codigo) {
 
 // Texto de las horas de un turno para las rejillas ("8 h"), o "" si aún no se conocen
 function textoHorasTurno(codigo) {
-    if (codigo === "B") return "las previstas";
+    if (CODIGOS_SUMAN_PREVISTAS.includes(codigo)) return "las previstas";
     const clave = `${anioHorasEnUso}|${codigo}`;
     return horasCargadas && horasTurno.has(clave) ? `${formatoHoras(horasTurno.get(clave))} h` : "";
 }
@@ -602,7 +617,10 @@ function miniDato(etiqueta, valor, sub, ancho, clase, alTocar) {
 
 async function pintarResumenPrincipal(caja, empleado) {
     const token = ++tokenResumenPrincipal;
-    if (!(await cargarHoras())) { if (token === tokenResumenPrincipal) caja.hidden = true; return; }
+    if (!(await cargarHoras())) {
+        if (token === tokenResumenPrincipal) reemplazarHijos(caja, el("p", { class: "hoy-subtitulo", text: "No se pudo cargar el resumen." }));
+        return;
+    }
     const anio = new Date().getFullYear();
     const { total } = await calcularResumen(empleado, anio);
     if (token !== tokenResumenPrincipal) return;   // llegó otro pintado más reciente
@@ -615,31 +633,36 @@ async function pintarResumenPrincipal(caja, empleado) {
     // Apuntados / disponibles
     const vac = dias("V"), ld = dias("LD");
     const verHoras = veHoras(empleado);
-    const anchoFila1 = verHoras ? "2" : "3";
+    // Solapes: solo los colectivos de turnos y solo si el administrador les ha dado alguno al año
+    const colectivo = buscarColectivo(empleado.colectivo);
+    const solapesAnio = colectivo && colectivo.tipo === "turnos" ? Number(colectivo.diasSolape) || 0 : 0;
+    const verSolapes = solapesAnio > 0;
+    const sol = dias("S");
+    const anchoFila1 = verHoras || verSolapes ? "2" : "3";
     tarjetas.push(miniDato("Vacaciones", `${vac} / ${Math.max(0, cfg.dias_vacaciones - vac)}`, null, anchoFila1, vac > cfg.dias_vacaciones ? "mini-aviso" : ""));
     tarjetas.push(miniDato("Libre disposición", `${ld} / ${Math.max(0, cfg.dias_ld - ld)}`, null, anchoFila1, ld > cfg.dias_ld ? "mini-aviso" : ""));
+    if (verSolapes) tarjetas.push(miniDato("Solapes", `${sol} / ${Math.max(0, solapesAnio - sol)}`, null, anchoFila1, sol > solapesAnio ? "mini-aviso" : ""));
 
     if (verHoras) {
         const anuales = anualesDe(empleado.id, anio);
         const pendiente = excesoPendiente(total.horas, empleado.id, anio);
         const e = dias("E");
+        const anchoExc = verSolapes ? "2" : "3";   // con solapes hay tres tarjetas por fila
         tarjetas.push(anuales === null
             ? miniDato("Horas anuales", "Sin definir", "Tócalo para ponerlas", "2", "mini-aviso", () => verAjustes())
             : miniDato("Horas anuales", `${formatoHoras(anuales)} h`, null, "2"));
-        tarjetas.push(miniDato("Excesos puestos", `${e} ${plural(e)}`, null, "3"));
+        tarjetas.push(miniDato("Excesos utilizados", `${e} ${plural(e)}`, null, anchoExc));
         if (pendiente === null) {
-            tarjetas.push(miniDato("Excesos disponibles", "—", "Faltan tus horas anuales", "3"));
+            tarjetas.push(miniDato("Excesos disponibles", "—", "Faltan tus horas anuales", anchoExc));
         } else if (pendiente > 0.005) {
             const d = Math.round(pendiente / cfg.horas_dia_exceso * 10) / 10;
-            tarjetas.push(miniDato("Excesos disponibles", `${formatoHoras(d)} ${plural(d)}`, `${formatoHoras(Math.round(pendiente * 100) / 100)} h`, "3", "mini-destacado"));
+            tarjetas.push(miniDato("Excesos disponibles", `${formatoHoras(d)} ${plural(d)}`, `${formatoHoras(Math.round(pendiente * 100) / 100)} h`, anchoExc, "mini-destacado"));
         } else {
-            tarjetas.push(miniDato("Excesos disponibles", "0 días", pendiente < -0.005 ? `te has pasado ${formatoHoras(Math.round(-pendiente * 100) / 100)} h` : "0 h", "3", pendiente < -0.005 ? "mini-aviso" : ""));
+            tarjetas.push(miniDato("Excesos disponibles", "0 días", pendiente < -0.005 ? `te has pasado ${formatoHoras(Math.round(-pendiente * 100) / 100)} h` : "0 h", anchoExc, pendiente < -0.005 ? "mini-aviso" : ""));
         }
     }
 
     reemplazarHijos(caja,
-        el("p", { class: "hoy-subtitulo", text: `Resumen ${anio} · apuntados / disponibles` }),
+        el("p", { class: "hoy-subtitulo", text: `Resumen ${anio} · utilizados / disponibles` }),
         el("div", { class: "mini-grid" }, tarjetas));
-    caja.hidden = false;
-    if (typeof ajustarAlturaCalendario === "function") ajustarAlturaCalendario();
 }

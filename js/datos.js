@@ -5,6 +5,18 @@
 const ANIO_MIN = 2025;
 const ANIO_MAX = 2035;
 
+// Categorías en las que se agrupan los colectivos (subgrupos): Personal a turnos y Personal de jornada partida.
+// La categoría se deduce del tipo: los colectivos de turnos van juntos y todo lo demás (correturnos y los
+// subgrupos de jornada partida) cuelga de jornada partida.
+const GRUPOS = [
+    { codigo: "turnos",  nombre: "Personal a turnos",           icono: "🔁" },
+    { codigo: "jornada", nombre: "Personal de jornada partida", icono: "🕘" }
+];
+
+function grupoDeColectivo(colectivo) {
+    return colectivo && colectivo.tipo === "turnos" ? "turnos" : "jornada";
+}
+
 // colectivos = [{ codigo, nombre, icono, puesto, patron, diasSolape, tipo, empleados: [{ id, nombre, iniciales, inicio, colectivo, activo, orden, marcas }] }]
 // tipo: 'turnos' (jefes de turno, operadores de control y de campo), 'correturnos' u 'otro'.
 // marcas: marcas de arriba de la celda que ese empleado puede usar (D, CTD, CT1... CTY); vacío = celda entera.

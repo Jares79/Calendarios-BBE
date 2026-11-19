@@ -162,9 +162,25 @@ Los nombres exactos de los menús pueden cambiar con las versiones del panel.
 
 ## Fase 10: baja (B), resumen de la pantalla principal y horas anuales por persona
 
-- **Baja (B)**: turno nuevo que se pone a mano (un día o un rango). Se ve en el calendario y **sigue sumando las horas previstas**: las del ajuste manual de ese día si lo hay y, si no, las del turno que tocaba por ciclo, intensiva o festivo. Si al pasar a B el día traía un turno puesto a mano con otras horas, esas horas se conservan como ajuste. Quien tiene B no genera avisos de cobertura a los demás. Color editable (por defecto rosa).
+- **Baja (B)**: turno nuevo que se pone a mano (un día o un rango). Se ve en el calendario y **sigue sumando las horas previstas** (desde la fase 11 también LD, J y el solape a mano): las del ajuste manual de ese día si lo hay y, si no, las del turno que tocaba por ciclo, intensiva o festivo. Si al pasar a B el día traía un turno puesto a mano con otras horas, esas horas se conservan como ajuste. Quien tiene B no genera avisos de cobertura a los demás. Color editable (por defecto rosa).
 - **Colores CT1 a CT4**: por defecto comparten el color de CT1; cada usuario puede darle uno propio a cada uno en "Editar colores". CTD y CTY mantienen el suyo.
-- **Resumen bajo "Hoy"** (sustituye a los próximos días): vacaciones y libre disposición (LD) *apuntados / disponibles* del año en curso y, para los colectivos de turnos (y para quien el administrador active), horas anuales, excesos puestos (días) y excesos disponibles (días y horas). En móviles muy bajitos se oculta para que el mes quepa entero.
+- **Resumen bajo "Hoy"** (sustituye a los próximos días): vacaciones y libre disposición (LD) *apuntados / disponibles* del año en curso y, para los colectivos de turnos (y para quien el administrador active), horas anuales, excesos puestos (días) y excesos disponibles (días y horas). (En la fase 11 pasó a ser un desplegable; ver abajo.)
 - **Horas anuales**: ya no las pone el administrador; cada persona escribe las suyas (solo el total del año) en **Ajustes → Mis horas anuales**. El administrador las ve en Horas → Todos.
 - **Administrador**: "Horas y convenio" tiene ahora los días de LD al año (por defecto 2) junto a los de vacaciones; en la ficha de un empleado de un colectivo que no es de turnos hay una casilla para enseñarle el resumen de horas.
 - SQL: `supabase/fase10-baja-resumen.sql` (añade B a los turnos y colores permitidos, `config_horas.dias_ld`, `empleados.ver_horas`, permisos de horas anuales por persona y repara `horas_dia`). Los avisos de error al guardar horas ahora incluyen el código técnico.
+
+## Fase 11: resumen desplegable, horas previstas en LD/J/S y empleados por colectivo
+
+- **Resumen desplegable**: la barra de "Hoy" lleva una pastilla "Resumen del año ▾" (en todos los dispositivos). Al tocarla se despliega el resumen debajo; cerrado por defecto y se recuerda en el dispositivo. Con el resumen abierto el mes ya no se ajusta a la pantalla (la página baja). Se ha quitado el nivel de compactación que ocultaba el bloque "Hoy" entero en móviles muy bajos.
+- **LD, J y solape (S) a mano** funcionan como la baja: se pintan, pero no tienen horas propias y suman las que había previstas ese día (ajuste manual de horas si lo hay y, si no, las del turno del ciclo). Si el día traía un turno puesto a mano con otras horas, se conservan como ajuste. Las horas de LD y J desaparecen de "Horas y convenio" (el solape que sale del ciclo conserva las suyas). Los LD/J ya guardados pasan a sumar las horas previstas del día.
+- **Empleados y accesos**: un desplegable por colectivo (cerrados al entrar, con el número de empleados); se recuerda cuáles has abierto mientras trabajas.
+- **Jornada partida**: la casilla "Enseñarle su resumen de horas…" de la ficha ya sirve para cualquier colectivo que no sea de turnos (correturnos y jornada partida). No hay SQL nuevo en esta fase.
+
+## Fase 12: categorías y subgrupos, solapes en el resumen y recordatorio del PIN
+
+- **Dos categorías** en Empleados y accesos: *Personal a turnos* (jefes de turno, operadores de control y de campo) y *Personal de jornada partida* (correturnos y los subgrupos que crees). La categoría se deduce del tipo del colectivo (`turnos` va a turnos; el resto a jornada partida). Cada categoría y cada subgrupo es un desplegable.
+- **Subgrupos de jornada partida**: el administrador los crea, renombra y borra (solo si no tienen empleados) desde el desplegable de jornada partida. Heredan el ciclo del colectivo `jornada` (P P P P I F F), son de tipo `otro` (sin turnos) y aparecen en el desplegable de colectivo de la ficha del empleado. El colectivo `jornada` pasa a llamarse *Sin subgrupo*. Los correturnos siguen siendo de tipo `correturnos`, ahora dentro de jornada partida.
+- **Solapes**: en cada colectivo de turnos hay un campo "Solapes al año de cada persona" (`colectivos.dias_solape`; 0 = desactivado). Con más de 0, el resumen de cada persona del colectivo muestra *Solapes: utilizados / disponibles* (días S marcados en el año / los que quedan). También se sigue pudiendo editar en el editor de ciclos.
+- **Resumen**: "apuntados" pasa a "utilizados" y "Excesos puestos" a "Excesos utilizados".
+- **Pantalla de acceso**: el campo PIN recuerda que tiene de 6 a 10 dígitos.
+- SQL: `supabase/fase12-grupos-solapes.sql` (después de `fase10-baja-resumen.sql`; la fase 11 no tuvo SQL). Deshacer: `fase12-deshacer.sql`.

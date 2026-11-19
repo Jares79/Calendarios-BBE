@@ -34,7 +34,7 @@ with sync_playwright() as p:
     # 3) horas por año (admin)
     b,pg,errs=nueva(p,ADM,None)
     pg.click('#infoUsuario'); pg.click('#btnAdminHoras'); pg.wait_for_selector('.fila-horas')
-    for i,h in enumerate(['8','8','8','8','7','8','8','0','8','8']): pg.locator('.admin-grupo').nth(0).locator('input[aria-label^="Horas de"]').nth(i).fill(h)
+    for i,h in enumerate(['8','8','8','8','7','8','8','0']): pg.locator('.admin-grupo').nth(0).locator('input[aria-label^="Horas de"]').nth(i).fill(h)
     pg.click('text=Guardar horas por turno de 2026'); pg.wait_for_timeout(300)
     pg.evaluate("window.__db.horas_anuales.push({empleado_id:'e-jefe',anio:2026,horas:1700})")   # desde la fase 10 las pone cada persona en Ajustes (ver t12.py)
     print('db 2026:', pg.evaluate("window.__db.horas_turno.length"), pg.evaluate("window.__db.horas_anuales.map(r=>r.anio+':'+r.horas).join(',')"))

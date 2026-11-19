@@ -2,8 +2,8 @@
 
 Se ejecutan en Supabase > SQL Editor (botón Run), cada uno de una sola vez. Son aditivos y se pueden repetir,
 **salvo que no hay que volver a ejecutar uno anterior después de uno posterior** (los posteriores redefinen funciones).
-Orden en una base de datos nueva: 1 → 13. En la base de datos del administrador están ejecutados los de la fase 1 a la 9
-y falta el 10 (`fase10-baja-resumen.sql`, que es el que deja el estado final).
+Orden en una base de datos nueva: 1 → 14. Si estás en la fase 9, ejecuta **en este orden** `fase10-baja-resumen.sql` y
+`fase12-grupos-solapes.sql` (la fase 11 no tuvo SQL). Ambos se pueden repetir sin problema.
 
 | Orden | Archivo | Qué hace |
 |---|---|---|
@@ -19,7 +19,8 @@ y falta el 10 (`fase10-baja-resumen.sql`, que es el que deja el estado final).
 | 10 | `fase7-permutas.sql` | Tabla `cambios_hechos` (cambios aceptados, 30 días) y `responder_cambio` ampliado: sirve para avisar si uno deshace por su cuenta un cambio de dos. |
 | 11 | `fase8-horas-dia.sql` | Tabla `horas_dia`: ajuste manual de las horas de un día. |
 | 12 | `fase9-reorganizacion.sql` | Tipo de colectivo (`colectivos.tipo`), marcas por persona (`empleados.marcas`, G pasa a D, función `admin_guardar_marcas`), `crear_cambios` por tipo de colectivo, y horas por año (`horas_turno`, `config_horas`, `horas_anuales` con año). |
-| 13 | **`fase10-baja-resumen.sql`** | **Estado final.** Turno B (baja) en `excepciones` y en los colores, `config_horas.dias_ld`, `empleados.ver_horas` (+ `admin_guardar_ver_horas`), las horas anuales las escribe cada persona, y crea o repara `horas_dia`. |
+| 13 | `fase10-baja-resumen.sql` | Turno B (baja) en `excepciones` y en los colores, `config_horas.dias_ld`, `empleados.ver_horas` (+ `admin_guardar_ver_horas`), las horas anuales las escribe cada persona, y crea o repara `horas_dia`. |
+| 14 | **`fase12-grupos-solapes.sql`** | **Estado final.** Crear, renombrar y borrar subgrupos de jornada partida (`admin_crear_subgrupo`, `admin_renombrar_subgrupo`, `admin_borrar_subgrupo`), el colectivo `jornada` pasa a llamarse "Sin subgrupo" y `dias_solape` limitado a 0-366. |
 
 Otros: `fase1-deshacer.sql`, `fase3-deshacer.sql`, `fase4-deshacer`... (`*-deshacer.sql`) deshacen cada fase; `historico/` y
 `seguridad.sql`, `pin-cambio.sql`, `admin-resetear-pin.sql` son del login antiguo (ya no se usan).

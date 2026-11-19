@@ -67,7 +67,8 @@ function mostrarPantallaLogin() {
 
             <label class="campo">
                 <span>PIN</span>
-                <input type="password" id="inputPin" placeholder="••••••" required inputmode="numeric" autocomplete="current-password" />
+                <input type="password" id="inputPin" placeholder="De 6 a 10 dígitos" required inputmode="numeric" maxlength="10" autocomplete="current-password" />
+                <small class="campo-ayuda">Tu PIN tiene de 6 a 10 dígitos</small>
             </label>
 
             <p id="errorLogin" class="error-texto" role="alert"></p>

@@ -6,7 +6,7 @@
     colectivos: [
       { codigo:'jefes', nombre:'Jefes de Turno', icono:'J', puesto:'Jefe de Turno', patron:['M','M','T','T','N','N','F','F'], dias_solape:3, orden:1, tipo:'turnos' },
       { codigo:'correturnos', nombre:'Correturnos', icono:'C', puesto:'Correturno', patron:P, dias_solape:0, orden:4, tipo:'correturnos' },
-      { codigo:'jornada', nombre:'Personal de jornada partida', icono:'H', puesto:'Personal de jornada partida', patron:P, dias_solape:0, orden:5, tipo:'otro' }
+      { codigo:'jornada', nombre:'Sin subgrupo', icono:'H', puesto:'Personal de jornada partida', patron:P, dias_solape:0, orden:5, tipo:'otro' }
     ],
     empleados: [
       { id:'e-jefe', iniciales:'JEF', nombre:'Jefe Uno', colectivo:'jefes', inicio:'2026-03-02', orden:1, activo:true, marcas:[] },
@@ -72,6 +72,10 @@
       const no = (m) => ({ data:{ ok:false, motivo:m }, error:null });
       if (name==='mi_perfil') return { data:{ iniciales:U.iniciales, nombre:'Usuario', rol:U.rol, empleadoId:U.empleadoId, empleadoNombre:'X', debeCambiarPin:false, colores:{} }, error:null };
       window.__writes.push(['rpc', name]);
+      if (name==='admin_editar_empleado') { const e = db.empleados.find(x=>x.id===a.p_id); if (!e) return no('no_encontrado'); if (!db.colectivos.some(c=>c.codigo===a.p_colectivo)) return no('datos_invalidos'); Object.assign(e, { nombre:a.p_nombre, iniciales:a.p_iniciales, colectivo:a.p_colectivo, inicio:a.p_inicio }); return ok(); }
+      if (name==='admin_crear_subgrupo') { if (U.rol!=='administrador') return no('no_autorizado'); const n=(a.p_nombre||'').trim(); if(!n||n.length>40) return no('datos_invalidos'); if (db.colectivos.some(c=>c.nombre.toLowerCase()===n.toLowerCase())) return no('nombre_repetido'); const cod='sg'+(db.colectivos.length+1); db.colectivos.push({codigo:cod,nombre:n,icono:'👥',puesto:n,patron:db.colectivos.find(c=>c.codigo==='jornada').patron,dias_solape:0,orden:db.colectivos.length+1,tipo:'otro'}); return { data:{ok:true,codigo:cod}, error:null }; }
+      if (name==='admin_renombrar_subgrupo') { const c=db.colectivos.find(x=>x.codigo===a.p_codigo); if(!c) return no('no_encontrado'); if(c.tipo==='turnos') return no('no_permitido'); const n=(a.p_nombre||'').trim(); if(!n) return no('datos_invalidos'); if (db.colectivos.some(x=>x.codigo!==c.codigo && x.nombre.toLowerCase()===n.toLowerCase())) return no('nombre_repetido'); c.nombre=n; return ok(); }
+      if (name==='admin_borrar_subgrupo') { const c=db.colectivos.find(x=>x.codigo===a.p_codigo); if(!c) return no('no_encontrado'); if(c.tipo!=='otro'||c.codigo==='jornada') return no('no_permitido'); if (db.empleados.some(e=>e.colectivo===c.codigo)) return no('tiene_empleados'); db.colectivos=db.colectivos.filter(x=>x!==c); return ok(); }
       if (name==='admin_guardar_ver_horas') { if (U.rol!=='administrador') return no('no_autorizado'); const e = emp(a.p_empleado); if (!e) return no('no_encontrado'); e.ver_horas = a.p_ver; return ok(); }
       if (name==='admin_guardar_marcas') { if (U.rol!=='administrador') return no('no_autorizado'); const e = emp(a.p_empleado); e.marcas = a.p_marcas; return ok(); }
       if (name==='limpiar_cambios') {
