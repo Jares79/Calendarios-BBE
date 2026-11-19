@@ -15,6 +15,11 @@ function obtenerEmpleadoActual() {
     return empleado && empleado.activo ? empleado : null;
 }
 
+// Administrador sin ficha de empleado (solo gestiona): no tiene calendario ni pertenece a ningún colectivo
+function sinCalendario() {
+    return !!usuarioActual && usuarioActual.rol === "administrador" && !usuarioActual.empleadoId;
+}
+
 function esPerfilFamiliar() {
     return !!usuarioActual && usuarioActual.rol === "familiar";
 }
@@ -45,6 +50,15 @@ function verMiCalendario() {
     // Si el año aún no está cargado, se pinta con lo que hay y se repinta al llegar los datos
     if (!aniosCargados.has(anio)) {
         asegurarAnio(anio).then(ok => { if (ok && fechaCalendario.getFullYear() === anio) verMiCalendario(); });
+    }
+
+    // Sin calendario propio: la pantalla de inicio es directamente el menú, abierto
+    if (sinCalendario()) {
+        document.body.classList.add("sin-calendario");
+        const panel = document.getElementById("panelUsuario");
+        if (panel) panel.style.display = "block";
+        pintarCabeceraUsuario("");
+        return;
     }
 
     const empleado = obtenerEmpleadoActual();
@@ -192,6 +206,8 @@ function prepararPanelUsuario() {
 
 function toggleUsuario() {
     ocultarDetalleDia();
+    // Sin calendario, en la pantalla de inicio el menú está siempre abierto
+    if (sinCalendario() && !document.body.classList.contains("vista-resultado")) return;
 
     const panel = document.getElementById("panelUsuario");
     const cabecera = document.getElementById("infoUsuario");
@@ -266,7 +282,9 @@ document.addEventListener("click", function (event) {
 
     const panelUsuario = document.getElementById("panelUsuario");
     const usuarioCabecera = document.querySelector(".usuarioCabecera");
-    if (panelUsuario && panelUsuario.style.display === "block") {
+    // Sin calendario, el menú de la pantalla de inicio no se cierra al tocar fuera
+    const menuEsInicio = sinCalendario() && !document.body.classList.contains("vista-resultado");
+    if (panelUsuario && panelUsuario.style.display === "block" && !menuEsInicio) {
         const dentroPanel = panelUsuario.contains(event.target);
         const dentroCabecera = usuarioCabecera && usuarioCabecera.contains(event.target);
         if (!dentroPanel && !dentroCabecera) cerrarPanelUsuario();

@@ -211,7 +211,7 @@ let resumenPestana = "resumen";          // resumen | todos
 let resumenEmpleadoId = null;
 
 function puedeVerResumen() {
-    return !!usuarioActual && !esPerfilFamiliar() && !!obtenerEmpleadoActual();
+    return !!usuarioActual && !esPerfilFamiliar() && (!!obtenerEmpleadoActual() || sinCalendario());
 }
 
 function prepararPanelHoras() {
@@ -260,7 +260,9 @@ async function verResumen(pestana) {
     if (resumenAnio === null) resumenAnio = anioInicialAdmin();
     const yo = obtenerEmpleadoActual();
     const esAdmin = puedeGestionarUsuarios(usuarioActual);
-    if (!esAdmin || !buscarEmpleadoPorId(resumenEmpleadoId)) resumenEmpleadoId = yo.id;
+    if (!esAdmin || !buscarEmpleadoPorId(resumenEmpleadoId)) {
+        resumenEmpleadoId = yo ? yo.id : (todosLosEmpleadosActivos()[0] || {}).id;   // el administrador sin ficha empieza por el primero
+    }
     if (resumenPestana === "todos" && !esAdmin) resumenPestana = "resumen";
 
     contenedor.replaceChildren(el("p", { class: "aviso-vacio", text: "Calculando…" }));

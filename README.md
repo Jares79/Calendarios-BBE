@@ -190,3 +190,10 @@ Los nombres exactos de los menús pueden cambiar con las versiones del panel.
 - **Salir** pide confirmación con una ventana centrada ("¿Cerrar sesión?", con "Cerrar sesión" y "Cancelar"; Cancelar tiene el foco y Esc también cierra). El botón está junto al menú de usuario y se podía pulsar sin querer.
 - **Gesto o botón atrás del móvil** (`js/atras.js`): en lugar de salir de la app, cierra lo último abierto: ventana, hoja de un día, menú de usuario, modo cambio o edición, o pantalla de resultados (Horas, Ajustes, administrador…). Con el calendario principal a la vista, atrás sigue saliendo de la app. Se mantiene una entrada de historial por capa abierta y se quitan al cerrar con los botones de la app. Desde una pantalla de resultados, atrás vuelve al calendario (no a la pantalla anterior dentro de administrador).
 - Sin SQL nuevo. Versión del service worker `bbe-v16`.
+
+## Fase 14: administrador sin ficha de empleado
+
+- Un administrador sin ficha (`perfiles.empleado_id` nulo) no tiene calendario ni colectivo: la pantalla de inicio es directamente el menú, abierto y fijo (sin calendario, sin resumen de hoy, sin "Mi año" ni "Editar calendario"). Mantiene Buscar, Calendario anual, Horas (de todos), Ajustes, colores y todo el administrador. Desde cualquier pantalla, Volver devuelve al menú.
+- `supabase/admin-sin-ficha.sql` desvincula a ADMIN de su ficha de empleado y la borra (el acceso, el PIN y el rol no cambian). Se ejecuta una vez.
+- Atención: el acceso de este administrador deja de salir en Empleados y accesos (el listado es por empleados), así que su PIN no se puede resetear desde la app.
+- Versión del service worker `bbe-v17`. Prueba: `pruebas/t15.py`.

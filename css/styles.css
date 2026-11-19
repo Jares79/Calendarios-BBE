@@ -1622,3 +1622,9 @@ button.hoy-bloque {
 .dialogo-salir .btn-secundario { background: var(--superficie-2); color: var(--tinta); border: 1px solid var(--linea); }
 @keyframes dialogo-entra { from { opacity: 0; transform: translateY(8px) scale(0.97); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .modal-centrado .modal-hoja { animation: none; } }
+
+/* ---- Administrador sin calendario: la pantalla de inicio es solo el menú ---- */
+body.sin-calendario #cardCalendario,
+body.sin-calendario #resumenHoy,
+body.sin-calendario #btnMiAnio,
+body.sin-calendario #btnEditarCalendario { display: none !important; }

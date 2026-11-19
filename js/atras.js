@@ -19,7 +19,9 @@
         if (document.body.classList.contains("vista-resultado")) capas.push(() => cerrarVistaResultado());
         if (typeof modoEdicion !== "undefined" && modoEdicion) capas.push(() => terminarModoEdicion());
         if (typeof modoCambio !== "undefined" && modoCambio) capas.push(() => terminarModoCambio());
-        if (menu && menu.style.display !== "none") capas.push(() => cerrarPanelUsuario());
+        // Sin calendario, el menú de la pantalla de inicio no es una capa: no hay nada debajo a lo que volver
+        const menuEsInicio = typeof sinCalendario === "function" && sinCalendario() && !document.body.classList.contains("vista-resultado");
+        if (menu && menu.style.display !== "none" && !menuEsInicio) capas.push(() => cerrarPanelUsuario());
         if (document.getElementById("panelDetalleDia")) capas.push(() => ocultarDetalleDia());
         if (document.getElementById("modalCambio")) capas.push(() => cerrarModal());
         return capas;
