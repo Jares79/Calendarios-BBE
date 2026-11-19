@@ -56,12 +56,30 @@ M, T, N, F, P, I y S pueden salir del ciclo. V, E, J y LD solo se ponen a mano.
 
 - **Mi año** (menú): los 12 meses a la vez, un cuadradito por día con el color de su turno, selector de año con flechas y recuento de días por turno. Tocar un cuadradito abre el detalle del día.
 - **Colectivos nuevos** (se crean con `supabase/fase4-correturnos.sql`): *Correturnos* y *Personal de jornada partida*, ciclo de 7 días `P P P P I F F` de lunes a domingo. El día de inicio de cada empleado tiene que ser un **lunes** (la app lo comprueba al dar de alta o editar). Se añaden con "Empleados y accesos" como el resto.
-- **Semanas especiales**: el personal de jornada partida tiene semanas de guardia (**G**) y los correturnos semanas **CTD, CT1, CT2, CT3, CT4 y CTY**. En sus calendarios cada celda va partida: arriba la marca de la semana, abajo el turno del día. La marca no cambia el turno.
-  - Cada persona las asigna en el menú → **Semanas** (lista de semanas del año, varias semanas seguidas) o tocando un día en "Editar calendario".
-  - El administrador puede asignarlas a cualquiera y crear un **patrón que se repite** (por ejemplo `CT1 CT2 CT3 CT4 CTD CTY`, con `-` para una semana sin marca).
-  - Los colores de G y de los CT se editan en "Editar colores" (solo aparecen si hay colectivos con semanas).
-- Qué marcas admite cada colectivo está en la columna `colectivos.marcas` (se puede cambiar por SQL).
-- Tablas nuevas: `semanas_especiales` (empleado, lunes de la semana, código). Archivos nuevos: `js/semanas.js` y `js/anio.js`.
+- **Marcas de la mitad de arriba de la celda** (D, CTD, CT1... CTY): ver "Fase 9" (se asignan persona a persona). Tablas: `semanas_especiales` (marca de una semana entera, por su lunes) y `marcas_dia` (marca de un día suelto, o "-" = ese día sin marca). Archivos nuevos: `js/semanas.js` y `js/anio.js`.
+
+## Fase 5: solicitudes de cambio entre compañeros
+
+- Solo en los colectivos de turnos (jefes de turno, operadores de control y de campo), entre compañeros del mismo colectivo.
+- Es una **permuta**: cada uno se queda con el turno del otro ese día. Se pide un día desde su ficha ("Solicitar cambio") o varios con "Cambio de varios días" (se eligen en el calendario, cambiando de mes si hace falta). En la ventana se elige a quién se pide cada día y se puede añadir un mensaje.
+- Solo se ofrecen compañeros con turno M, T, N, P, I, S o F ese día. Avisa (sin bloquear) de noche → tarde, tarde → mañana y noche → mañana.
+- Menú **Cambios**: pestañas *Recibidas* y *Mis solicitudes*, con el hilo de mensajes de cada solicitud. El destinatario acepta (se cambian los dos calendarios) o rechaza; el solicitante puede cancelar. Globo de avisos en el menú y junto al nombre.
+- La solicitud caduca el día del primer cambio. Lo aceptado, rechazado, cancelado o caducado se borra a las 24 horas.
+- SQL: `supabase/fase5-cambios.sql` (obligatorio) y `supabase/fase5-limpieza.sql` (limpieza programada con pg_cron, opcional: la app también limpia al abrir y cada minuto).
+
+## Fase 6 y 8: horas, resumen del año y ajuste por día
+
+- **Horas y convenio** (menú de administrador, **por año**): horas que cuenta cada turno, horas que equivale un día de excesos, días de vacaciones y horas anuales de cada empleado (cada uno solo ve las suyas). Hay un botón para copiar los valores del año anterior.
+- **Horas** (menú, para todos): horas por mes, vacaciones (usadas y restantes), excesos, solapes, permisos justificados y libre disposición, y las **horas y días de excesos que quedan por pedir** (horas computables del año − horas anuales). El administrador elige a cualquiera y tiene la pestaña "Todos".
+- **Editor de calendario**: cada turno muestra las horas que computa y, en un día, se puede **ajustar a mano** cuántas horas computa (p. ej. una baja que computa como el turno que tocaba). Cambiar el turno de ese día borra el ajuste. Tabla `horas_dia`.
+- Los **correturnos** pueden pedir cambios a los tres colectivos de turnos, y estos a un correturno que esté sustituyendo (turno M, T o N ese día).
+
+## Fase 7: avisos al tocar tu calendario
+
+- **Deshacer un cambio de dos personas**: si cambias a mano un turno que te llegó por un cambio aceptado, la app avisa de que afecta a la otra persona y sugiere pedirle que lo deshaga (se envía como una solicitud nueva). También deja "cambiar solo el mío". Para esto cada cambio aceptado se anota en `cambios_hechos` (se conserva 30 días tras la fecha).
+- **Turno ya cubierto**: al poner M, T o N a mano, avisa si alguien de tu colectivo ya tiene ese turno ese día más allá de lo habitual (lo habitual sale del ciclo, así que cubrir a alguien de vacaciones no avisa). Un correturno recibe el aviso cuando nadie falta en ese turno en los colectivos de turnos.
+- Los colectivos de turnos pueden pedir cambio a un correturno que esté sustituyendo (turno M, T o N ese día).
+- SQL: `supabase/fase7-permutas.sql` (después de las fases 5 y 6; no vuelvas a ejecutar `fase5-cambios.sql` después, porque sustituiría `responder_cambio`).
 
 ## Instalar en el móvil
 
@@ -134,3 +152,48 @@ Los nombres exactos de los menús pueden cambiar con las versiones del panel.
 - La clave `sb_publishable_...` de `js/usuarios.js` puede estar en el código: está pensada para eso. Lo que protege los datos son las sesiones y los permisos por filas (RLS).
 - Los nombres de empleados nunca se insertan como HTML (se pintan con `esc()` o `textContent`).
 - Supabase Auth limita los intentos de acceso por dirección IP, pero ya no bloquea cuentas individuales como hacía el login anterior. Por eso conviene elegir PIN de 8 o más números.
+
+## Fase 9: marcas por persona, tipos de colectivo y horas por año
+
+- **Marcas por persona**: en "Empleados y accesos" → **Disponibilidades y CT**, el administrador marca quién puede usar **D** (Disponible; antes "G", guardia) y las semanas **CTD, CT1, CT2, CT3, CT4, CTY**. Solo a esas personas se les parte la celda en dos mitades y se les ofrecen esas marcas al editar (por semana o por día). Se guardan en `empleados.marcas`.
+- **Tipo de colectivo** (`colectivos.tipo`): `turnos` (jefes de turno, operadores de control y de campo), `correturnos` u `otro`. Determina quién puede pedir cambios.
+- Se eliminan la pantalla "Semanas" y las coincidencias con compañeros. La sección Horas pasa de Ajustes al menú.
+- SQL: `supabase/fase9-reorganizacion.sql` (ver `supabase/LEEME-orden.md` para el orden de todos los scripts).
+
+## Fase 10: baja (B), resumen de la pantalla principal y horas anuales por persona
+
+- **Baja (B)**: turno nuevo que se pone a mano (un día o un rango). Se ve en el calendario y **sigue sumando las horas previstas** (desde la fase 11 también LD, J y el solape a mano): las del ajuste manual de ese día si lo hay y, si no, las del turno que tocaba por ciclo, intensiva o festivo. Si al pasar a B el día traía un turno puesto a mano con otras horas, esas horas se conservan como ajuste. Quien tiene B no genera avisos de cobertura a los demás. Color editable (por defecto rosa).
+- **Colores CT1 a CT4**: por defecto comparten el color de CT1; cada usuario puede darle uno propio a cada uno en "Editar colores". CTD y CTY mantienen el suyo.
+- **Resumen bajo "Hoy"** (sustituye a los próximos días): vacaciones y libre disposición (LD) *apuntados / disponibles* del año en curso y, para los colectivos de turnos (y para quien el administrador active), horas anuales, excesos puestos (días) y excesos disponibles (días y horas). (En la fase 11 pasó a ser un desplegable; ver abajo.)
+- **Horas anuales**: ya no las pone el administrador; cada persona escribe las suyas (solo el total del año) en **Ajustes → Mis horas anuales**. El administrador las ve en Horas → Todos.
+- **Administrador**: "Horas y convenio" tiene ahora los días de LD al año (por defecto 2) junto a los de vacaciones; en la ficha de un empleado de un colectivo que no es de turnos hay una casilla para enseñarle el resumen de horas.
+- SQL: `supabase/fase10-baja-resumen.sql` (añade B a los turnos y colores permitidos, `config_horas.dias_ld`, `empleados.ver_horas`, permisos de horas anuales por persona y repara `horas_dia`). Los avisos de error al guardar horas ahora incluyen el código técnico.
+
+## Fase 11: resumen desplegable, horas previstas en LD/J/S y empleados por colectivo
+
+- **Resumen desplegable**: la barra de "Hoy" lleva una pastilla "Resumen del año ▾" (en todos los dispositivos). Al tocarla se despliega el resumen debajo; cerrado por defecto y se recuerda en el dispositivo. Con el resumen abierto el mes ya no se ajusta a la pantalla (la página baja). Se ha quitado el nivel de compactación que ocultaba el bloque "Hoy" entero en móviles muy bajos.
+- **LD, J y solape (S) a mano** funcionan como la baja: se pintan, pero no tienen horas propias y suman las que había previstas ese día (ajuste manual de horas si lo hay y, si no, las del turno del ciclo). Si el día traía un turno puesto a mano con otras horas, se conservan como ajuste. Las horas de LD y J desaparecen de "Horas y convenio" (el solape que sale del ciclo conserva las suyas). Los LD/J ya guardados pasan a sumar las horas previstas del día.
+- **Empleados y accesos**: un desplegable por colectivo (cerrados al entrar, con el número de empleados); se recuerda cuáles has abierto mientras trabajas.
+- **Jornada partida**: la casilla "Enseñarle su resumen de horas…" de la ficha ya sirve para cualquier colectivo que no sea de turnos (correturnos y jornada partida). No hay SQL nuevo en esta fase.
+
+## Fase 12: categorías y subgrupos, solapes en el resumen y recordatorio del PIN
+
+- **Dos categorías** en Empleados y accesos: *Personal a turnos* (jefes de turno, operadores de control y de campo) y *Personal de jornada partida* (correturnos y los subgrupos que crees). La categoría se deduce del tipo del colectivo (`turnos` va a turnos; el resto a jornada partida). Cada categoría y cada subgrupo es un desplegable.
+- **Subgrupos de jornada partida**: el administrador los crea, renombra y borra (solo si no tienen empleados) desde el desplegable de jornada partida. Heredan el ciclo del colectivo `jornada` (P P P P I F F), son de tipo `otro` (sin turnos) y aparecen en el desplegable de colectivo de la ficha del empleado. El colectivo `jornada` pasa a llamarse *Sin subgrupo*. Los correturnos siguen siendo de tipo `correturnos`, ahora dentro de jornada partida.
+- **Solapes**: en cada colectivo de turnos hay un campo "Solapes al año de cada persona" (`colectivos.dias_solape`; 0 = desactivado). Con más de 0, el resumen de cada persona del colectivo muestra *Solapes: utilizados / disponibles* (días S marcados en el año / los que quedan). También se sigue pudiendo editar en el editor de ciclos.
+- **Resumen**: "apuntados" pasa a "utilizados" y "Excesos puestos" a "Excesos utilizados".
+- **Pantalla de acceso**: el campo PIN recuerda que tiene de 6 a 10 dígitos.
+- SQL: `supabase/fase12-grupos-solapes.sql` (después de `fase10-baja-resumen.sql`; la fase 11 no tuvo SQL). Deshacer: `fase12-deshacer.sql`.
+
+## Fase 13: confirmar al salir y botón/gesto atrás
+
+- **Salir** pide confirmación con una ventana centrada ("¿Cerrar sesión?", con "Cerrar sesión" y "Cancelar"; Cancelar tiene el foco y Esc también cierra). El botón está junto al menú de usuario y se podía pulsar sin querer.
+- **Gesto o botón atrás del móvil** (`js/atras.js`): en lugar de salir de la app, cierra lo último abierto: ventana, hoja de un día, menú de usuario, modo cambio o edición, o pantalla de resultados (Horas, Ajustes, administrador…). Con el calendario principal a la vista, atrás sigue saliendo de la app. Se mantiene una entrada de historial por capa abierta y se quitan al cerrar con los botones de la app. Desde una pantalla de resultados, atrás vuelve al calendario (no a la pantalla anterior dentro de administrador).
+- Sin SQL nuevo. Versión del service worker `bbe-v16`.
+
+## Fase 14: administrador sin ficha de empleado
+
+- Un administrador sin ficha (`perfiles.empleado_id` nulo) no tiene calendario ni colectivo: la pantalla de inicio es directamente el menú, abierto y fijo (sin calendario, sin resumen de hoy, sin "Mi año" ni "Editar calendario"). Mantiene Buscar, Calendario anual, Horas (de todos), Ajustes, colores y todo el administrador. Desde cualquier pantalla, Volver devuelve al menú.
+- `supabase/admin-sin-ficha.sql` desvincula a ADMIN de su ficha de empleado y la borra (el acceso, el PIN y el rol no cambian). Se ejecuta una vez.
+- Atención: el acceso de este administrador deja de salir en Empleados y accesos (el listado es por empleados), así que su PIN no se puede resetear desde la app.
+- Versión del service worker `bbe-v17`. Prueba: `pruebas/t15.py`.

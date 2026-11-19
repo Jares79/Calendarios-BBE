@@ -67,7 +67,8 @@ function mostrarPantallaLogin() {
 
             <label class="campo">
                 <span>PIN</span>
-                <input type="password" id="inputPin" placeholder="••••••" required inputmode="numeric" autocomplete="current-password" />
+                <input type="password" id="inputPin" placeholder="De 6 a 10 dígitos" required inputmode="numeric" maxlength="10" autocomplete="current-password" />
+                <small class="campo-ayuda">Tu PIN tiene de 6 a 10 dígitos</small>
             </label>
 
             <p id="errorLogin" class="error-texto" role="alert"></p>
@@ -191,10 +192,30 @@ async function iniciarApp() {
     pintarLeyenda();
     aplicarModoFamiliar();   // oculta el menú y marca la cabecera
     prepararPanelAdmin();    // solo administradores
-    prepararPanelSemanas();  // solo quien tiene semanas especiales (y el administrador)
+    prepararPanelHoras();    // sección Horas del menú
     iniciarCambios();        // solicitudes de cambio entre compañeros (globo de avisos)
 
     verMiCalendario();
+}
+
+// Ventana de confirmación antes de salir (el botón está pegado al menú de usuario y se podía pulsar sin querer)
+function confirmarCerrarSesion() {
+    const cancelar = el("button", { type: "button", class: "btn-secundario", text: "Cancelar", onclick: () => cerrarModal() });
+    const salir = el("button", { type: "button", class: "btn-peligro", text: "Cerrar sesión" });
+    const icono = el("div", { class: "dialogo-icono", "aria-hidden": "true" });
+    icono.innerHTML = '<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>';
+    const fondo = abrirModal(
+        el("div", { class: "dialogo-salir" },
+            icono,
+            el("h3", { text: "¿Cerrar sesión?" }),
+            el("p", { class: "dialogo-texto", text: "Tendrás que volver a entrar con tus iniciales y tu PIN." }),
+            el("div", { class: "modal-acciones modal-acciones-columna" }, salir, cancelar)
+        )
+    );
+    fondo.classList.add("modal-centrado");
+    fondo.addEventListener("keydown", (e) => { if (e.key === "Escape") cerrarModal(); });
+    salir.addEventListener("click", () => { salir.disabled = true; salir.textContent = "Saliendo…"; cerrarSesion(); });
+    cancelar.focus();   // lo más seguro por defecto: no salir
 }
 
 async function cerrarSesion() {

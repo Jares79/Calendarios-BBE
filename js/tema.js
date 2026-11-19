@@ -61,13 +61,18 @@ function verAjustes() {
         return boton;
     });
 
-    contenedor.replaceChildren(
+    // Horas anuales de la persona (solo si se le enseñan las horas); se rellena al cargar los datos
+    const bloqueHoras = el("div", { class: "ajustes-horas" });
+
+    reemplazarHijos(contenedor,
         el("div", { class: "resultado-cabecera" },
             el("h2", { text: "Ajustes" }),
             el("button", { type: "button", class: "btn-secundario", text: "Volver", onclick: cerrarVistaResultado })
         ),
         el("h3", { class: "grupo-titulo", text: "Apariencia" }),
         el("p", { class: "admin-nota", text: "Se guarda en este dispositivo. \"Según el sistema\" sigue el modo claro u oscuro de tu móvil u ordenador." }),
-        el("div", { class: "opciones-tema" }, botones)
+        el("div", { class: "opciones-tema" }, botones),
+        bloqueHoras
     );
+    if (typeof pintarHorasAnualesAjustes === "function") pintarHorasAnualesAjustes(bloqueHoras);
 }

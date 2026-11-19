@@ -7,7 +7,7 @@
 // si no hay red, lo último guardado. Para forzar que todos descarguen de nuevo los
 // archivos, cambia el número de VERSION.
 
-const VERSION = "bbe-v8";
+const VERSION = "bbe-v17";
 
 const ARCHIVOS = [
     "./",
@@ -23,10 +23,12 @@ const ARCHIVOS = [
     "js/anio.js",
     "js/tema.js",
     "js/cambios.js",
+    "js/horas.js",
     "js/admin.js",
     "js/admin-fechas.js",
     "js/edicion.js",
     "js/colores.js",
+    "js/atras.js",
     "js/app.js",
     "manifest.webmanifest",
     "img/LOGO_BBE_SOLO.png",

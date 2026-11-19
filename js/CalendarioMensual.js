@@ -15,6 +15,11 @@ function obtenerEmpleadoActual() {
     return empleado && empleado.activo ? empleado : null;
 }
 
+// Administrador sin ficha de empleado (solo gestiona): no tiene calendario ni pertenece a ningún colectivo
+function sinCalendario() {
+    return !!usuarioActual && usuarioActual.rol === "administrador" && !usuarioActual.empleadoId;
+}
+
 function esPerfilFamiliar() {
     return !!usuarioActual && usuarioActual.rol === "familiar";
 }
@@ -45,6 +50,15 @@ function verMiCalendario() {
     // Si el año aún no está cargado, se pinta con lo que hay y se repinta al llegar los datos
     if (!aniosCargados.has(anio)) {
         asegurarAnio(anio).then(ok => { if (ok && fechaCalendario.getFullYear() === anio) verMiCalendario(); });
+    }
+
+    // Sin calendario propio: la pantalla de inicio es directamente el menú, abierto
+    if (sinCalendario()) {
+        document.body.classList.add("sin-calendario");
+        const panel = document.getElementById("panelUsuario");
+        if (panel) panel.style.display = "block";
+        pintarCabeceraUsuario("");
+        return;
     }
 
     const empleado = obtenerEmpleadoActual();
@@ -192,6 +206,8 @@ function prepararPanelUsuario() {
 
 function toggleUsuario() {
     ocultarDetalleDia();
+    // Sin calendario, en la pantalla de inicio el menú está siempre abierto
+    if (sinCalendario() && !document.body.classList.contains("vista-resultado")) return;
 
     const panel = document.getElementById("panelUsuario");
     const cabecera = document.getElementById("infoUsuario");
@@ -266,7 +282,9 @@ document.addEventListener("click", function (event) {
 
     const panelUsuario = document.getElementById("panelUsuario");
     const usuarioCabecera = document.querySelector(".usuarioCabecera");
-    if (panelUsuario && panelUsuario.style.display === "block") {
+    // Sin calendario, el menú de la pantalla de inicio no se cierra al tocar fuera
+    const menuEsInicio = sinCalendario() && !document.body.classList.contains("vista-resultado");
+    if (panelUsuario && panelUsuario.style.display === "block" && !menuEsInicio) {
         const dentroPanel = panelUsuario.contains(event.target);
         const dentroCabecera = usuarioCabecera && usuarioCabecera.contains(event.target);
         if (!dentroPanel && !dentroCabecera) cerrarPanelUsuario();
@@ -311,6 +329,24 @@ document.addEventListener("DOMContentLoaded", () => {
 // --- BLOQUE "HOY" Y LEYENDA ---
 const DIAS_SEMANA_CORTOS = ["D", "L", "M", "X", "J", "V", "S"];
 
+// Estado del desplegable del resumen (se recuerda en el dispositivo; por defecto, cerrado)
+const CLAVE_RESUMEN_ABIERTO = "bbe-resumen-abierto";
+
+function resumenAbierto() {
+    try { return localStorage.getItem(CLAVE_RESUMEN_ABIERTO) === "1"; } catch (e) { return false; }
+}
+
+function alternarResumen() {
+    const barra = document.querySelector(".hoy-desplegable");
+    const caja = document.querySelector(".hoy-resumen-caja");
+    if (!barra || !caja) return;
+    const abrir = caja.hidden;
+    caja.hidden = !abrir;
+    barra.setAttribute("aria-expanded", String(abrir));
+    try { localStorage.setItem(CLAVE_RESUMEN_ABIERTO, abrir ? "1" : "0"); } catch (e) { /* sin almacenamiento */ }
+    ajustarAlturaCalendario();
+}
+
 function pintarResumenHoy() {
     const contenedor = document.getElementById("resumenHoy");
     if (!contenedor) return;
@@ -325,37 +361,33 @@ function pintarResumenHoy() {
     const iso = aISO(hoy);
     const info = infoTurno(iso, empleado);
 
-    const proximos = [];
-    for (let i = 1; i <= 6; i++) {
-        const dia = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() + i);
-        const isoDia = aISO(dia);
-        const infoDia = infoTurno(isoDia, empleado);
-        proximos.push(el("li", { class: "chip-dia " + infoDia.clase + claseLargo(infoDia), title: `${fechaLarga(isoDia)}: ${infoDia.texto}${infoDia.marca ? " · " + infoDia.marca.texto : ""}` },
-            el("span", { class: "chip-sem", text: DIAS_SEMANA_CORTOS[dia.getDay()] }),
-            el("span", { class: "chip-num", text: dia.getDate() }),
-            el("span", { class: "chip-letra", text: infoDia.codigo }),
-            infoDia.partida
-                ? el("span", { class: "chip-marca " + (infoDia.marca ? infoDia.marca.clase : "sin-marca"), text: infoDia.marca ? infoDia.marca.codigo : "·" })
-                : null
-        ));
-    }
+    // Resumen del año (vacaciones, LD, horas y excesos): se despliega desde la barra de hoy; se rellena al tener los datos
+    const desplegable = !esPerfilFamiliar();
+    const abierto = desplegable && resumenAbierto();
+    const resumenCaja = desplegable ? el("div", { class: "hoy-resumen-caja", hidden: !abierto },
+        el("p", { class: "hoy-subtitulo", text: "Calculando resumen…" })) : null;
 
-    contenedor.replaceChildren(
-        el("div", { class: "hoy-bloque " + info.clase },
-            el("div", { class: "hoy-textos" },
-                el("span", { class: "hoy-etiqueta", text: "Hoy" }),
-                el("span", { class: "hoy-nombre", text: info.texto }),
-                el("span", { class: "hoy-fecha", text: fechaLarga(iso) }),
-                info.marca ? el("span", { class: "hoy-marca " + info.marca.clase, text: info.marca.texto }) : null
-            ),
-            el("span", { class: "hoy-letra" + claseLargo(info), text: info.codigo })
+    const barra = el(desplegable ? "button" : "div", {
+        type: desplegable ? "button" : null,
+        class: "hoy-bloque " + info.clase + (desplegable ? " hoy-desplegable" : ""),
+        "aria-expanded": desplegable ? String(abierto) : null,
+        onclick: desplegable ? alternarResumen : null
+    },
+        el("div", { class: "hoy-textos" },
+            el("span", { class: "hoy-etiqueta", text: "Hoy" }),
+            el("span", { class: "hoy-nombre", text: info.texto }),
+            el("span", { class: "hoy-fecha", text: fechaLarga(iso) }),
+            info.marca ? el("span", { class: "hoy-marca " + info.marca.clase, text: info.marca.texto }) : null,
+            desplegable ? el("span", { class: "hoy-desplegar" },
+                el("span", { text: "Resumen del año" }),
+                el("span", { class: "hoy-chevron", "aria-hidden": "true", text: "▾" })) : null
         ),
-        el("div", { class: "hoy-proximos-caja" },
-            el("p", { class: "hoy-subtitulo", text: "Próximos días" }),
-            el("ul", { class: "hoy-proximos" }, proximos)
-        )
+        el("span", { class: "hoy-letra" + claseLargo(info), text: info.codigo })
     );
+
+    reemplazarHijos(contenedor, barra, resumenCaja);
     contenedor.hidden = false;
+    if (resumenCaja && typeof pintarResumenPrincipal === "function") pintarResumenPrincipal(resumenCaja, empleado);
 }
 
 function pintarLeyenda() {
@@ -368,12 +400,12 @@ function pintarLeyenda() {
             el("span", { text: t.texto })
         );
 
-    // Las marcas semanales solo se explican si hay algún colectivo que las use
-    const hayMarcas = colectivos.some(c => c.marcas.length > 0);
+    // Las marcas solo se explican si hay alguien con marcas activadas
+    const hayMarcas = hayMarcasEnUso();
     reemplazarHijos(contenedor,
         el("h2", { text: "Turnos" }),
         el("ul", { class: "leyenda-lista" }, Object.entries(TURNOS).map(item)),
-        hayMarcas ? el("h2", { class: "leyenda-sub", text: "Semanas (mitad de arriba de la celda)" }) : null,
+        hayMarcas ? el("h2", { class: "leyenda-sub", text: "Marcas (mitad de arriba de la celda)" }) : null,
         hayMarcas ? el("ul", { class: "leyenda-lista" }, Object.entries(MARCAS).map(item)) : null
     );
 }
@@ -394,8 +426,7 @@ function alturaMenuAbierto() {
 const NIVELES_COMPACTOS = [
     [],
     ["pantalla-baja"],
-    ["pantalla-baja", "pantalla-muy-baja"],
-    ["pantalla-baja", "pantalla-muy-baja", "sin-hoy"]
+    ["pantalla-baja", "pantalla-muy-baja"]
 ];
 const CLASES_COMPACTAS = ["pantalla-baja", "pantalla-muy-baja", "sin-hoy"];
 const ALTO_CELDA_COMODO = 40;   // por debajo de esto se compacta lo de arriba
@@ -408,7 +439,11 @@ function ajustarAlturaCalendario() {
 
     const quitarCompactacion = () => document.body.classList.remove(...CLASES_COMPACTAS);
 
-    if (!window.matchMedia("(max-width: 767px)").matches) {
+    // Con el resumen del año desplegado la página es más alta a propósito: no se ajusta el mes a la pantalla
+    const cajaResumen = document.querySelector(".hoy-resumen-caja");
+    const resumenDesplegado = !!cajaResumen && !cajaResumen.hidden;
+
+    if (resumenDesplegado || !window.matchMedia("(max-width: 767px)").matches) {
         grid.classList.remove("altura-fija");
         contenedor.style.removeProperty("--alto-celda");
         quitarCompactacion();

@@ -60,6 +60,9 @@ async function verGestionAdmin() {
     pintarGestionAdmin();
 }
 
+// Colectivos que el administrador tiene desplegados en el listado de empleados
+const gruposAbiertos = new Set();
+
 function pintarGestionAdmin() {
     const contenedor = document.getElementById("resultado");
 
@@ -76,18 +79,134 @@ function pintarGestionAdmin() {
         onclick: () => mostrarFormularioEmpleado(null)
     });
 
-    const listas = colectivos.map(c => el("div", { class: "admin-grupo" },
-        el("h3", { text: `${c.icono} ${c.nombre}` }),
-        c.empleados.length
-            ? c.empleados.map(emp => filaEmpleado(emp, c))
-            : el("p", { class: "admin-nota", text: "Sin empleados." })
-    ));
+    // Dos categorías (personal a turnos y jornada partida) y, dentro, un desplegable por subgrupo.
+    // Cerrados al entrar; se recuerda cuáles has abierto mientras trabajas.
+    const listas = GRUPOS.map(g => {
+        const hijos = colectivos.filter(c => grupoDeColectivo(c) === g.codigo);
+        const total = hijos.reduce((n, c) => n + c.empleados.filter(e => e.activo).length, 0);
+        const contenido = [];
+        if (g.codigo === "jornada") contenido.push(formularioNuevoSubgrupo());
+        hijos.forEach(c => contenido.push(desplegableSubgrupo(c)));
+        return desplegableAdmin("g:" + g.codigo, `${g.icono} ${g.nombre}`, String(total), "admin-grupo admin-desplegable", contenido);
+    });
+
+    const botonMarcas = el("button", {
+        class: "admin-nuevo btn-secundario", text: "🏷️ Disponibilidades y CT",
+        onclick: verMarcasAdmin
+    });
 
     contenedor.replaceChildren(
-        cabecera, adminAviso, botonNuevo, formulario, ...listas,
+        cabecera, adminAviso, botonNuevo, botonMarcas, formulario, ...listas,
         el("hr", { class: "separador" }),
         seccionCiclos()
     );
+}
+
+// <details> recordando si está abierto
+function desplegableAdmin(clave, titulo, cuantos, clases, contenido) {
+    const detalles = el("details", { class: clases, open: gruposAbiertos.has(clave) },
+        el("summary", {},
+            el("span", { text: titulo }),
+            el("span", { class: "admin-desplegable-n", text: cuantos })),
+        contenido.flat());
+    detalles.addEventListener("toggle", () => {
+        if (detalles.open) gruposAbiertos.add(clave); else gruposAbiertos.delete(clave);
+    });
+    return detalles;
+}
+
+function desplegableSubgrupo(c) {
+    const activos = c.empleados.filter(e => e.activo).length;
+    const contenido = [];
+
+    // Colectivos de turnos: cuántos solapes al año tiene cada persona (0 = no se muestran en su resumen)
+    if (c.tipo === "turnos") contenido.push(filaSolapes(c));
+    // Subgrupos creados por el administrador: renombrar y borrar
+    if (c.tipo === "otro" && c.codigo !== "jornada") contenido.push(filaGestionSubgrupo(c));
+    // El colectivo base de jornada partida se puede renombrar, pero no borrar
+    if (c.codigo === "jornada") contenido.push(filaGestionSubgrupo(c, false));
+
+    contenido.push(c.empleados.length
+        ? c.empleados.map(emp => filaEmpleado(emp, c))
+        : el("p", { class: "admin-nota", text: "Sin empleados." }));
+
+    return desplegableAdmin("c:" + c.codigo, `${c.icono} ${c.nombre}`,
+        c.empleados.length === activos ? `${activos}` : `${activos} de ${c.empleados.length}`,
+        "admin-subdesplegable admin-desplegable", contenido);
+}
+
+function filaSolapes(c) {
+    const input = el("input", { type: "number", min: "0", max: "366", step: "1", inputmode: "numeric", class: "input-corto", "aria-label": `Solapes al año de ${c.nombre}` });
+    input.value = String(c.diasSolape);
+    const guardar = el("button", { type: "button", class: "btn-secundario", text: "Guardar" });
+    guardar.addEventListener("click", async () => {
+        const n = Number(input.value);
+        if (!Number.isInteger(n) || n < 0 || n > 366) { mostrarAviso("Los solapes deben ser un número entero de 0 a 366.", true); return; }
+        guardar.disabled = true;
+        const { error } = await supabaseClient.from("colectivos").update({ dias_solape: n }).eq("codigo", c.codigo);
+        guardar.disabled = false;
+        if (error) { console.error(error); mostrarAviso("No se pudieron guardar los solapes." + detalleError(error), true); return; }
+        c.diasSolape = n;
+        mostrarAviso(n > 0 ? `${c.nombre}: ${n} solapes al año. Cada persona los verá en su resumen.` : `${c.nombre}: sin solapes (no se muestran en el resumen).`, false);
+    });
+    return el("div", { class: "admin-fila-solapes" },
+        el("label", { class: "fila-horas" },
+            el("span", { class: "fila-horas-nombre", text: "Solapes al año de cada persona" }), input, el("span", { class: "fila-horas-unidad", text: "días" })),
+        guardar,
+        el("p", { class: "admin-nota", text: "Con 0 no aparecen en el resumen. Con más de 0, cada persona verá cuántos ha utilizado y cuántos le quedan." }));
+}
+
+const MENSAJES_SUBGRUPO = {
+    nombre_repetido: "Ya existe un subgrupo con ese nombre.",
+    datos_invalidos: "El nombre debe tener entre 1 y 40 caracteres.",
+    tiene_empleados: "Primero pasa a otro subgrupo a los empleados que tiene.",
+    no_permitido: "Ese subgrupo no se puede cambiar.",
+    en_uso: "Ese subgrupo tiene datos asociados y no se puede borrar.",
+    no_autorizado: "No tienes permiso para hacer esto."
+};
+
+async function llamarSubgrupo(funcion, args, textoOk, antesDeRecargar) {
+    const r = await supabaseClient.rpc(funcion, args);
+    if (r.error || !r.data) {
+        console.error(r.error);
+        mostrarAviso("No se pudo hacer el cambio. Puede que falte ejecutar el script de la fase 12 en Supabase." + detalleError(r.error), true);
+        return false;
+    }
+    if (!r.data.ok) { mostrarAviso(MENSAJES_SUBGRUPO[r.data.motivo] || "No se pudo hacer el cambio.", true); return false; }
+    if (antesDeRecargar) antesDeRecargar(r.data);
+    await recargarGestionAdmin();
+    mostrarAviso(textoOk, false);
+    return r.data;
+}
+
+function formularioNuevoSubgrupo() {
+    const input = el("input", { type: "text", maxlength: "40", placeholder: "Nombre del subgrupo nuevo", required: true, "aria-label": "Nombre del subgrupo nuevo" });
+    const form = el("form", { class: "admin-form-subgrupo" }, input, el("button", { type: "submit", text: "➕ Crear subgrupo" }));
+    form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        await llamarSubgrupo("admin_crear_subgrupo", { p_nombre: input.value }, `Subgrupo «${input.value.trim()}» creado. Ya puedes asignarle empleados.`,
+            (datos) => { gruposAbiertos.add("g:jornada"); if (datos.codigo) gruposAbiertos.add("c:" + datos.codigo); });
+    });
+    return form;
+}
+
+function filaGestionSubgrupo(c, puedeBorrar = true) {
+    const renombrar = el("button", { type: "button", class: "btn-secundario", text: "✏️ Cambiar nombre" });
+    renombrar.addEventListener("click", async () => {
+        const nuevo = prompt("Nuevo nombre del subgrupo", c.nombre);
+        if (nuevo === null || nuevo.trim() === c.nombre) return;
+        await llamarSubgrupo("admin_renombrar_subgrupo", { p_codigo: c.codigo, p_nombre: nuevo }, `Subgrupo renombrado a «${nuevo.trim()}».`);
+    });
+    const botones = [renombrar];
+    if (puedeBorrar && c.tipo === "otro") {
+        const borrar = el("button", { type: "button", class: "btn-peligro", text: "🗑️ Borrar subgrupo" });
+        borrar.addEventListener("click", async () => {
+            if (!confirm(`¿Borrar el subgrupo «${c.nombre}»? Solo se puede si no tiene empleados.`)) return;
+            await llamarSubgrupo("admin_borrar_subgrupo", { p_codigo: c.codigo }, `Subgrupo «${c.nombre}» borrado.`);
+        });
+        botones.push(borrar);
+    }
+    return el("div", { class: "admin-acciones" }, botones);
 }
 
 function filaEmpleado(emp, colectivo) {
@@ -228,7 +347,8 @@ function mostrarFormularioEmpleado(emp) {
 
     const inputNombre = el("input", { type: "text", maxlength: "40", value: emp ? emp.nombre : "", required: true });
     const inputIniciales = el("input", { type: "text", maxlength: "8", value: emp ? emp.iniciales : "", required: true, class: "input-iniciales" });
-    const selectColectivo = el("select", {}, colectivos.map(c => el("option", { value: c.codigo, text: c.nombre })));
+    const selectColectivo = el("select", {}, GRUPOS.map(g => el("optgroup", { label: g.nombre },
+        colectivos.filter(c => grupoDeColectivo(c) === g.codigo).map(c => el("option", { value: c.codigo, text: c.nombre })))));
     selectColectivo.value = emp ? emp.colectivo : colectivos[0].codigo;
     const inputInicio = el("input", { type: "date", value: emp ? emp.inicio : "", required: true });
     const selectRol = el("select", {},
@@ -237,6 +357,15 @@ function mostrarFormularioEmpleado(emp) {
     selectRol.value = principal ? principal.rol : "empleado";
     if (!esNuevo && !principal) selectRol.disabled = true;
     const checkActivo = el("input", { type: "checkbox", checked: emp ? emp.activo : true });
+    const checkVerHoras = el("input", { type: "checkbox", checked: emp ? emp.verHoras : false });
+    const filaVerHoras = el("label", { class: "admin-campo admin-check" }, checkVerHoras,
+        el("span", { text: "Enseñarle su resumen de horas anuales y excesos (los colectivos de turnos siempre lo ven)" }));
+    const actualizarVerHoras = () => {
+        const c = buscarColectivo(selectColectivo.value);
+        filaVerHoras.style.display = esNuevo || (c && c.tipo === "turnos") ? "none" : "";
+    };
+    selectColectivo.addEventListener("change", actualizarVerHoras);
+    actualizarVerHoras();
     const error = el("p", { class: "admin-error-texto", text: "" });
 
     const campo = (etiqueta, control) => el("label", { class: "admin-campo" }, el("span", { text: etiqueta }), control);
@@ -249,6 +378,7 @@ function mostrarFormularioEmpleado(emp) {
         campo("Día en que empieza su ciclo de turnos", inputInicio),
         campo("Rol en la app", selectRol),
         esNuevo ? null : el("label", { class: "admin-campo admin-check" }, checkActivo, el("span", { text: "Activo (si lo desmarcas, no sale en calendarios y no puede entrar)" })),
+        esNuevo ? null : filaVerHoras,
         error,
         el("div", { class: "admin-acciones" },
             el("button", { type: "submit", text: esNuevo ? "Crear empleado" : "Guardar cambios" }),
@@ -301,6 +431,17 @@ function mostrarFormularioEmpleado(emp) {
         if (!r || !r.ok) {
             error.textContent = MOTIVOS_ADMIN[r && r.motivo] || "No se pudo guardar.";
             return;
+        }
+
+        // Resumen de horas para quien no es de un colectivo de turnos (se guarda aparte)
+        if (!esNuevo && checkVerHoras.checked !== emp.verHoras) {
+            const rv = await supabaseClient.rpc("admin_guardar_ver_horas", { p_empleado: emp.id, p_ver: checkVerHoras.checked });
+            if (rv.error || !rv.data || !rv.data.ok) {
+                console.error(rv.error || rv.data);
+                await recargarGestionAdmin();
+                mostrarAviso("Los cambios se guardaron, pero no se pudo cambiar lo del resumen de horas (falta ejecutar el script de la fase 10 en Supabase).", true);
+                return;
+            }
         }
 
         await recargarGestionAdmin();

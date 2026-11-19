@@ -5,7 +5,22 @@
 const ANIO_MIN = 2025;
 const ANIO_MAX = 2035;
 
-// colectivos = [{ codigo, nombre, icono, puesto, patron, diasSolape, marcas, empleados: [{ id, nombre, iniciales, inicio, colectivo, activo, orden }] }]
+// Categorías en las que se agrupan los colectivos (subgrupos): Personal a turnos y Personal de jornada partida.
+// La categoría se deduce del tipo: los colectivos de turnos van juntos y todo lo demás (correturnos y los
+// subgrupos de jornada partida) cuelga de jornada partida.
+const GRUPOS = [
+    { codigo: "turnos",  nombre: "Personal a turnos",           icono: "🔁" },
+    { codigo: "jornada", nombre: "Personal de jornada partida", icono: "🕘" }
+];
+
+function grupoDeColectivo(colectivo) {
+    return colectivo && colectivo.tipo === "turnos" ? "turnos" : "jornada";
+}
+
+// colectivos = [{ codigo, nombre, icono, puesto, patron, diasSolape, tipo, empleados: [{ id, nombre, iniciales, inicio, colectivo, activo, orden, marcas }] }]
+// tipo: 'turnos' (jefes de turno, operadores de control y de campo), 'correturnos' u 'otro'.
+// marcas: marcas de arriba de la celda que ese empleado puede usar (D, CTD, CT1... CTY); vacío = celda entera.
+// verHoras: el administrador le activa el resumen de horas anuales y excesos (los colectivos de turnos lo ven siempre).
 // Los empleados dados de baja solo los ve el administrador, y no aparecen en los calendarios.
 let colectivos = [];
 
@@ -42,7 +57,7 @@ async function cargarDatos() {
         puesto: c.puesto,
         patron: c.patron,
         diasSolape: c.dias_solape,
-        marcas: Array.isArray(c.marcas) ? c.marcas : [],   // marcas semanales permitidas (vacío = sin semanas)
+        tipo: c.tipo || (c.codigo === "correturnos" ? "correturnos" : c.codigo === "jornada" ? "otro" : "turnos"),
         empleados: re.data
             .filter(e => e.colectivo === c.codigo)
             .map(e => ({
@@ -52,7 +67,9 @@ async function cargarDatos() {
                 inicio: e.inicio,
                 colectivo: e.colectivo,
                 activo: e.activo,
-                orden: e.orden
+                orden: e.orden,
+                marcas: Array.isArray(e.marcas) ? e.marcas : [],
+                verHoras: e.ver_horas === true
             }))
     }));
 

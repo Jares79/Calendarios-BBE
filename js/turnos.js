@@ -7,6 +7,7 @@
 //   2. Festivo: convierte en F una P o una I que salga del ciclo.
 //   3. Intensiva: convierte en I cualquier P dentro de los periodos marcados.
 //   4. El ciclo (patrón) de su colectivo, desde su fecha de inicio.
+// La baja (B) se pone siempre a mano: se ve en el calendario y sigue sumando las horas previstas.
 
 const TURNOS = {
     M:  { texto: "Mañana",            clase: "manana" },
@@ -19,14 +20,15 @@ const TURNOS = {
     V:  { texto: "Vacaciones",        clase: "vacaciones" },
     E:  { texto: "Excesos",           clase: "excesos" },
     J:  { texto: "Permiso justificado", clase: "permiso" },
-    LD: { texto: "Libre disposición", clase: "libredisp" }
+    LD: { texto: "Libre disposición", clase: "libredisp" },
+    B:  { texto: "Baja",              clase: "baja" }
 };
 
-// Marcas semanales (mitad de arriba de la celda) de los colectivos con semanas especiales:
-// G = guardia (personal de jornada partida) y CTD, CT1... CTY (correturnos).
+// Marcas (mitad de arriba de la celda) de quienes el administrador activa para ello:
+// D = disponible y CTD, CT1... CTY (semanas de correturno). Se ponen por semana o por día.
 // No son turnos del día: van por semana (de lunes a domingo) y no cambian el turno de abajo.
 const MARCAS = {
-    G:   { texto: "Guardia",        clase: "marca-g" },
+    D:   { texto: "Disponible",     clase: "marca-d" },
     CTD: { texto: "Correturno CTD", clase: "marca-ctd" },
     CT1: { texto: "Correturno CT1", clase: "marca-ct1" },
     CT2: { texto: "Correturno CT2", clase: "marca-ct2" },
@@ -34,6 +36,11 @@ const MARCAS = {
     CT4: { texto: "Correturno CT4", clase: "marca-ct4" },
     CTY: { texto: "Correturno CTY", clase: "marca-cty" }
 };
+
+// ¿Hay alguien con marcas activadas?
+function hayMarcasEnUso() {
+    return colectivos.some(c => c.empleados.some(e => e.marcas.length > 0));
+}
 
 // Turnos y marcas juntos (para el editor de colores)
 const TIPOS_COLOR = { ...TURNOS, ...MARCAS };
@@ -139,10 +146,10 @@ function convertirTurno(codigo) {
         : { codigo, texto: codigo, clase: "" };
 }
 
-// Marca semanal (G, CT1...) de un empleado en una fecha, o null. Solo existe en los colectivos
-// con semanas especiales; la semana va de lunes a domingo.
+// Marca (D, CT1...) de un empleado en una fecha, o null. Solo existe en los colectivos
+// con marcas activadas; la semana va de lunes a domingo.
 function marcaDeSemana(fechaISO, empleado, colectivo) {
-    if (!colectivo.marcas.length) return null;
+    if (!empleado.marcas.length) return null;
     // Un día suelto manda sobre su semana ("-" = ese día sin marca)
     const suelta = marcasDia.get(claveExcepcion(empleado.id, fechaISO));
     if (suelta) return suelta === "-" ? null : { ...convertirMarca(suelta), dia: true };
@@ -157,7 +164,7 @@ function infoTurno(fechaISO, empleado) {
     const colectivo = buscarColectivo(empleado.colectivo);
     if (!colectivo) return { ...convertirTurno("?"), origen: "ciclo", nota: null, manual: false, partida: false, marca: null };
 
-    const partida = colectivo.marcas.length > 0;
+    const partida = empleado.marcas.length > 0;   // solo se parte la celda a quien tiene marcas activadas
     const marca = marcaDeSemana(fechaISO, empleado, colectivo);
 
     const manual = excepciones.get(claveExcepcion(empleado.id, fechaISO));
