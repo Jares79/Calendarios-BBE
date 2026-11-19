@@ -184,3 +184,9 @@ Los nombres exactos de los menús pueden cambiar con las versiones del panel.
 - **Resumen**: "apuntados" pasa a "utilizados" y "Excesos puestos" a "Excesos utilizados".
 - **Pantalla de acceso**: el campo PIN recuerda que tiene de 6 a 10 dígitos.
 - SQL: `supabase/fase12-grupos-solapes.sql` (después de `fase10-baja-resumen.sql`; la fase 11 no tuvo SQL). Deshacer: `fase12-deshacer.sql`.
+
+## Fase 13: confirmar al salir y botón/gesto atrás
+
+- **Salir** pide confirmación con una ventana centrada ("¿Cerrar sesión?", con "Cerrar sesión" y "Cancelar"; Cancelar tiene el foco y Esc también cierra). El botón está junto al menú de usuario y se podía pulsar sin querer.
+- **Gesto o botón atrás del móvil** (`js/atras.js`): en lugar de salir de la app, cierra lo último abierto: ventana, hoja de un día, menú de usuario, modo cambio o edición, o pantalla de resultados (Horas, Ajustes, administrador…). Con el calendario principal a la vista, atrás sigue saliendo de la app. Se mantiene una entrada de historial por capa abierta y se quitan al cerrar con los botones de la app. Desde una pantalla de resultados, atrás vuelve al calendario (no a la pantalla anterior dentro de administrador).
+- Sin SQL nuevo. Versión del service worker `bbe-v16`.

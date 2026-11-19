@@ -1,4 +1,4 @@
-# Resumen del proyecto: Calendario BBE (estado tras la fase 12)
+# Resumen del proyecto: Calendario BBE (estado tras la fase 13)
 
 Texto para retomar el proyecto en una conversación nueva. Va junto con el zip del código actual (carpeta `supabase/` con todos los SQL y su orden en `supabase/LEEME-orden.md`; banco de pruebas en `pruebas/`).
 
@@ -6,7 +6,7 @@ Texto para retomar el proyecto en una conversación nueva. Va junto con el zip d
 - **App web de turnos** de una planta con 21 empleados en tres colectivos de turnos (jefes de turno, operadores de control y operadores de campo), más dos colectivos nuevos: **Correturnos** y **Personal de jornada partida**.
 - **El usuario es el administrador** (iniciales `JAM`). No es técnico: Mac y móvil Android con Chrome; sube el código a GitHub desde la web (Add file → Upload files). Infraestructura: GitHub, Vercel (ramas `main` y `develop`, y una dirección de prueba por rama) y Supabase (base de datos y sesiones). **El proyecto de Supabase se comparte con otra app de reservas** (tabla `reservas`): no tocar nada que no sea del calendario.
 - Tecnología: HTML, CSS y JavaScript sin compilar, `supabase-js` desde CDN, PWA instalable.
-- Cómo prefiere trabajar: responder en español; hacerle las preguntas necesarias antes de empezar y entregar de una vez (usa el plan gratuito de Claude, con límite de uso); guiarle paso a paso; darle un zip o solo los archivos que cambian; **probar el código antes de entregarlo** (banco de pruebas en `pruebas/`) y avisar con claridad de lo que no se ha podido probar contra el Supabase real, que es **siempre el SQL**. Cuando entrega archivos sueltos, dice a qué carpeta va cada uno. Subir `VERSION` de `sw.js` en cada entrega para que todos descarguen lo nuevo (ahora `bbe-v15`).
+- Cómo prefiere trabajar: responder en español; hacerle las preguntas necesarias antes de empezar y entregar de una vez (usa el plan gratuito de Claude, con límite de uso); guiarle paso a paso; darle un zip o solo los archivos que cambian; **probar el código antes de entregarlo** (banco de pruebas en `pruebas/`) y avisar con claridad de lo que no se ha podido probar contra el Supabase real, que es **siempre el SQL**. Cuando entrega archivos sueltos, dice a qué carpeta va cada uno. Subir `VERSION` de `sw.js` en cada entrega para que todos descarguen lo nuevo (ahora `bbe-v16`).
 
 ## 2. Estado actual
 - Hechas y probadas en el navegador simulado: fases 1 a 10. **Pendiente de que el usuario las pruebe con su Supabase real: todo desde la fase 4**, y ejecutar `fase10-baja-resumen.sql` (ya ejecutó hasta la fase 9; aún no había aplicado las fases 10 y 11 cuando pidió la 12, y hay que ejecutar `fase10-baja-resumen.sql` y después `fase12-grupos-solapes.sql`). Al guardar horas de un día le salía un error: la fase 10 recrea `horas_dia` por si la fase 8 no se había ejecutado bien, y el aviso de error ya muestra el código técnico (si sigue fallando, pedirle ese código). Pendiente también fundir las ramas en `main` (mientras tanto los compañeros ven la versión antigua).
@@ -76,3 +76,7 @@ Ver `supabase/LEEME-orden.md` (orden de los scripts y modelo de datos final). Pu
 - Dos categorías, deducidas del tipo del colectivo: **Personal a turnos** (tipo `turnos`: jefes, control, campo; no habrá más) y **Personal de jornada partida** (todo lo demás: `correturnos`, `jornada` = "Sin subgrupo" y los subgrupos nuevos de tipo `otro`, que heredan el ciclo P P P P I F F).
 - El administrador crea/renombra/borra subgrupos desde Empleados y accesos (RPC `admin_crear_subgrupo`, `admin_renombrar_subgrupo`, `admin_borrar_subgrupo`) y asigna empleados con el desplegable de colectivo de la ficha.
 - Solapes: `colectivos.dias_solape` al año por persona (solo turnos); si es > 0 el resumen muestra utilizados / disponibles (días S del año en curso).
+
+## Salir y atrás (fase 13)
+- El botón Salir abre una ventana de confirmación (`confirmarCerrarSesion` en `app.js`, usa `abrirModal` de `cambios.js`).
+- `js/atras.js` sincroniza el historial del navegador con las capas abiertas (modal, hoja del día, menú, modo cambio/edición, vista de resultados) para que el gesto atrás de Android/iPhone cierre la capa en vez de salir. Probado simulando el botón atrás del navegador (`pruebas/t14.py`); falta probarlo en un móvil real (sobre todo la app instalada en iPhone).
