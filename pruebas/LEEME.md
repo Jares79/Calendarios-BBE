@@ -14,4 +14,5 @@ Requiere Python con `playwright` (`pip install playwright`, `playwright install 
 - `t13.py`: fase 12 (PIN de 6 a 10 dígitos, categorías y subgrupos: crear/renombrar/borrar/asignar, solapes por colectivo y su resumen).
 - `t14.py`: fase 13 (confirmación al salir y botón atrás: diálogo, menú, Horas, hoja del día, modo edición).
 - `t15.py`: fase 14 (administrador sin ficha: inicio con el menú abierto, Horas, Volver, atrás).
+- `t16.py`: fase 15 (editor de turnos, Mi año con letras, login, leyenda por persona, calendario anual por persona, Disponibilidades y CT).
 Los tests de la fase 4 (marcas en el mes, año, semanas) se hicieron a mano y no están como script.

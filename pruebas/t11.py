@@ -17,7 +17,7 @@ with sync_playwright() as p:
     pg.click('#btnAjustes'); pg.wait_for_selector('.opciones-tema'); print('ajustes botones:', pg.locator('.opcion-tema').all_inner_texts(), '| Coincidencias en página:', pg.locator('text=Coincidencias').count())
     pg.click('text=Volver')
     # 2) admin: marcas por persona
-    pg.click('#infoUsuario'); pg.click('#btnAdminEmpleados'); pg.wait_for_selector('.admin-grupo'); pg.click('text=Disponibilidades y CT'); pg.wait_for_selector('.fila-marcas')
+    pg.click('#infoUsuario'); pg.click('#btnAdminEmpleados'); pg.wait_for_selector('.admin-grupo'); pg.click('text=Disponibilidades y CT'); pg.wait_for_selector('summary'); [pg.locator('details:not([open]) > summary').first.click() for _ in range(8) if pg.locator('details:not([open]) > summary').count()]; pg.wait_for_selector('.fila-marcas')
     print('filas marcas:', pg.locator('.fila-marcas').count(), '| casillas por fila:', pg.locator('.fila-marcas').first.locator('input').count())
     fila=pg.locator('.fila-marcas', has_text='Jefe Uno'); fila.locator('input').nth(0).check()   # D
     pg.click('text=Guardar'); pg.wait_for_timeout(400); print('aviso:', pg.locator('.admin-aviso-corto').inner_text(), '| marcas db Jefe Uno:', pg.evaluate("window.__db.empleados.find(e=>e.id=='e-jefe').marcas"))
@@ -50,8 +50,7 @@ with sync_playwright() as p:
     pg.select_option('.resultado-acciones select','2027'); pg.wait_for_selector('.tarjetas-resumen'); pg.wait_for_timeout(300)
     print('2027:', [t.replace('\n',' ') for t in pg.locator('.dato-resumen').all_inner_texts()][:3], '| pestañas:', pg.locator('.pestana-cambios').count())
     # 4) horas en el editor y ajuste de un día
-    pg.click('text=Volver'); pg.click('#infoUsuario'); pg.click('#btnEditarCalendario'); pg.click('[data-fecha="2026-11-24"]'); pg.wait_for_selector('.opcion-horas')
-    print('horas en rejilla:', pg.locator('#panelDetalleDia .rejilla-turnos').first.locator('.opcion-turno').evaluate_all('e=>e.map(x=>x.querySelector(".opcion-letra").textContent+x.querySelector(".opcion-horas").textContent).join(" ")'))
+    pg.click('text=Volver'); pg.click('#infoUsuario'); pg.click('#btnEditarCalendario'); pg.click('[data-fecha="2026-11-24"]'); pg.wait_for_selector('.seccion-horas-actual')
     print('sección horas:', pg.locator('.seccion-horas-actual').inner_text(), '|', pg.locator('.seccion-horas button').all_inner_texts())
     pg.click('text=Igual que el turno del ciclo'); pg.wait_for_timeout(300); print('db horas_dia:', pg.evaluate("window.__db.horas_dia"))
     pg.click('[data-fecha="2026-11-24"]'); print('tras ajuste:', pg.locator('.seccion-horas-actual').inner_text()); pg.locator('#panelDetalleDia .rejilla-turnos').first.locator('.opcion-turno', has_text='Vacaciones').click(); pg.wait_for_timeout(400)

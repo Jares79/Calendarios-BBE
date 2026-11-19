@@ -214,14 +214,19 @@ async function verCalendario(anioParam, colectivoParam) {
 
     const selectColectivo = document.getElementById("colectivoAnual");
     const esMovil = window.innerWidth <= 768;
-    const codigo = colectivoParam || (selectColectivo ? selectColectivo.value : (esMovil ? colectivos[0].codigo : "todos"));
+    const visibles = colectivosVisiblesAnual();
+    if (!visibles.length) return;
+    let codigo = colectivoParam || (selectColectivo ? selectColectivo.value : (esMovil || visibles.length === 1 ? visibles[0].codigo : "todos"));
+    // Solo se puede ver lo que el administrador ha dado a esta persona
+    if (codigo !== "todos" && !visibles.some(c => c.codigo === codigo)) codigo = visibles[0].codigo;
+    if (codigo === "todos" && visibles.length === 1) codigo = visibles[0].codigo;
 
     let columnas = [];
     let tituloVista = "Planificación anual";
     if (codigo === "todos") {
-        colectivos.forEach(c => empleadosActivos(c).forEach(e => columnas.push(e)));
+        visibles.forEach(c => empleadosActivos(c).forEach(e => columnas.push(e)));
     } else {
-        const c = buscarColectivo(codigo) || colectivos[0];
+        const c = buscarColectivo(codigo) || visibles[0];
         columnas = empleadosActivos(c);
         tituloVista = c.nombre;
     }

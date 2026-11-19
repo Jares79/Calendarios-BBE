@@ -13,6 +13,16 @@ const GRUPOS = [
     { codigo: "jornada", nombre: "Personal de jornada partida", icono: "🕘" }
 ];
 
+// Colectivos cuyo calendario anual puede ver la persona que ha entrado: el administrador, todos; el resto,
+// el suyo y los grupos o subgrupos que el administrador le haya dado en su ficha
+function colectivosVisiblesAnual() {
+    if (typeof usuarioActual !== "undefined" && usuarioActual && usuarioActual.rol === "administrador") return colectivos;
+    const yo = typeof obtenerEmpleadoActual === "function" ? obtenerEmpleadoActual() : null;
+    if (!yo) return [];
+    const ver = yo.anualVer || [];
+    return colectivos.filter(c => c.codigo === yo.colectivo || ver.includes(c.codigo) || ver.includes("g:" + grupoDeColectivo(c)));
+}
+
 function grupoDeColectivo(colectivo) {
     return colectivo && colectivo.tipo === "turnos" ? "turnos" : "jornada";
 }
@@ -69,7 +79,8 @@ async function cargarDatos() {
                 activo: e.activo,
                 orden: e.orden,
                 marcas: Array.isArray(e.marcas) ? e.marcas : [],
-                verHoras: e.ver_horas === true
+                verHoras: e.ver_horas === true,
+                anualVer: Array.isArray(e.anual_ver) ? e.anual_ver : []
             }))
     }));
 
