@@ -63,6 +63,8 @@ function verAjustes() {
 
     // Horas anuales de la persona (solo si se le enseñan las horas); se rellena al cargar los datos
     const bloqueHoras = el("div", { class: "ajustes-horas" });
+    // Google Calendar (cada persona vincula el suyo; solo aparece si está configurado)
+    const bloqueGoogle = el("div", { class: "ajustes-google" });
 
     reemplazarHijos(contenedor,
         el("div", { class: "resultado-cabecera" },
@@ -72,7 +74,9 @@ function verAjustes() {
         el("h3", { class: "grupo-titulo", text: "Apariencia" }),
         el("p", { class: "admin-nota", text: "Se guarda en este dispositivo. \"Según el sistema\" sigue el modo claro u oscuro de tu móvil u ordenador." }),
         el("div", { class: "opciones-tema" }, botones),
-        bloqueHoras
+        bloqueHoras,
+        bloqueGoogle
     );
     if (typeof pintarHorasAnualesAjustes === "function") pintarHorasAnualesAjustes(bloqueHoras);
+    if (typeof pintarGoogleAjustes === "function") pintarGoogleAjustes(bloqueGoogle);
 }

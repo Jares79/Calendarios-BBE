@@ -117,6 +117,7 @@ function verMiCalendario() {
     html += `</div>`;
     contenedor.innerHTML = html;
     ajustarAlturaCalendario();
+    if (typeof alMostrarMesGoogle === "function") alMostrarMesGoogle(anio, mes);   // eventos de Google (si los has vinculado)
 
     if (!swipeActivo) {
         contenedor.addEventListener("touchstart", function (e) {
@@ -389,7 +390,8 @@ function pintarResumenHoy() {
         el("span", { class: "hoy-letra" + claseLargo(info), text: info.codigo })
     );
 
-    reemplazarHijos(contenedor, barra, resumenCaja);
+    const botonGoogle = (typeof crearBotonGoogleHoy === "function") ? crearBotonGoogleHoy(info.clase) : null;
+    reemplazarHijos(contenedor, el("div", { class: "hoy-envoltorio" }, barra, botonGoogle), resumenCaja);
     contenedor.hidden = false;
     if (resumenCaja && typeof pintarResumenPrincipal === "function") pintarResumenPrincipal(resumenCaja, empleado);
 }
