@@ -6,7 +6,7 @@
 //   - el permiso de Google dura una hora y se renueva con el botón de sincronizar del recuadro "Hoy".
 // Si GOOGLE_CLIENT_ID está vacío, la función no aparece en ninguna pantalla.
 
-const GOOGLE_CLIENT_ID = "863198735502-g0dv9l7oqp84ak1k604gdcnllmma2i39.apps.googleusercontent.com";   // ← pega aquí el ID de cliente OAuth de Google Cloud (es público, no es una clave secreta)
+const GOOGLE_CLIENT_ID = "";   // ← pega aquí el ID de cliente OAuth de Google Cloud (es público, no es una clave secreta)
 const GOOGLE_SCOPES = [
     "https://www.googleapis.com/auth/calendar.calendarlist.readonly",   // ver la lista de tus calendarios
     "https://www.googleapis.com/auth/calendar.events.readonly"          // ver sus eventos (nunca crear ni cambiar nada)
@@ -146,7 +146,11 @@ function pedirTokenGoogle(prompt) {
             },
             fallo: (e) => reject(new Error((e && e.type) || "cancelado"))
         };
-        googleClienteToken.requestAccessToken({ prompt: prompt || "" });
+        // Con la cuenta ya conocida, Google no vuelve a enseñar la lista de cuentas
+        const cfg = leerGoogle();
+        const opciones = { prompt: prompt || "" };
+        if (cfg && cfg.cuenta) opciones.hint = cfg.cuenta;
+        googleClienteToken.requestAccessToken(opciones);
     });
     // Con el script ya cargado, la ventana se pide en el mismo toque (sin esperas que el navegador pueda bloquear)
     return scriptGoogleListo() ? solicitar() : cargarScriptGoogle().then(solicitar);
@@ -333,6 +337,16 @@ function crearBotonGoogleHoy(claseTurno) {
     return boton;
 }
 
+// El calendario principal se llama como el correo de la cuenta: sirve de pista para que Google no pregunte la cuenta cada vez
+async function completarCuentaGoogle() {
+    const cfg = leerGoogle();
+    if (!cfg || cfg.cuenta) return;
+    try {
+        const principal = (await listarCalendariosGoogle()).find(c => c.principal);
+        if (principal) guardarGoogle({ ...cfg, cuenta: principal.id });
+    } catch (e) { /* no es imprescindible */ }
+}
+
 // Pide el permiso (si hace falta) y actualiza los eventos del mes que ves y los dos de al lado
 async function sincronizarGoogle() {
     if (sincronizandoGoogle || !googleActivo() || !leerGoogle()) return;
@@ -341,6 +355,7 @@ async function sincronizarGoogle() {
     const promesaPermiso = pedirTokenGoogle("");   // se pide en el mismo toque, antes de cualquier espera
     try {
         await promesaPermiso;
+        await completarCuentaGoogle();
         const f = fechaCalendario;
         const meses = [-1, 0, 1].map(d => new Date(f.getFullYear(), f.getMonth() + d, 1));
         const ok = await Promise.all(meses.map(m => cargarEventosGoogleMes(m.getFullYear(), m.getMonth(), true)));
@@ -456,7 +471,8 @@ function pintarGoogleAjustes(contenedor) {
                     el("button", { type: "button", class: "btn-ancho", text: "Guardar", onclick: () => {
                         const elegidos = casillas.filter(x => x.input.checked).map(x => ({ id: x.c.id, nombre: x.c.nombre }));
                         if (!elegidos.length) { mostrarToast("Marca al menos un calendario.", true); return; }
-                        guardarGoogle({ calendarios: elegidos });
+                        const principal = lista.find(c => c.principal);
+                        guardarGoogle({ calendarios: elegidos, cuenta: principal ? principal.id : ((leerGoogle() || {}).cuenta || "") });
                         olvidarEventosGoogle();
                         aviso = "";
                         pintarInicio();
