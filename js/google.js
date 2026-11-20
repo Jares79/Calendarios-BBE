@@ -6,7 +6,7 @@
 //   - el permiso de Google dura una hora y se renueva con el botón de sincronizar del recuadro "Hoy".
 // Si GOOGLE_CLIENT_ID está vacío, la función no aparece en ninguna pantalla.
 
-const GOOGLE_CLIENT_ID = "";   // ← pega aquí el ID de cliente OAuth de Google Cloud (es público, no es una clave secreta)
+const GOOGLE_CLIENT_ID = "863198735502-g0dv9l7oqp84ak1k604gdcnllmma2i39.apps.googleusercontent.com";   // ← pega aquí el ID de cliente OAuth de Google Cloud (es público, no es una clave secreta)
 const GOOGLE_SCOPES = [
     "https://www.googleapis.com/auth/calendar.calendarlist.readonly",   // ver la lista de tus calendarios
     "https://www.googleapis.com/auth/calendar.events.readonly"          // ver sus eventos (nunca crear ni cambiar nada)
