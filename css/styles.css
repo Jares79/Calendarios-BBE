@@ -451,7 +451,8 @@ body.vista-resultado #leyenda { display: none; }
 .panel-controles .select-anio { flex: 0 0 90px; }
 
 /* --- Bloque "Hoy" --- */
-.hoy { padding: 0; overflow: hidden; }
+/* Solo la tarjeta "Hoy" (la celda del día de hoy también lleva la clase .hoy y no debe perder su relleno) */
+.card.hoy { padding: 0; overflow: hidden; }
 
 .hoy-bloque {
     display: flex;
@@ -963,7 +964,7 @@ body.vista-resultado #leyenda { display: none; }
     button.cerrarSesion { padding: 8px; }
     .contenedor { padding: 12px 10px calc(24px + env(safe-area-inset-bottom)); }
     .card { padding: 12px 10px; }
-    .hoy { padding: 0; }
+    .card.hoy { padding: 0; }
     .hoy-letra { font-size: 4.2rem; }
     .hoy-nombre { font-size: 1.9rem; }
     .calendario-grid { gap: 4px; }
