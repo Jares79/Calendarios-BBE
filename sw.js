@@ -7,7 +7,7 @@
 // si no hay red, lo último guardado. Para forzar que todos descarguen de nuevo los
 // archivos, cambia el número de VERSION.
 
-const VERSION = "bbe-v19";
+const VERSION = "bbe-v20";
 
 const ARCHIVOS = [
     "./",
@@ -19,6 +19,9 @@ const ARCHIVOS = [
     "js/turnos.js",
     "js/semanas.js",
     "js/google.js",
+    "js/push.js",
+    "privacidad.html",
+    "terminos.html",
     "js/calendario.js",
     "js/CalendarioMensual.js",
     "js/anio.js",
@@ -69,5 +72,32 @@ self.addEventListener("fetch", (evento) => {
                 return respuesta;
             })
             .catch(() => caches.match(peticion).then((guardada) => guardada || caches.match("index.html")))
+    );
+});
+
+// --- Avisos (notificaciones push) ---
+// Llega un aviso del servidor: se muestra siempre (los navegadores lo exigen) y al tocarlo se abre la app en "Cambios".
+self.addEventListener("push", (evento) => {
+    let datos = {};
+    try { datos = evento.data ? evento.data.json() : {}; } catch (e) { datos = { cuerpo: evento.data ? evento.data.text() : "" }; }
+    evento.waitUntil(self.registration.showNotification(datos.titulo || "Calendario BBE", {
+        body: datos.cuerpo || "",
+        tag: datos.tag || undefined,
+        icon: "img/icon-192.png",
+        badge: "img/LOGO_BBE_SOLO.png",
+        data: { url: datos.url || "./" }
+    }));
+});
+
+self.addEventListener("notificationclick", (evento) => {
+    evento.notification.close();
+    const url = (evento.notification.data && evento.notification.data.url) || "./";
+    evento.waitUntil(
+        self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((ventanas) => {
+            for (const v of ventanas) {
+                if ("focus" in v) { v.postMessage({ ir: "cambios" }); return v.focus(); }
+            }
+            return self.clients.openWindow(url);
+        })
     );
 });

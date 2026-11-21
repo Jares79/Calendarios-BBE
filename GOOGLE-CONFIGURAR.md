@@ -18,6 +18,11 @@ un "ID de cliente" (es público, no es una contraseña). Es gratis y no hace fal
 5. Copia el **ID de cliente** (acaba en `.apps.googleusercontent.com`) y pégalo en `js/google.js`, en la línea
    `const GOOGLE_CLIENT_ID = "";`. Sube el cambio. Mientras esté vacío, la función no aparece en ningún sitio.
 
+## Enlaces legales (opcional, pero recomendable)
+En la pantalla de consentimiento (**Marca / Branding**) hay campos para la página de inicio de la aplicación, la política de privacidad y los términos. Rellénalos con la dirección de tu web:
+`https://tu-app.vercel.app/` , `https://tu-app.vercel.app/privacidad.html` y `https://tu-app.vercel.app/terminos.html`.
+Si Google no acepta el dominio de Vercel como «dominio autorizado», deja ese campo vacío: no es obligatorio para una app sin verificar.
+
 ## Qué verá cada persona
 - Ajustes → **Google Calendar** → *Vincular mi cuenta de Google* → elige su cuenta → marca qué calendarios quiere ver.
 - Al ser una app en pruebas, Google enseña un aviso de "Google no ha verificado esta aplicación": se pulsa *Avanzado → Continuar*.
