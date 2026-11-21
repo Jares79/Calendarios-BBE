@@ -147,7 +147,7 @@ function pintarPushAjustes(contenedor) {
 
     async function probar() {
         try {
-            const { data, error } = await supabaseClient.functions.invoke("enviar-push", { body: { tipo: "prueba" } });
+            const { data, error } = await supabaseClient.functions.invoke("rapid-service", { body: { tipo: "prueba" } });
             if (error) throw error;
             mostrarToast(data && data.enviados ? "Aviso de prueba enviado." : "No se envió ningún aviso. Revisa la configuración.", !(data && data.enviados));
         } catch (e) { mostrarToast("No se pudo enviar el aviso de prueba.", true); }
