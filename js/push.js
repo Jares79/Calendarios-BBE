@@ -4,7 +4,7 @@
 // Lo que se guarda en la base de datos: la "dirección" del aviso de ese navegador y sus claves de cifrado (tabla
 // push_suscripciones), y si quieres avisos de cambios y/o de mensajes. Se borra al desactivar, al cerrar sesión o al borrar la cuenta.
 
-const PUSH_VAPID_PUBLICA = "";   // ← pega aquí la clave pública VAPID (ver PUSH-CONFIGURAR.md). Es pública, no es un secreto.
+const PUSH_VAPID_PUBLICA = "BFmmlVb4KISPVqmQ69Wz8KAJXM-l43W7Hei6b_KB7vtsdmnm-qH2ZToArWkXFDEVvr0ry-pKQdZ4FsBwZTKLkyQ";   // ← pega aquí la clave pública VAPID (ver PUSH-CONFIGURAR.md). Es pública, no es un secreto.
 
 function pushClave() { return PUSH_VAPID_PUBLICA || window.__PUSH_VAPID || ""; }
 function pushSoportado() { return "serviceWorker" in navigator && "PushManager" in window && "Notification" in window; }
