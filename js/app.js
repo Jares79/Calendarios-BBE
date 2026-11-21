@@ -71,7 +71,7 @@ function mostrarPantallaLogin() {
             <p id="errorLogin" class="error-texto" role="alert"></p>
 
             <button type="submit" id="btnEntrar" class="btn-ancho">Entrar</button>
-            <p class="acceso-legal"><a href="privacidad.html">Privacidad</a> · <a href="terminos.html">Términos</a></p>
+            <p class="acceso-legal"><a href="privacidad.html">Política de privacidad</a> · <a href="terminos.html">Términos y condiciones</a></p>
         </form>
     `);
 
