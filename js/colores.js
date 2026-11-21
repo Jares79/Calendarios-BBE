@@ -124,7 +124,9 @@ function pintarEditorColores() {
     const disponibles = yo
         ? { ...Object.fromEntries(turnosPermitidosDe(yo)), ...misMarcas }
         : TIPOS_COLOR;
-    const elegido = disponibles[turnoColorElegido] ? turnoColorElegido : "M";
+    // Si el turno elegido antes no lo puede usar esta persona (M, T, N y S no están para jornada partida
+    // ni subgrupos), se empieza por el primero que sí tenga
+    const elegido = disponibles[turnoColorElegido] ? turnoColorElegido : (Object.keys(disponibles)[0] || "M");
 
     const turnos = el("div", { class: "selector-turnos", role: "group", "aria-label": "Turno a cambiar" },
         Object.entries(disponibles).map(([codigo, t]) =>
