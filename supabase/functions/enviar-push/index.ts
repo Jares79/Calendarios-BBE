@@ -36,9 +36,10 @@ async function mandar(subs: { id: string; endpoint: string; p256dh: string; auth
         } catch (e) {
             const codigo = (e as { statusCode?: number }).statusCode;
             if (codigo === 404 || codigo === 410) {
+                console.log("Dispositivo caducado, se elimina. Código:", codigo);
                 await admin.from("push_suscripciones").delete().eq("id", s.id);   // el dispositivo ya no existe
             } else {
-                console.error("No se pudo enviar un aviso:", codigo, (e as Error).message);
+                console.error("No se pudo enviar un aviso:", codigo, (e as Error).message, String((e as { body?: string }).body ?? "").slice(0, 200));
             }
         }
     }));
@@ -56,7 +57,22 @@ async function nombres(ids: string[]): Promise<Record<string, string>> {
     return Object.fromEntries((data ?? []).map((e) => [e.id, e.nombre as string]));
 }
 
+// Cabeceras CORS: el botón "Enviar aviso de prueba" llama desde el navegador (otra dirección distinta de Supabase)
+const CORS = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+
 Deno.serve(async (req) => {
+    if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
+    const r = await manejar(req);
+    const h = new Headers(r.headers);
+    for (const [k, v] of Object.entries(CORS)) h.set(k, v);
+    return new Response(r.body, { status: r.status, headers: h });
+});
+
+async function manejar(req: Request): Promise<Response> {
     if (req.method !== "POST") return new Response("ok");
     let cuerpo: { tipo?: string; id?: string };
     try { cuerpo = await req.json(); } catch { return new Response("json no válido", { status: 400 }); }
@@ -66,8 +82,11 @@ Deno.serve(async (req) => {
         const token = (req.headers.get("Authorization") ?? "").replace(/^Bearer /i, "");
         const { data: u } = await admin.auth.getUser(token);
         if (!u?.user) return new Response("no autorizado", { status: 401 });
-        const { data: subs } = await admin.from("push_suscripciones").select("id, endpoint, p256dh, auth").eq("user_id", u.user.id);
+        const { data: subs, error: errSubs } = await admin.from("push_suscripciones").select("id, endpoint, p256dh, auth").eq("user_id", u.user.id);
+        console.log("Prueba: usuario =", u.user.id, "| error al leer dispositivos =", errSubs ? errSubs.message : "ninguno");
+        console.log("Prueba: dispositivos encontrados =", (subs ?? []).length);
         const n = await mandar(subs ?? [], { titulo: "Calendario BBE", cuerpo: "Los avisos funcionan correctamente.", tag: "prueba", url: "./" });
+        console.log("Prueba: avisos enviados =", n);
         return Response.json({ ok: true, enviados: n });
     }
 
@@ -118,4 +137,4 @@ Deno.serve(async (req) => {
         });
     }
     return Response.json({ ok: true, enviados });
-});
+}

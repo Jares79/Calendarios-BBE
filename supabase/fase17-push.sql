@@ -28,6 +28,10 @@ drop policy if exists push_suscripciones_leer on public.push_suscripciones;
 create policy push_suscripciones_leer on public.push_suscripciones
     for select to authenticated using (user_id = auth.uid());
 
+-- La función de envío (enviar-push) usa el rol service_role y necesita permiso expreso sobre estas tablas
+grant select, insert, update, delete on public.push_suscripciones to service_role;
+grant select on public.empleados, public.cambios_solicitudes, public.cambios_mensajes to service_role;
+
 -- 2) Dónde está la función que envía (se rellena con un UPDATE; nadie desde la app puede leerlo)
 create table if not exists public.push_config (
     id      int primary key default 1 check (id = 1),
