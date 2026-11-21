@@ -33,16 +33,22 @@ with sync_playwright() as p:
     for s in pg.locator('summary').all(): 
         if s.evaluate("e=>!e.parentElement.open"): s.click()
     fila=lambda n: pg.locator('.fila-marcas', has=pg.locator('strong', has_text=n))
-    f=fila('Jefe Uno'); print('2 Jefe Uno: selector =', f.locator('select').input_value(), '| casillas deshabilitadas:', f.locator('input[type=checkbox]:disabled').count())
+    g=lambda f: f.locator('button.fila-marcas-guardar')
+    print('2 botones Guardar por fila:', pg.locator('button.fila-marcas-guardar').count(), '| botón Guardar de abajo:', pg.locator('.fila-guardar').count(), '| todos desactivados al entrar:', pg.locator('button.fila-marcas-guardar:enabled').count()==0)
+    f=fila('Jefe Uno'); print('  Jefe Uno: selector =', f.locator('select').input_value(), '| casillas deshabilitadas:', f.locator('input[type=checkbox]:disabled').count())
     f=fila('Jefe Dos'); print('  Jefe Dos: selector habilitado:', f.locator('select').is_enabled(), '| casillas habilitadas:', f.locator('input[type=checkbox]:enabled').count())
-    f.locator('select').select_option(value='e-jp'); print('  al elegir persona -> casillas deshabilitadas:', f.locator('input[type=checkbox]:disabled').count())
-    f.locator('select').select_option(value=''); f.locator('input[type=checkbox]').first.check(); print('  al marcar D -> selector deshabilitado:', f.locator('select').is_disabled())
+    f.locator('select').select_option(value='e-jp'); print('  al elegir persona -> casillas deshabilitadas:', f.locator('input[type=checkbox]:disabled').count(), '| su Guardar activo:', g(f).is_enabled(), '| el de Jefe Uno sigue desactivado:', g(fila('Jefe Uno')).is_disabled())
+    f.locator('select').select_option(value=''); print('  al volver a "nadie" -> Guardar desactivado:', g(f).is_disabled())
+    f.locator('input[type=checkbox]').first.check(); print('  al marcar D -> selector deshabilitado:', f.locator('select').is_disabled())
     f.locator('input[type=checkbox]').first.uncheck(); f.locator('select').select_option(value='e-jp')
-    pg.click('text=Guardar'); pg.wait_for_timeout(500)
-    print('  guardado:', pg.locator('.admin-aviso-corto').inner_text(), '| db Jefe Dos ve a:', pg.evaluate("window.__db.empleados.find(e=>e.id=='e-jefe2').ver_calendario_de"))
-    # Pasar de ver a marca: Jefe Uno -> quitar ver, poner D
-    f=fila('Jefe Uno'); f.locator('select').select_option(value=''); f.locator('input[type=checkbox]').first.check(); pg.click('text=Guardar'); pg.wait_for_timeout(500)
-    print('  Jefe Uno pasa a D:', pg.locator('.admin-aviso-corto').inner_text(), '| db:', pg.evaluate("[window.__db.empleados.find(e=>e.id=='e-jefe').ver_calendario_de, window.__db.empleados.find(e=>e.id=='e-jefe').marcas]"))
+    pg.screenshot(path='admin_fila_390.png')
+    g(f).click(); pg.wait_for_timeout(400)
+    print('  guardado:', g(f).inner_text(), '| desactivado:', g(f).is_disabled(), '| db Jefe Dos ve a:', pg.evaluate("window.__db.empleados.find(e=>e.id=='e-jefe2').ver_calendario_de"))
+    # Pasar de ver a marca en Jefe Uno (solo se guarda esa fila)
+    f=fila('Jefe Uno'); f.locator('select').select_option(value=''); f.locator('input[type=checkbox]').first.check(); g(f).click(); pg.wait_for_timeout(400)
+    print('  Jefe Uno pasa a D:', g(f).inner_text(), '| db:', pg.evaluate("[window.__db.empleados.find(e=>e.id=='e-jefe').ver_calendario_de, window.__db.empleados.find(e=>e.id=='e-jefe').marcas]"), '| Jefe Dos intacto:', pg.evaluate("window.__db.empleados.find(e=>e.id=='e-jefe2').ver_calendario_de"))
+    # Cambiar de nuevo tras guardar reactiva el botón
+    f.locator('input[type=checkbox]').first.uncheck(); print('  tras un cambio nuevo, Guardar vuelve a activarse:', g(f).is_enabled(), '| texto:', g(f).inner_text())
     b.close()
     # Móvil estrecho y ordenador: la celda partida se ve bien
     for vp in [(360,640),(1200,800)]:
