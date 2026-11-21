@@ -65,6 +65,8 @@ function verAjustes() {
     const bloqueHoras = el("div", { class: "ajustes-horas" });
     // Google Calendar (cada persona vincula el suyo; solo aparece si está configurado)
     const bloqueGoogle = el("div", { class: "ajustes-google" });
+    // Avisos (notificaciones push) con su interruptor
+    const bloquePush = el("div", { class: "ajustes-push" });
 
     reemplazarHijos(contenedor,
         el("div", { class: "resultado-cabecera" },
@@ -75,8 +77,15 @@ function verAjustes() {
         el("p", { class: "admin-nota", text: "Se guarda en este dispositivo. \"Según el sistema\" sigue el modo claro u oscuro de tu móvil u ordenador." }),
         el("div", { class: "opciones-tema" }, botones),
         bloqueHoras,
-        bloqueGoogle
+        bloqueGoogle,
+        bloquePush,
+        el("h3", { class: "grupo-titulo", text: "Información legal" }),
+        el("p", { class: "ajustes-legal" },
+            el("a", { href: "privacidad.html", target: "_blank", rel: "noopener", text: "Política de privacidad" }),
+            " · ",
+            el("a", { href: "terminos.html", target: "_blank", rel: "noopener", text: "Términos y condiciones" }))
     );
     if (typeof pintarHorasAnualesAjustes === "function") pintarHorasAnualesAjustes(bloqueHoras);
     if (typeof pintarGoogleAjustes === "function") pintarGoogleAjustes(bloqueGoogle);
+    if (typeof pintarPushAjustes === "function") pintarPushAjustes(bloquePush);
 }

@@ -2,8 +2,8 @@
 from run import *
 import json, re, urllib.parse
 JEF={'iniciales':'JEF','rol':'empleado','empleadoId':'e-jefe'}
-GIS="""window.__gis={revocado:0,pedidos:[],rechazar:false};
-window.google={accounts:{oauth2:{initTokenClient:(cfg)=>({requestAccessToken(o){window.__gis.pedidos.push(o.prompt);
+GIS="""window.__gis={revocado:0,pedidos:[],hints:[],rechazar:false};
+window.google={accounts:{oauth2:{initTokenClient:(cfg)=>({requestAccessToken(o){window.__gis.pedidos.push(o.prompt);window.__gis.hints.push(o.hint||null);
   setTimeout(()=>window.__gis.rechazar?cfg.error_callback({type:'popup_closed'}):cfg.callback({access_token:'tok-'+window.__gis.pedidos.length,expires_in:3600,scope:cfg.scope}),10)}}),
   hasGrantedAllScopes:()=>true, revoke:(t,cb)=>{window.__gis.revocado++;cb&&cb({})}}}};"""
 CALS={'items':[{'id':'jefe@gmail.com','summary':'Personal','primary':True},{'id':'fam@group','summary':'Familia','summaryOverride':'Mi familia'}]}
@@ -52,7 +52,7 @@ with sync_playwright() as p:
     pg.click('.ajustes-google button'); pg.wait_for_selector('.google-cal-fila')
     print('3 calendarios:', pg.locator('.google-cal-fila span').all_inner_texts(), '| marcados:', pg.evaluate("[...document.querySelectorAll('.google-cal-fila input')].map(i=>i.checked)"), '| prompt:', pg.evaluate("window.__gis.pedidos"))
     pg.locator('.google-cal-fila input').nth(1).check(); pg.click('.ajustes-google >> text=Guardar'); pg.wait_for_timeout(700)
-    print('4 guardado en el dispositivo:', pg.evaluate("localStorage.getItem('bbe-google-e-jefe')")); print('  peticiones de eventos (3 meses × 2 calendarios):', len(m.llamadas))
+    print('4 guardado en el dispositivo:', pg.evaluate("localStorage.getItem('bbe-google-e-jefe')"), '| pista en la 1ª petición:', pg.evaluate("window.__gis.hints")); print('  peticiones de eventos (3 meses × 2 calendarios):', len(m.llamadas))
     pg.click('.resultado-cabecera >> text=Volver'); pg.wait_for_selector('.dia-calendario'); pg.wait_for_timeout(500)
     print('5 estrellas (días):', estrellas(pg), '| botón en Hoy:', pg.locator('.hoy-google .hoy-google-texto').inner_text())
     pg.screenshot(path='google_hoy.png', clip={'x':0,'y':60,'width':390,'height':520})
@@ -71,6 +71,7 @@ with sync_playwright() as p:
     cel(pg2,'2026-11-24').click(); pg2.wait_for_selector('.google-evento'); print('  ficha 24 al abrir:', pg2.locator('.google-evento').all_inner_texts()[0].replace('\n',' '))
     # 9 Los eventos cambian en Google: se actualizan con el botón de la ficha y la ficha se repinta sola
     m2.version=2; pg2.click('.google-actualizar'); pg2.wait_for_timeout(700)
+    print('9b petición de permiso con la cuenta ya conocida: pista =', pg2.evaluate("window.__gis.hints"))
     print('9 tras Actualizar en la ficha: eventos del 24:', pg2.locator('.google-vacio').count() and pg2.locator('.google-vacio').inner_text(), '| estrellas:', estrellas(pg2), '| permisos:', pg2.evaluate("window.__gis.pedidos"))
     pg2.click('.btn-cerrar'); cel(pg2,'2026-11-25').click(); pg2.wait_for_selector('.google-evento'); print('  ficha 25 (evento movido):', pg2.locator('.google-evento').all_inner_texts()[0].replace('\n',' '))
     # 10 Botón en Hoy: mismo resultado y animación

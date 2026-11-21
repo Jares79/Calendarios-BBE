@@ -1707,3 +1707,16 @@ body.sin-calendario #btnEditarCalendario { display: none !important; }
 .google-cal-fila input { width: 20px; height: 20px; flex: none; }
 .ajustes-google .fila-botones { display: flex; gap: 8px; }
 .ajustes-google .fila-botones > button { flex: 1; }
+
+
+/* --- Avisos push y enlaces legales (fase 17) --- */
+.push-fila { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border: 1px solid var(--linea); border-radius: 10px; background: var(--superficie-2); margin: 6px 0; }
+.push-fila input { width: 20px; height: 20px; flex: none; }
+.push-principal { font-weight: 600; }
+.push-detalle { margin-left: 8px; }
+.push-detalle[hidden] { display: none; }
+.push-probar { width: 100%; margin-top: 6px; }
+.ajustes-legal { margin: 6px 0 24px; }
+.ajustes-legal a { color: var(--acento); }
+.acceso-legal { text-align: center; font-size: 0.85rem; margin: 14px 0 0; opacity: 0.85; }
+.acceso-legal a { color: inherit; }
