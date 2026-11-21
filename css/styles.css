@@ -1515,6 +1515,9 @@ td.dato-destacado { font-weight: 700; }
 .opcion-marca { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; border: 2px solid var(--linea); cursor: pointer; font-weight: 700; font-size: 0.85rem; }
 .opcion-marca:has(input:checked) { background: var(--bg); color: var(--fg); border-color: var(--bg); }
 .opcion-marca input { width: 16px; height: 16px; margin: 0; }
+.fila-marcas-pie { display: flex; align-items: center; gap: 8px; }
+.fila-marcas-pie select { flex: 1 1 auto; min-width: 0; }
+.fila-marcas-guardar { flex: 0 0 auto; width: auto; white-space: nowrap; }
 
 
 /* ---- Resumen del año bajo "Hoy" (vacaciones, LD, horas y excesos) ---- */

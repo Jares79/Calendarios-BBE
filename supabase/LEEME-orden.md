@@ -2,7 +2,7 @@
 
 Se ejecutan en Supabase > SQL Editor (botón Run), cada uno de una sola vez. Son aditivos y se pueden repetir,
 **salvo que no hay que volver a ejecutar uno anterior después de uno posterior** (los posteriores redefinen funciones).
-Orden en una base de datos nueva: 1 → 16. Si estás en la fase 9, ejecuta **en este orden** `fase10-baja-resumen.sql`,
+Orden en una base de datos nueva: 1 → 18. Si estás en la fase 9, ejecuta **en este orden** `fase10-baja-resumen.sql`,
 `fase12-grupos-solapes.sql`, `admin-sin-ficha.sql` (solo si quieres un administrador sin ficha) y `fase15-anual-visibilidad.sql`
 (las fases 11, 13 y 14 no tuvieron más SQL). Todos se pueden repetir sin problema.
 
@@ -25,6 +25,7 @@ Orden en una base de datos nueva: 1 → 16. Si estás en la fase 9, ejecuta **en
 | 15 | `admin-sin-ficha.sql` | (Opcional, una vez) Desvincula al usuario ADMIN de su ficha de empleado y la borra: administrador sin calendario ni colectivo. |
 | 16 | `fase15-anual-visibilidad.sql` | `empleados.anual_ver` y `admin_guardar_anual_ver`: qué calendarios anuales ve cada persona. |
 | 17 | **`fase17-push.sql`** | Avisos push: tablas `push_suscripciones` y `push_config`, funciones `push_guardar/preferencias/borrar` y los avisos a la función `enviar-push` (ver `PUSH-CONFIGURAR.md`). Requiere activar pg_net. |
+| 18 | **`fase18-ver-calendario.sql`** | `empleados.ver_calendario_de` y `admin_guardar_ver_calendario`: el administrador deja que alguien vea en la mitad de arriba de su mes el calendario de otra persona (incompatible con las marcas; `admin_guardar_marcas` lo comprueba). Ejecutar después de la 17. |
 
 Otros: `fase1-deshacer.sql`, `fase3-deshacer.sql`, `fase4-deshacer`... (`*-deshacer.sql`) deshacen cada fase; `historico/` y
 `seguridad.sql`, `pin-cambio.sql`, `admin-resetear-pin.sql` son del login antiguo (ya no se usan).

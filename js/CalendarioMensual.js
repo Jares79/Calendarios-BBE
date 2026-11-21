@@ -76,6 +76,7 @@ function verMiCalendario() {
 
     const diasMes = new Date(anio, mes + 1, 0).getDate();
     const hoyISO = aISO(new Date());
+    const otra = otraPersonaDe(empleado);   // si el administrador te deja ver a otra persona: mitad de arriba
 
     let primerDiaSemana = new Date(anio, mes, 1).getDay();
     primerDiaSemana = primerDiaSemana === 0 ? 6 : primerDiaSemana - 1;
@@ -99,14 +100,17 @@ function verMiCalendario() {
     for (let dia = 1; dia <= diasMes; dia++) {
         const iso = aISO(new Date(anio, mes, dia));
         const info = infoTurno(iso, empleado);
+        const ver = otra ? infoOtraPersona(iso, otra) : null;
 
         const esHoy = iso === hoyISO ? " hoy" : "";
-        const marcas = claseLargo(info) + (info.manual ? " editado" : "") + (info.partida ? " con-marca" : "") + (seleccionCambio.has(iso) ? " seleccionado" : "");
-        const textoMarca = info.marca ? ` · ${info.marca.texto}` : "";
-        // Colectivos con semanas: celda partida (arriba la marca de la semana, abajo el turno)
-        const interior = info.partida
-            ? htmlMitades(info, `<span class="numero-dia">${dia}</span>`)
-            : `<span class="numero-dia">${dia}</span><span class="turno-dia">${esc(inicial(info))}</span>`;
+        const marcas = claseLargo(info) + (info.manual ? " editado" : "") + (info.partida || ver ? " con-marca" : "") + (seleccionCambio.has(iso) ? " seleccionado" : "");
+        const textoMarca = (info.marca ? ` · ${info.marca.texto}` : "") + (ver ? ` · ${otra.nombre}: ${ver.texto}` : "");
+        // Celda partida: arriba la marca de la semana (colectivos con marcas) o lo de la otra persona; abajo el turno
+        const interior = ver
+            ? htmlMitadesOtra(info, ver, `<span class="numero-dia">${dia}</span>`)
+            : info.partida
+                ? htmlMitades(info, `<span class="numero-dia">${dia}</span>`)
+                : `<span class="numero-dia">${dia}</span><span class="turno-dia">${esc(inicial(info))}</span>`;
         html += `
             <button type="button" class="dia-calendario ${info.clase}${esHoy}${marcas}" data-fecha="${iso}" data-emp="${esc(empleado.id)}" aria-label="${esc(fechaLarga(iso))}: ${esc(info.texto)}${esc(textoMarca)}">
                 ${interior}

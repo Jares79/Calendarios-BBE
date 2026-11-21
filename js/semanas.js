@@ -240,19 +240,79 @@ async function verMarcasAdmin() {
     if (!usuarioActual || !puedeGestionarUsuarios(usuarioActual)) return;
     const contenedor = mostrarVistaAdmin();
     const codigos = Object.keys(MARCAS);
-    const entradas = new Map();   // empleadoId -> { empleado, cajas: Map(codigo -> checkbox) }
 
+    // Personas que se pueden elegir en "Ver a": todas las activas, salvo la propia
+    const todosActivos = colectivos.flatMap(c => c.empleados.filter(e => e.activo));
+
+    // Cada persona tiene su propio botón Guardar, en su fila
     const filaMarcas = (emp) => {
         const cajas = new Map();
-        entradas.set(emp.id, { empleado: emp, cajas });
-        return el("div", { class: "fila-marcas" },
+        const selector = el("select", { class: "select-ver-otra", "aria-label": `Ver el calendario de otra persona (${emp.nombre})` },
+            el("option", { value: "", text: "Ver a: nadie" }),
+            todosActivos.filter(e => e.id !== emp.id).map(e => el("option", { value: e.id, text: `Ver a: ${e.nombre} (${e.iniciales})` })));
+        selector.value = emp.verCalendarioDe || "";
+        const guardar = el("button", { type: "button", class: "btn-secundario fila-marcas-guardar", text: "Guardar" });
+
+        const estadoActual = () => ({ marcas: codigos.filter(c => cajas.get(c).checked), ver: selector.value || null });
+        const hayCambios = () => {
+            const n = estadoActual();
+            return n.marcas.join() !== emp.marcas.join() || n.ver !== (emp.verCalendarioDe || null);
+        };
+
+        // "Ver a otra persona" y las marcas (D, CT...) son incompatibles: usan la misma mitad de la celda
+        const sincronizar = () => {
+            const hayMarca = codigos.some(c => cajas.get(c).checked);
+            const hayOtra = selector.value !== "";
+            codigos.forEach(c => { cajas.get(c).disabled = hayOtra; });
+            selector.disabled = hayMarca;
+            guardar.disabled = !hayCambios();
+            guardar.textContent = "Guardar";
+        };
+
+        guardar.addEventListener("click", async () => {
+            const n = estadoActual();
+            guardar.disabled = true;
+            const marcasIguales = n.marcas.join() === emp.marcas.join();
+            const verIgual = n.ver === (emp.verCalendarioDe || null);
+
+            // Marcas y "ver a otra persona" no pueden convivir: primero se quita lo que se deja de usar
+            let bien = true;
+            if (!verIgual && n.ver === null) {
+                const r = await rpcVerCalendario(emp.id, null);
+                bien = r.ok;
+                if (bien) emp.verCalendarioDe = null;
+            }
+            if (bien && !marcasIguales) {
+                const r = await rpcMarcas(emp.id, n.marcas);
+                bien = r.ok;
+                if (bien) emp.marcas = n.marcas;
+            }
+            if (bien && !verIgual && n.ver !== null) {
+                const r = await rpcVerCalendario(emp.id, n.ver);
+                bien = r.ok;
+                if (bien) emp.verCalendarioDe = n.ver;
+            }
+            if (bien) {
+                guardar.textContent = "Guardado ✓";   // se queda desactivado hasta el próximo cambio
+            } else {
+                guardar.textContent = "No se pudo guardar";
+                guardar.disabled = false;
+            }
+        });
+
+        const fila = el("div", { class: "fila-marcas" },
             el("strong", { class: "fila-marcas-nombre", text: emp.nombre }),
             el("div", { class: "fila-marcas-opciones" }, codigos.map(codigo => {
                 const caja = el("input", { type: "checkbox", "aria-label": `${MARCAS[codigo].texto} para ${emp.nombre}` });
                 caja.checked = emp.marcas.includes(codigo);
+                caja.addEventListener("change", sincronizar);
                 cajas.set(codigo, caja);
                 return el("label", { class: "opcion-marca " + MARCAS[codigo].clase, title: MARCAS[codigo].texto }, caja, el("span", { text: codigo }));
-            })));
+            })),
+            el("div", { class: "fila-marcas-pie" }, selector, guardar));
+        selector.addEventListener("change", sincronizar);
+        sincronizar();
+        return fila;
     };
 
     // Por categorías y subgrupos desplegables, como en Empleados y accesos (cerrados al entrar)
@@ -268,29 +328,18 @@ async function verMarcasAdmin() {
         return desplegableAdmin("m:g:" + g.codigo, `${g.icono} ${g.nombre}`, String(total), "admin-grupo admin-desplegable", subgrupos);
     });
 
-    const aviso = el("p", { class: "admin-aviso-corto", role: "status" });
-    const guardar = el("button", { type: "button", text: "Guardar" });
-    guardar.addEventListener("click", async () => {
-        guardar.disabled = true;
-        let fallos = 0, cambiados = 0;
-        for (const { empleado, cajas } of entradas.values()) {
-            const nuevas = codigos.filter(c => cajas.get(c).checked);
-            if (nuevas.join() === empleado.marcas.join()) continue;
-            const r = await rpcMarcas(empleado.id, nuevas);
-            if (r.ok) { empleado.marcas = nuevas; cambiados++; } else fallos++;
-        }
-        guardar.disabled = false;
-        if (fallos) { aviso.textContent = "No se pudieron guardar algunos cambios."; aviso.className = "admin-aviso-corto error-texto"; }
-        else { aviso.textContent = cambiados ? "Guardado." : "No había cambios."; aviso.className = "admin-aviso-corto admin-ok"; }
-    });
-
     reemplazarHijos(contenedor,
         el("div", { class: "resultado-cabecera" },
             el("h2", { text: "Disponibilidades y CT" }),
             el("button", { type: "button", class: "btn-secundario", text: "Volver", onclick: verGestionAdmin })),
-        el("p", { class: "admin-nota", text: "Marca qué puede hacer cada persona: D (disponible) y las semanas de correturno CTD, CT1, CT2, CT3, CT4 y CTY. Solo a quien tenga alguna marcada se le parte la celda en dos mitades y se le ofrecen esas marcas al editar su calendario." }),
-        grupos,
-        el("div", { class: "fila-guardar" }, guardar, aviso));
+        el("p", { class: "admin-nota", text: "Marca qué puede hacer cada persona: D (disponible) y las semanas de correturno CTD, CT1, CT2, CT3, CT4 y CTY. Solo a quien tenga alguna marcada se le parte la celda en dos mitades y se le ofrecen esas marcas al editar su calendario. Con «Ver a:» eliges a una persona para que, en el mes de esta, la mitad de arriba muestre el turno de la otra (o su D) y la de abajo el suyo; es incompatible con las marcas y está apagado por defecto. Cada persona tiene su propio botón Guardar." }),
+        grupos);
+}
+
+async function rpcVerCalendario(empleadoId, otroId) {
+    const { data, error } = await supabaseClient.rpc("admin_guardar_ver_calendario", { p_empleado: empleadoId, p_otro: otroId });
+    if (error) { console.error("Error al guardar a quién ve:", error); return { ok: false }; }
+    return data || { ok: false };
 }
 
 async function rpcMarcas(empleadoId, marcas) {

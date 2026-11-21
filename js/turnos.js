@@ -201,6 +201,28 @@ function htmlMitades(info, extraArriba) {
            `<span class="mitad-abajo"><span class="turno-dia">${esc(inicial(info))}</span></span>`;
 }
 
+// --- Ver el calendario de otra persona (ajuste del administrador) ---
+// Si a un empleado se le asigna "ver a otra persona", en su mes la celda se parte: arriba lo de la otra
+// persona, abajo lo suyo. Es incompatible con las marcas (D, CT...), que usan esa misma mitad.
+function otraPersonaDe(empleado) {
+    if (!empleado || !empleado.verCalendarioDe) return null;
+    const otra = buscarEmpleadoPorId(empleado.verCalendarioDe);
+    return otra && otra.activo ? otra : null;
+}
+
+// Lo que se ve de la otra persona un día: su marca (D) si la tiene; si no, su turno
+function infoOtraPersona(fechaISO, otra) {
+    const info = infoTurno(fechaISO, otra);
+    if (info.marca) return { codigo: info.marca.codigo, texto: info.marca.texto, clase: info.marca.clase, esMarca: true };
+    return { codigo: info.codigo, texto: info.texto, clase: info.clase, esMarca: false };
+}
+
+// Celda partida: arriba lo de la otra persona (con sus colores), abajo el turno de quien mira
+function htmlMitadesOtra(info, ver, extraArriba) {
+    return `<span class="mitad-arriba ${ver.clase || "sin-marca"}">${extraArriba || ""}<span class="marca-codigo">${esc(ver.codigo)}</span></span>` +
+           `<span class="mitad-abajo"><span class="turno-dia">${esc(inicial(info))}</span></span>`;
+}
+
 // Clase extra para los códigos de dos letras (LD), que necesitan letra más pequeña
 function claseLargo(info) {
     return info.codigo && info.codigo.length > 1 ? " largo" : "";

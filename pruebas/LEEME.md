@@ -16,3 +16,4 @@ Requiere Python con `playwright` (`pip install playwright`, `playwright install 
 - `t15.py`: fase 14 (administrador sin ficha: inicio con el menú abierto, Horas, Volver, atrás).
 - `t16.py`: fase 15 (editor de turnos, Mi año con letras, login, leyenda por persona, calendario anual por persona, Disponibilidades y CT).
 Los tests de la fase 4 (marcas en el mes, año, semanas) se hicieron a mano y no están como script.
+- `t19.py`: fase 18 (ver el calendario de otra persona: celda partida del mes, D de la otra persona sobre su turno, ficha del día, pantalla «Disponibilidades y CT» con el selector «Ver a:» y su incompatibilidad con las marcas).

@@ -122,6 +122,11 @@ function seleccionarDia(fechaISO, empleadoId) {
         });
     }
 
+    // Si en tu calendario ves también a otra persona (ajuste del administrador): su turno o su D de ese día
+    const miFicha = obtenerEmpleadoActual();
+    const otraPersona = miFicha && miFicha.id === empleado.id ? otraPersonaDe(empleado) : null;
+    const verOtra = otraPersona ? infoOtraPersona(fechaISO, otraPersona) : null;
+
     const panel = el("div", { id: "panelDetalleDia", class: "detalle-dia " + info.clase, role: "dialog", "aria-label": "Detalle del día" },
         el("div", { class: "detalle-cabecera" },
             el("div", { class: "detalle-titulo" },
@@ -141,6 +146,12 @@ function seleccionarDia(fechaISO, empleadoId) {
             el("span", { class: "detalle-etiqueta", text: "Origen" }),
             textoOrigen(info)
         ),
+        verOtra
+            ? el("p", { class: "detalle-linea" },
+                el("span", { class: "detalle-etiqueta", text: otraPersona.nombre }),
+                el("span", { class: "badge-turno " + verOtra.clase, text: `${verOtra.codigo} · ${verOtra.texto}` })
+              )
+            : null,
         info.marca
             ? el("p", { class: "detalle-linea" },
                 el("span", { class: "detalle-etiqueta", text: "Marca" }),

@@ -80,6 +80,7 @@ async function cargarDatos() {
                 orden: e.orden,
                 marcas: Array.isArray(e.marcas) ? e.marcas : [],
                 verHoras: e.ver_horas === true,
+                verCalendarioDe: e.ver_calendario_de || null,
                 anualVer: Array.isArray(e.anual_ver) ? e.anual_ver : []
             }))
     }));

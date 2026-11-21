@@ -83,7 +83,8 @@
       if (name==='admin_borrar_subgrupo') { const c=db.colectivos.find(x=>x.codigo===a.p_codigo); if(!c) return no('no_encontrado'); if(c.tipo!=='otro'||c.codigo==='jornada') return no('no_permitido'); if (db.empleados.some(e=>e.colectivo===c.codigo)) return no('tiene_empleados'); db.colectivos=db.colectivos.filter(x=>x!==c); return ok(); }
       if (name==='admin_guardar_anual_ver') { if (U.rol!=='administrador') return no('no_autorizado'); const e = emp(a.p_empleado); if (!e) return no('no_encontrado'); e.anual_ver = a.p_ver; return ok(); }
       if (name==='admin_guardar_ver_horas') { if (U.rol!=='administrador') return no('no_autorizado'); const e = emp(a.p_empleado); if (!e) return no('no_encontrado'); e.ver_horas = a.p_ver; return ok(); }
-      if (name==='admin_guardar_marcas') { if (U.rol!=='administrador') return no('no_autorizado'); const e = emp(a.p_empleado); e.marcas = a.p_marcas; return ok(); }
+      if (name==='admin_guardar_marcas') { if (U.rol!=='administrador') return no('no_autorizado'); const e = emp(a.p_empleado); if (a.p_marcas.length && e.ver_calendario_de) return no('incompatible'); e.marcas = a.p_marcas; return ok(); }
+      if (name==='admin_guardar_ver_calendario') { if (U.rol!=='administrador') return no('no_autorizado'); const e = emp(a.p_empleado); if (!e) return no('no_encontrado'); if (a.p_otro) { const o = emp(a.p_otro); if (!o || !o.activo || o.id===e.id) return no('datos_invalidos'); if ((e.marcas||[]).length) return no('incompatible'); } e.ver_calendario_de = a.p_otro || null; return ok(); }
       if (name==='limpiar_cambios') {
         db.cambios_solicitudes.forEach(s => { if (s.estado==='pendiente' && s.primer_dia <= hoy) { s.estado='caducada'; s.cerrada_en=nowIso; s.visto_solicitante=false; s.visto_destinatario=false; } });
         const antes = db.cambios_solicitudes.length;
