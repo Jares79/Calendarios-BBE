@@ -35,7 +35,8 @@ Supabase → **Edge Functions → Secrets** (Manage secrets) → añade estos cu
 2. Borra el código de ejemplo y pega el contenido de `supabase/functions/enviar-push/index.ts` → **Deploy**.
 3. En la función, en sus ajustes (**Details/Settings**), **desactiva «Verify JWT»** (*Enforce JWT Verification*). Hace falta porque los avisos de la base de datos no llevan sesión; la función se protege con el `WEBHOOK_SECRET`.
    (Con la terminal sería: `supabase functions deploy enviar-push --no-verify-jwt`.)
-4. Copia la dirección de la función: `https://TU-REF.supabase.co/functions/v1/enviar-push` (el *TU-REF* es el identificador de tu proyecto, el que sale en la dirección de Supabase).
+4. Copia la dirección de la función que muestra Supabase: `https://TU-REF.supabase.co/functions/v1/NOMBRE` (el *TU-REF* es el identificador de tu proyecto).
+   **Ojo:** el editor web a veces le pone un nombre automático (en este proyecto salió `rapid-service`) y no deja cambiarlo. No importa, pero ese nombre tiene que coincidir con el de `supabase.functions.invoke("...")` en `js/push.js` (botón «Enviar aviso de prueba») y con la dirección del paso 5.
 
 ## 5. Conectar la base de datos con la función
 En el **SQL Editor** ejecuta esto, cambiando las dos cosas entre comillas:
