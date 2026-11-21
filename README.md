@@ -207,3 +207,21 @@ Los nombres exactos de los menús pueden cambiar con las versiones del panel.
 - **Calendario anual por persona**: en la ficha del empleado, el administrador marca qué grupos completos o subgrupos puede ver además del suyo (`empleados.anual_ver`, RPC `admin_guardar_anual_ver`). Sin nada marcado, solo ve su colectivo. El administrador ve todos. Es un control de lo que ofrece la app, no una barrera de privacidad en la base de datos.
 - **Disponibilidades y CT**: desplegables por grupo y subgrupo, como Empleados y accesos.
 - SQL: `supabase/fase15-anual-visibilidad.sql` (después de la fase 12). Versión del service worker `bbe-v18`. Pruebas: `pruebas/t16.py`.
+
+## Fase 16 (alternativa B): Google Calendar
+
+- Cada persona vincula su cuenta de Google en **Ajustes → Google Calendar** y elige qué calendarios ver (solo lectura: la app nunca crea, cambia ni borra nada en Google).
+- **Dónde se ve:** las celdas de tu calendario con eventos llevan una estrellita abajo a la derecha, y la **ficha del día** muestra los eventos directamente (hora, título y calendario) con «Actualizado hace X».
+- **Botón de sincronizar** (icono ⟳) en el recuadro «Hoy», arriba a la derecha: pide el permiso a Google (dura una hora), actualiza el mes que ves y los dos de al lado, y muestra «Google · hace X». Mientras el permiso siga vigente, al cambiar de mes se cargan solos. La ficha tiene también un pequeño «Actualizar».
+- **Privacidad:** los eventos van de Google al navegador y **no pasan por Supabase**. En el dispositivo se guardan solo (localStorage, por persona) los calendarios elegidos y una copia de los últimos eventos para verlos al abrir la app sin conexión a Google. «Desvincular» borra ambas cosas.
+- El script de Google se descarga por adelantado (solo si la función está en uso) para que el botón pida el permiso en el mismo toque y el navegador no bloquee la ventana.
+- Mientras `GOOGLE_CLIENT_ID` (en `js/google.js`) esté vacío, la función no aparece. Pasos en `GOOGLE-CONFIGURAR.md`. No aparece para un administrador sin ficha ni para familiares.
+- No hay SQL. Versión del service worker `bbe-v19`. Pruebas: `pruebas/t17g.py` (Google simulado; la conexión real hay que probarla con el ID de cliente).
+
+## Fase 17: páginas legales y avisos push
+
+- **Páginas legales:** `privacidad.html` y `terminos.html` (estáticas, con modo claro/oscuro). Enlazadas en la pantalla de acceso y en Ajustes → Información legal. El correo de contacto (`Jares@bbe.es`) y el nombre del responsable aparecen en ambas páginas: para cambiarlos, busca `Jares@bbe.es` en esos dos archivos (y en `supabase/functions/enviar-push/index.ts`, la línea del `VAPID_SUBJECT`, que es opcional).
+- **Avisos push:** nueva sección **Ajustes → Avisos en el móvil** con interruptor (por dispositivo) y casillas «Solicitudes de cambio» y «Mensajes». Avisa de solicitud nueva (al destinatario), aceptada/rechazada (a quien la pidió), cancelada y mensajes nuevos. Tocar el aviso abre la app en Cambios. Al cerrar sesión el móvil deja de recibir avisos de esa cuenta.
+- **Servidor:** `supabase/fase17-push.sql` (tablas, funciones y disparadores; un fallo de avisos nunca impide un cambio) y `supabase/functions/enviar-push/index.ts` (función de Supabase que envía). Pasos completos en `PUSH-CONFIGURAR.md`.
+- Mientras `PUSH_VAPID_PUBLICA` (en `js/push.js`) esté vacía, la sección no aparece. En iPhone hace falta la app instalada (iOS 16.4+).
+- Service worker `bbe-v20` (maneja los avisos y cachea las páginas legales). Pruebas: `pruebas/t18.py` (el navegador y los servicios de aviso se simulan; el envío real hay que probarlo con las claves).

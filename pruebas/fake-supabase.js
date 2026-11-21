@@ -24,7 +24,7 @@
       { empleado_id:'e-jp', semana:'2026-11-16', codigo:'D' }
     ],
     horas_turno: [], config_horas: [], horas_anuales: [], horas_dia: [],
-    cambios_hechos: [],
+    cambios_hechos: [], push_suscripciones: [],
     marcas_dia: [], cambios_solicitudes: [], cambios_dias: [], cambios_mensajes: [],
     perfiles: [ { id:'u1', iniciales:U.iniciales, rol:U.rol, empleado_id:U.empleadoId, activo:true } ]
   };
@@ -32,7 +32,7 @@
   window.__db = db; window.__writes = [];
   const ops = { eq:(a,b)=>a===b, gte:(a,b)=>a>=b, lte:(a,b)=>a<=b, in:(a,b)=>b.includes(a) };
   function qb(table) {
-    let op='select', filters=[], orders=[], rng=null, payload=null, opts={}, sel=false;
+    let op='select', filters=[], orders=[], rng=null, payload=null, opts={}, sel=false, uno=false;
     const run = () => {
       let rows = db[table];
       if (!rows) return { data:null, error:{ message:'relation does not exist' } };
@@ -48,10 +48,11 @@
       let out = rows.filter(match).slice();
       orders.forEach(k => out.sort((a,b)=> String(a[k]).localeCompare(String(b[k]))));
       if (rng) out = out.slice(rng[0], rng[1]+1);
+      if (uno) return { data: out.length ? JSON.parse(JSON.stringify(out[0])) : null, error:null };
       return { data: JSON.parse(JSON.stringify(out)), error:null };
     };
     const self = {
-      select(){ sel=true; return self; }, order(k){ orders.push(k); return self; }, range(a,b){ rng=[a,b]; return self; },
+      select(){ sel=true; return self; }, maybeSingle(){ uno=true; return self; }, order(k){ orders.push(k); return self; }, range(a,b){ rng=[a,b]; return self; },
       eq(k,v){ filters.push([k,'eq',v]); return self; }, gte(k,v){ filters.push([k,'gte',v]); return self; },
       lte(k,v){ filters.push([k,'lte',v]); return self; }, in(k,v){ filters.push([k,'in',v]); return self; },
       upsert(p,o){ op='upsert'; payload=p; opts=o||{}; return self; }, delete(){ op='delete'; return self; },
@@ -62,6 +63,7 @@
   }
   const client = {
     from: qb,
+    functions: { invoke: async (nombre, o) => { window.__invocado = [nombre, o && o.body]; return { data:{ ok:true, enviados: db.push_suscripciones.length }, error:null }; } },
     auth: { getSession: async()=>({ data:{ session:{ user:{id:'u1'} } } }), signOut: async()=>({}), onAuthStateChange(){} },
     rpc: async (name, a) => {
       a = a || {};
@@ -72,6 +74,9 @@
       const no = (m) => ({ data:{ ok:false, motivo:m }, error:null });
       if (name==='mi_perfil') return { data:{ iniciales:U.iniciales, nombre:'Usuario', rol:U.rol, empleadoId:U.empleadoId, empleadoNombre:'X', debeCambiarPin:false, colores:{} }, error:null };
       window.__writes.push(['rpc', name]);
+      if (name==='push_guardar') { const i = db.push_suscripciones.findIndex(x=>x.endpoint===a.p_endpoint); const fila = { id:'ps'+(db.push_suscripciones.length+1), user_id:'u1', empleado_id:me, endpoint:a.p_endpoint, p256dh:a.p_p256dh, auth:a.p_auth, avisar_cambios:true, avisar_mensajes:true }; if (i>=0) Object.assign(db.push_suscripciones[i], { p256dh:a.p_p256dh, auth:a.p_auth }); else db.push_suscripciones.push(fila); return { data:{ ok: !window.__pushFallo }, error:null }; }
+      if (name==='push_preferencias') { const f = db.push_suscripciones.find(x=>x.endpoint===a.p_endpoint); if (f) { if (a.p_cambios!=null) f.avisar_cambios=a.p_cambios; if (a.p_mensajes!=null) f.avisar_mensajes=a.p_mensajes; } return { data:{ ok:!!f }, error:null }; }
+      if (name==='push_borrar') { db.push_suscripciones = db.push_suscripciones.filter(x=>x.endpoint!==a.p_endpoint); return { data:{ ok:true }, error:null }; }
       if (name==='admin_editar_empleado') { const e = db.empleados.find(x=>x.id===a.p_id); if (!e) return no('no_encontrado'); if (!db.colectivos.some(c=>c.codigo===a.p_colectivo)) return no('datos_invalidos'); Object.assign(e, { nombre:a.p_nombre, iniciales:a.p_iniciales, colectivo:a.p_colectivo, inicio:a.p_inicio }); return ok(); }
       if (name==='admin_crear_subgrupo') { if (U.rol!=='administrador') return no('no_autorizado'); const n=(a.p_nombre||'').trim(); if(!n||n.length>40) return no('datos_invalidos'); if (db.colectivos.some(c=>c.nombre.toLowerCase()===n.toLowerCase())) return no('nombre_repetido'); const cod='sg'+(db.colectivos.length+1); db.colectivos.push({codigo:cod,nombre:n,icono:'👥',puesto:n,patron:db.colectivos.find(c=>c.codigo==='jornada').patron,dias_solape:0,orden:db.colectivos.length+1,tipo:'otro'}); return { data:{ok:true,codigo:cod}, error:null }; }
       if (name==='admin_renombrar_subgrupo') { const c=db.colectivos.find(x=>x.codigo===a.p_codigo); if(!c) return no('no_encontrado'); if(c.tipo==='turnos') return no('no_permitido'); const n=(a.p_nombre||'').trim(); if(!n) return no('datos_invalidos'); if (db.colectivos.some(x=>x.codigo!==c.codigo && x.nombre.toLowerCase()===n.toLowerCase())) return no('nombre_repetido'); c.nombre=n; return ok(); }

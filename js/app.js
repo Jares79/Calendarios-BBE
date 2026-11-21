@@ -71,6 +71,7 @@ function mostrarPantallaLogin() {
             <p id="errorLogin" class="error-texto" role="alert"></p>
 
             <button type="submit" id="btnEntrar" class="btn-ancho">Entrar</button>
+            <p class="acceso-legal"><a href="privacidad.html">Política de privacidad</a> · <a href="terminos.html">Términos y condiciones</a></p>
         </form>
     `);
 
@@ -193,6 +194,7 @@ async function iniciarApp() {
     iniciarCambios();        // solicitudes de cambio entre compañeros (globo de avisos)
 
     verMiCalendario();
+    if (typeof alAbrirDesdeAviso === "function") alAbrirDesdeAviso();   // si se abrió desde un aviso, va a Cambios
 }
 
 // Ventana de confirmación antes de salir (el botón está pegado al menú de usuario y se podía pulsar sin querer)
@@ -216,6 +218,7 @@ function confirmarCerrarSesion() {
 }
 
 async function cerrarSesion() {
+    if (typeof olvidarPushAlCerrarSesion === "function") await olvidarPushAlCerrarSesion();   // este móvil deja de recibir avisos de esta cuenta
     await cerrarSesionSupabase();
     location.reload();
 }

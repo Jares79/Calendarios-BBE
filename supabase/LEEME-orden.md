@@ -23,7 +23,8 @@ Orden en una base de datos nueva: 1 → 16. Si estás en la fase 9, ejecuta **en
 | 13 | `fase10-baja-resumen.sql` | Turno B (baja) en `excepciones` y en los colores, `config_horas.dias_ld`, `empleados.ver_horas` (+ `admin_guardar_ver_horas`), las horas anuales las escribe cada persona, y crea o repara `horas_dia`. |
 | 14 | `fase12-grupos-solapes.sql` | Crear, renombrar y borrar subgrupos de jornada partida (`admin_crear_subgrupo`, `admin_renombrar_subgrupo`, `admin_borrar_subgrupo`), el colectivo `jornada` pasa a llamarse "Sin subgrupo" y `dias_solape` limitado a 0-366. |
 | 15 | `admin-sin-ficha.sql` | (Opcional, una vez) Desvincula al usuario ADMIN de su ficha de empleado y la borra: administrador sin calendario ni colectivo. |
-| 16 | **`fase15-anual-visibilidad.sql`** | **Estado final.** `empleados.anual_ver` y `admin_guardar_anual_ver`: qué calendarios anuales ve cada persona. |
+| 16 | `fase15-anual-visibilidad.sql` | `empleados.anual_ver` y `admin_guardar_anual_ver`: qué calendarios anuales ve cada persona. |
+| 17 | **`fase17-push.sql`** | Avisos push: tablas `push_suscripciones` y `push_config`, funciones `push_guardar/preferencias/borrar` y los avisos a la función `enviar-push` (ver `PUSH-CONFIGURAR.md`). Requiere activar pg_net. |
 
 Otros: `fase1-deshacer.sql`, `fase3-deshacer.sql`, `fase4-deshacer`... (`*-deshacer.sql`) deshacen cada fase; `historico/` y
 `seguridad.sql`, `pin-cambio.sql`, `admin-resetear-pin.sql` son del login antiguo (ya no se usan).

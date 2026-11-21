@@ -154,6 +154,7 @@ function seleccionarDia(fechaISO, empleadoId) {
                 el("div", { class: "chips" }, compis.map(n => el("span", { class: "chip", text: n })))
               )
             : null,
+        (typeof crearSeccionGoogle === "function") ? crearSeccionGoogle(empleado, fechaISO) : null,
         puedeSolicitarCambioEnFicha(empleado, fechaISO, info)
             ? el("button", {
                 type: "button", class: "btn-ancho btn-editar-ficha",
