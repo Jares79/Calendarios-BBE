@@ -2,7 +2,7 @@
 
 Se ejecutan en Supabase > SQL Editor (botón Run), cada uno de una sola vez. Son aditivos y se pueden repetir,
 **salvo que no hay que volver a ejecutar uno anterior después de uno posterior** (los posteriores redefinen funciones).
-Orden en una base de datos nueva: 1 → 18. Si estás en la fase 9, ejecuta **en este orden** `fase10-baja-resumen.sql`,
+Orden en una base de datos nueva: 1 → 19. Si estás en la fase 9, ejecuta **en este orden** `fase10-baja-resumen.sql`,
 `fase12-grupos-solapes.sql`, `admin-sin-ficha.sql` (solo si quieres un administrador sin ficha) y `fase15-anual-visibilidad.sql`
 (las fases 11, 13 y 14 no tuvieron más SQL). Todos se pueden repetir sin problema.
 
@@ -26,6 +26,18 @@ Orden en una base de datos nueva: 1 → 18. Si estás en la fase 9, ejecuta **en
 | 16 | `fase15-anual-visibilidad.sql` | `empleados.anual_ver` y `admin_guardar_anual_ver`: qué calendarios anuales ve cada persona. |
 | 17 | **`fase17-push.sql`** | Avisos push: tablas `push_suscripciones` y `push_config`, funciones `push_guardar/preferencias/borrar` y los avisos a la función `enviar-push` (ver `PUSH-CONFIGURAR.md`). Requiere activar pg_net. |
 | 18 | **`fase18-ver-calendario.sql`** | `empleados.ver_calendario_de` y `admin_guardar_ver_calendario`: el administrador deja que alguien vea en la mitad de arriba de su mes el calendario de otra persona (incompatible con las marcas; `admin_guardar_marcas` lo comprueba). Ejecutar después de la 17. |
+| 19 | **`fase19-sincronizacion.sql`** | `guardar_turnos`: guarda turnos y ajustes de horas en una sola operación (o todo o nada). Y activa Realtime en `excepciones`, `semanas_especiales`, `marcas_dia`, `empleados`, `colectivos`, `festivos` e `intensivas` para que los cambios de los compañeros lleguen sin recargar. Ejecutar después de la 18. Se puede repetir. |
+
+## Comprobar y exportar (solo leen, no cambian nada)
+- **`schema-comprobar.sql`**: compara tu base de datos con lo que la app necesita (tablas, funciones, columnas, políticas
+  de seguridad y Realtime). Devuelve «Todo en orden» o una fila por cada cosa que falte. Ejecutarlo tras cada SQL nuevo y
+  después de montar un proyecto nuevo. La lista de lo esperado sale de los SQL de esta carpeta: si añades uno nuevo,
+  hay que actualizarla.
+- **`schema-exportar.sql`**: saca la estructura REAL de la base de datos (tablas, políticas, funciones, disparadores) tal como
+  está. Guardar el resultado como `supabase/schema-actual.sql` deja una copia de referencia de la estructura (no de los datos).
+- Para un proyecto de pruebas aparte: crear otro proyecto de Supabase, ejecutar los SQL en el orden de la tabla de arriba
+  (saltando `fase1-2-migrar-usuarios.sql`, que solo migra usuarios del login antiguo, y los opcionales), seguir
+  `PUSH-CONFIGURAR.md` si se quieren avisos, y comprobar con `schema-comprobar.sql`.
 
 Otros: `fase1-deshacer.sql`, `fase3-deshacer.sql`, `fase4-deshacer`... (`*-deshacer.sql`) deshacen cada fase; `historico/` y
 `seguridad.sql`, `pin-cambio.sql`, `admin-resetear-pin.sql` son del login antiguo (ya no se usan).

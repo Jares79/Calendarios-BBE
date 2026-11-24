@@ -48,7 +48,9 @@ const marcasDia = new Map();
 const aniosCargados = new Set();
 const cargasEnCurso = new Map();
 
-async function cargarDatos() {
+// Lee de Supabase los colectivos, empleados, festivos e intensivas. Devuelve los datos ya preparados
+// (sin tocar nada de lo que hay en pantalla) o null si algo falló.
+async function leerMaestros() {
     const [rc, re, rf, ri] = await Promise.all([
         supabaseClient.from("colectivos").select("*").order("orden"),
         supabaseClient.from("empleados").select("*").order("orden"),
@@ -57,41 +59,110 @@ async function cargarDatos() {
     ]);
     if (rc.error || re.error || rf.error || ri.error) {
         console.error("Error al cargar datos:", rc.error || re.error || rf.error || ri.error);
-        return false;
+        return null;
     }
 
-    colectivos = rc.data.map(c => ({
-        codigo: c.codigo,
-        nombre: c.nombre,
-        icono: c.icono,
-        puesto: c.puesto,
-        patron: c.patron,
-        diasSolape: c.dias_solape,
-        tipo: c.tipo || (c.codigo === "correturnos" ? "correturnos" : c.codigo === "jornada" ? "otro" : "turnos"),
-        empleados: re.data
-            .filter(e => e.colectivo === c.codigo)
-            .map(e => ({
-                id: e.id,
-                nombre: e.nombre,
-                iniciales: e.iniciales,
-                inicio: e.inicio,
-                colectivo: e.colectivo,
-                activo: e.activo,
-                orden: e.orden,
-                marcas: Array.isArray(e.marcas) ? e.marcas : [],
-                verHoras: e.ver_horas === true,
-                verCalendarioDe: e.ver_calendario_de || null,
-                anualVer: Array.isArray(e.anual_ver) ? e.anual_ver : []
-            }))
-    }));
+    return {
+        colectivos: rc.data.map(c => ({
+            codigo: c.codigo,
+            nombre: c.nombre,
+            icono: c.icono,
+            puesto: c.puesto,
+            patron: c.patron,
+            diasSolape: c.dias_solape,
+            tipo: c.tipo || (c.codigo === "correturnos" ? "correturnos" : c.codigo === "jornada" ? "otro" : "turnos"),
+            empleados: re.data
+                .filter(e => e.colectivo === c.codigo)
+                .map(e => ({
+                    id: e.id,
+                    nombre: e.nombre,
+                    iniciales: e.iniciales,
+                    inicio: e.inicio,
+                    colectivo: e.colectivo,
+                    activo: e.activo,
+                    orden: e.orden,
+                    marcas: Array.isArray(e.marcas) ? e.marcas : [],
+                    verHoras: e.ver_horas === true,
+                    verCalendarioDe: e.ver_calendario_de || null,
+                    anualVer: Array.isArray(e.anual_ver) ? e.anual_ver : []
+                }))
+        })),
+        festivos: new Map(rf.data.map(f => [f.fecha, f.nombre])),
+        intensivas: ri.data.map(i => ({ id: i.id, desde: i.desde, hasta: i.hasta, nota: i.nota }))
+    };
+}
 
-    festivos = new Map(rf.data.map(f => [f.fecha, f.nombre]));
-    intensivas = ri.data.map(i => ({ id: i.id, desde: i.desde, hasta: i.hasta, nota: i.nota }));
+function aplicarMaestros(m) {
+    colectivos = m.colectivos;
+    festivos = m.festivos;
+    intensivas = m.intensivas;
+}
+
+async function cargarDatos() {
+    const maestros = await leerMaestros();
+    if (!maestros) return false;
+    aplicarMaestros(maestros);
 
     // Cambios manuales: el año en curso y los dos de al lado; el resto se pide al navegar
     const anio = new Date().getFullYear();
     await Promise.all([anio - 1, anio, anio + 1].map(asegurarAnio));
     return true;
+}
+
+// Lee de una tabla (por trozos de 1000) las filas de un rango de fechas.
+// Devuelve la lista de filas, o null si la lectura falló.
+async function leerPorTrozos(tabla, campoFecha, desde, hasta, avisoSoloConsola) {
+    const trozo = 1000;
+    const filas = [];
+    for (let inicio = 0; ; inicio += trozo) {
+        const { data, error } = await supabaseClient
+            .from(tabla)
+            .select(`empleado_id, ${campoFecha}, codigo`)
+            .gte(campoFecha, desde)
+            .lte(campoFecha, hasta)
+            .order(campoFecha)
+            .order("empleado_id")
+            .range(inicio, inicio + trozo - 1);
+        if (error) {
+            if (avisoSoloConsola) console.warn(avisoSoloConsola, error);
+            else console.error(`Error al cargar ${tabla}:`, error);
+            return null;
+        }
+        filas.push(...data);
+        if (data.length < trozo) break;
+    }
+    return filas;
+}
+
+// Lee los datos de un año: cambios manuales (obligatorio), semanas especiales y marcas de días sueltos
+// (si esas tablas aún no existen en Supabase no se rompe nada: simplemente no hay marcas).
+// Devuelve { exc, sem, mar } (sem y mar pueden ser null) o null si falló lo obligatorio.
+async function leerAnioServidor(anio) {
+    const desde = `${anio}-01-01`;
+    const hasta = `${anio}-12-31`;
+    const [exc, sem, mar] = await Promise.all([
+        leerPorTrozos("excepciones", "fecha", desde, hasta),
+        leerPorTrozos("semanas_especiales", "semana", lunesDe(desde), hasta, "No se pudieron cargar las semanas especiales:"),
+        leerPorTrozos("marcas_dia", "fecha", desde, hasta, "No se pudieron cargar las marcas de días sueltos:")
+    ]);
+    return exc ? { exc, sem, mar } : null;
+}
+
+// Sustituye en un mapa todo lo de un rango de fechas por lo leído (las claves acaban en la fecha)
+function reemplazarRango(mapa, desde, hasta, filas, campoFecha) {
+    for (const clave of [...mapa.keys()]) {
+        const fecha = clave.slice(-10);
+        if (fecha >= desde && fecha <= hasta) mapa.delete(clave);
+    }
+    filas.forEach(r => mapa.set(claveExcepcion(r.empleado_id, r[campoFecha]), r.codigo));
+}
+
+function aplicarAnio(anio, datos) {
+    const desde = `${anio}-01-01`;
+    const hasta = `${anio}-12-31`;
+    reemplazarRango(excepciones, desde, hasta, datos.exc, "fecha");
+    if (datos.sem) reemplazarRango(semanas, lunesDe(desde), hasta, datos.sem, "semana");
+    if (datos.mar) reemplazarRango(marcasDia, desde, hasta, datos.mar, "fecha");
 }
 
 // Carga (una sola vez) los cambios manuales de un año. Devuelve true si todo fue bien.
@@ -100,64 +171,9 @@ async function asegurarAnio(anio) {
     if (cargasEnCurso.has(anio)) return cargasEnCurso.get(anio);
 
     const carga = (async () => {
-        const desde = `${anio}-01-01`;
-        const hasta = `${anio}-12-31`;
-        const trozo = 1000;
-        for (let inicio = 0; ; inicio += trozo) {
-            const { data, error } = await supabaseClient
-                .from("excepciones")
-                .select("empleado_id, fecha, codigo")
-                .gte("fecha", desde)
-                .lte("fecha", hasta)
-                .order("fecha")
-                .order("empleado_id")
-                .range(inicio, inicio + trozo - 1);
-            if (error) {
-                console.error("Error al cargar cambios manuales:", error);
-                return false;
-            }
-            data.forEach(r => excepciones.set(claveExcepcion(r.empleado_id, r.fecha), r.codigo));
-            if (data.length < trozo) break;
-        }
-
-        // Semanas especiales (G, CT1...) que tocan este año. Si la tabla aún no existe en Supabase
-        // (falta ejecutar el SQL de la fase 4) no se rompe nada: simplemente no hay marcas.
-        const desdeSemanas = lunesDe(desde);
-        for (let inicio = 0; ; inicio += trozo) {
-            const { data, error } = await supabaseClient
-                .from("semanas_especiales")
-                .select("empleado_id, semana, codigo")
-                .gte("semana", desdeSemanas)
-                .lte("semana", hasta)
-                .order("semana")
-                .order("empleado_id")
-                .range(inicio, inicio + trozo - 1);
-            if (error) {
-                console.warn("No se pudieron cargar las semanas especiales:", error);
-                break;
-            }
-            data.forEach(r => semanas.set(claveExcepcion(r.empleado_id, r.semana), r.codigo));
-            if (data.length < trozo) break;
-        }
-
-        // Marcas de días sueltos (mismo criterio: si la tabla no existe, se ignora)
-        for (let inicio = 0; ; inicio += trozo) {
-            const { data, error } = await supabaseClient
-                .from("marcas_dia")
-                .select("empleado_id, fecha, codigo")
-                .gte("fecha", desde)
-                .lte("fecha", hasta)
-                .order("fecha")
-                .order("empleado_id")
-                .range(inicio, inicio + trozo - 1);
-            if (error) {
-                console.warn("No se pudieron cargar las marcas de días sueltos:", error);
-                break;
-            }
-            data.forEach(r => marcasDia.set(claveExcepcion(r.empleado_id, r.fecha), r.codigo));
-            if (data.length < trozo) break;
-        }
-
+        const datos = await leerAnioServidor(anio);
+        if (!datos) return false;
+        aplicarAnio(anio, datos);
         aniosCargados.add(anio);
         return true;
     })();
@@ -166,6 +182,143 @@ async function asegurarAnio(anio) {
     const ok = await carga;
     cargasEnCurso.delete(anio);
     return ok;
+}
+
+// --- Mantener los datos al día ---
+// Los cambios de otras personas llegan por Realtime (de uno en uno, sin recargar nada). Como el móvil
+// corta la conexión en segundo plano, al volver a la app (o recuperar la red) se vuelve a leer todo.
+// Si Realtime no estuviera activado en Supabase, solo falla lo instantáneo: al volver a la app se actualiza igual.
+
+// Mientras se guarda algo propio no se aplica ninguna lectura del servidor (podría pisar lo recién guardado)
+let escriturasLocales = 0;
+let marcaEscrituraLocal = 0;
+async function conEscrituraLocal(accion) {
+    escriturasLocales++;
+    marcaEscrituraLocal++;
+    try {
+        return await accion();
+    } finally {
+        escriturasLocales--;
+        marcaEscrituraLocal++;
+    }
+}
+
+let refrescando = false;
+let refrescoPendiente = false;
+let temporizadorRefresco = null;
+let temporizadorRepintado = null;
+let canalDatos = null;
+let canalYaConectado = false;
+let ocultoDesde = 0;
+let sincronizacionIniciada = false;
+
+function programarRepintado() {
+    clearTimeout(temporizadorRepintado);
+    temporizadorRepintado = setTimeout(() => {
+        if (typeof refrescarCalendarioPropio === "function" && document.getElementById("cardCalendario")) refrescarCalendarioPropio();
+    }, 200);
+}
+
+function programarRefresco(ms) {
+    clearTimeout(temporizadorRefresco);
+    temporizadorRefresco = setTimeout(refrescarDatos, ms == null ? 800 : ms);
+}
+
+// Vuelve a leer del servidor lo maestro y los años ya cargados, y repinta el mes
+async function refrescarDatos() {
+    if (refrescando) { refrescoPendiente = true; return; }
+    refrescando = true;
+    let aplicado = false;
+    try {
+        for (let pasada = 0; pasada < 3; pasada++) {
+            refrescoPendiente = false;
+            const marca = marcaEscrituraLocal;
+            const anios = [...aniosCargados];
+            const [maestros, leidos] = await Promise.all([leerMaestros(), Promise.all(anios.map(leerAnioServidor))]);
+
+            // Si mientras tanto se guardó algo propio, esta lectura puede estar vieja: se descarta y se repite
+            if (escriturasLocales > 0 || marca !== marcaEscrituraLocal) {
+                await new Promise(r => setTimeout(r, 1500));
+                continue;
+            }
+            if (maestros) aplicarMaestros(maestros);
+            anios.forEach((anio, i) => { if (leidos[i]) aplicarAnio(anio, leidos[i]); });
+            if (typeof tickCambios === "function") tickCambios();   // solicitudes de cambio al día también
+            programarRepintado();
+            aplicado = true;
+            if (!refrescoPendiente) break;
+        }
+        // Si un guardado propio tardó demasiado y no se pudo aplicar ninguna lectura, se vuelve a intentar más tarde
+        if (!aplicado) programarRefresco(3000);
+    } catch (e) {
+        console.warn("No se pudieron refrescar los datos:", e);
+    } finally {
+        refrescando = false;
+    }
+}
+
+// Cambio de una fila de excepciones / semanas_especiales / marcas_dia llegado por Realtime
+function alCambiarFila(mapa, campoFecha, cambio) {
+    const nueva = cambio.new || {};
+    const vieja = cambio.old || {};
+    if (cambio.eventType === "DELETE") {
+        if (vieja.empleado_id && vieja[campoFecha]) mapa.delete(claveExcepcion(vieja.empleado_id, vieja[campoFecha]));
+        else { programarRefresco(); return; }
+    } else if (nueva.empleado_id && nueva[campoFecha] && nueva.codigo != null) {
+        mapa.set(claveExcepcion(nueva.empleado_id, nueva[campoFecha]), nueva.codigo);
+    } else {
+        programarRefresco();
+        return;
+    }
+    programarRepintado();
+}
+
+function iniciarSincronizacion() {
+    if (sincronizacionIniciada) return;
+    sincronizacionIniciada = true;
+
+    // Al volver a la app tras un rato en segundo plano, o al recuperar la conexión
+    document.addEventListener("visibilitychange", () => {
+        if (document.hidden) { ocultoDesde = Date.now(); return; }
+        if (ocultoDesde && Date.now() - ocultoDesde > 20000) programarRefresco(100);
+    });
+    window.addEventListener("online", () => programarRefresco(500));
+
+    if (typeof supabaseClient.channel !== "function") return;
+    try {
+        canalDatos = supabaseClient.channel("bbe-datos");
+        [["excepciones", excepciones, "fecha"], ["semanas_especiales", semanas, "semana"], ["marcas_dia", marcasDia, "fecha"]]
+            .forEach(([tabla, mapa, campo]) => {
+                canalDatos.on("postgres_changes", { event: "*", schema: "public", table: tabla }, cambio => alCambiarFila(mapa, campo, cambio));
+            });
+        ["empleados", "colectivos", "festivos", "intensivas"].forEach(tabla => {
+            canalDatos.on("postgres_changes", { event: "*", schema: "public", table: tabla }, () => programarRefresco(1200));
+        });
+        canalDatos.subscribe(estado => {
+            if (estado === "SUBSCRIBED") {
+                if (canalYaConectado) programarRefresco(300);   // reconexión: se recupera lo que se haya perdido
+                canalYaConectado = true;
+            }
+        });
+    } catch (e) {
+        console.warn("Realtime no disponible:", e);
+    }
+}
+
+// Pone al día, desde el servidor, los cambios manuales de una persona en unos días concretos
+// (para decidir con datos frescos, por ejemplo si un día viene de un cambio con un compañero)
+async function sincronizarDiasDe(empleadoId, fechas) {
+    if (!fechas.length) return;
+    try {
+        const { data, error } = await supabaseClient.from("excepciones")
+            .select("fecha, codigo").eq("empleado_id", empleadoId).in("fecha", fechas);
+        if (error) return;
+        const del = new Map(data.map(r => [r.fecha, r.codigo]));
+        fechas.forEach(f => {
+            const clave = claveExcepcion(empleadoId, f);
+            if (del.has(f)) excepciones.set(clave, del.get(f)); else excepciones.delete(clave);
+        });
+    } catch (e) { /* si falla, se sigue con lo que hay en pantalla */ }
 }
 
 function buscarColectivo(codigo) {

@@ -192,6 +192,7 @@ async function iniciarApp() {
     prepararPanelAdmin();    // solo administradores
     prepararPanelHoras();    // sección Horas del menú
     iniciarCambios();        // solicitudes de cambio entre compañeros (globo de avisos)
+    iniciarSincronizacion(); // los cambios de los demás llegan solos (Realtime) y al volver a la app
 
     verMiCalendario();
     if (typeof alAbrirDesdeAviso === "function") alAbrirDesdeAviso();   // si se abrió desde un aviso, va a Cambios

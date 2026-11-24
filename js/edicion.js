@@ -260,11 +260,63 @@ async function guardarCambiosCalendario(cambios) {
         return true;
     }
 
+    // Cambiar el turno de un día quita su ajuste manual de horas (salvo al pasar a B, LD, J o S, que lo mantienen).
+    // Se decide ahora para guardarlo todo junto con los turnos.
+    const fechasSinSuma = [...subir.filter(r => !sumaPrev.includes(r.codigo)).map(r => r.fecha), ...borrar];
+    let limpiarHoras = [];
+    if (fechasSinSuma.length && typeof asegurarHorasDia === "function" && typeof horasDia !== "undefined") {
+        await Promise.all(anios.map(asegurarHorasDia));
+        limpiarHoras = fechasSinSuma.filter(f => horasDia.has(claveExcepcion(empleado.id, f)));
+    }
+
     // Se refleja al instante y se confirma con el servidor
     subir.forEach(r => excepciones.set(claveExcepcion(r.empleado_id, r.fecha), r.codigo));
     borrar.forEach(f => excepciones.delete(claveExcepcion(empleado.id, f)));
     verMiCalendario();
 
+    const { fallo } = await conEscrituraLocal(() => guardarTurnosEnServidor(empleado, subir, borrar, limpiarHoras, conservarHoras));
+
+    if (fallo) {
+        console.error("Error al guardar cambios:", fallo);
+        anterior.forEach((valor, clave) => {
+            if (valor === undefined) excepciones.delete(clave);
+            else excepciones.set(clave, valor);
+        });
+        verMiCalendario();
+        const motivo = fallo.motivo === "no_autorizado" ? " No tienes permiso para guardar este calendario."
+            : fallo.motivo === "datos_invalidos" ? " Algún dato no es válido." : "";
+        mostrarToast("No se pudo guardar." + (motivo || " Inténtalo de nuevo."), true);
+        return false;
+    }
+
+    mostrarToast(cambios.length > 1 ? "Cambios guardados" : "Guardado");
+    return true;
+}
+
+// Guarda turnos y ajustes de horas en una sola operación del servidor (función guardar_turnos, fase 19):
+// o se guarda todo o no se guarda nada. Si esa función aún no existe en Supabase, o son demasiados días,
+// se guarda por partes como antes. Devuelve { fallo: null } o { fallo: <error> }.
+async function guardarTurnosEnServidor(empleado, subir, borrar, limpiarHoras, ponerHoras) {
+    const cabe = [subir, borrar, limpiarHoras, ponerHoras].every(lista => lista.length <= 800);
+    if (cabe) {
+        const { data, error } = await supabaseClient.rpc("guardar_turnos", {
+            p_subir: subir.map(r => ({ fecha: r.fecha, codigo: r.codigo })),
+            p_borrar: borrar,
+            p_horas_borrar: limpiarHoras,
+            p_horas_poner: ponerHoras
+        });
+        const noExiste = error && (error.code === "PGRST202" || error.code === "42883" || error.status === 404);
+        if (!error && data && data.ok) {
+            if (typeof horasDia !== "undefined") {
+                limpiarHoras.forEach(f => horasDia.delete(claveExcepcion(empleado.id, f)));
+                ponerHoras.forEach(r => horasDia.set(claveExcepcion(empleado.id, r.fecha), r.horas));
+            }
+            return { fallo: null };
+        }
+        if (!noExiste) return { fallo: error || data || { motivo: "desconocido" } };
+    }
+
+    // Por partes (como antes de la fase 19)
     let fallo = null;
     for (let i = 0; i < subir.length && !fallo; i += 200) {
         const r = await supabaseClient.from("excepciones")
@@ -276,26 +328,13 @@ async function guardarCambiosCalendario(cambios) {
             .delete().eq("empleado_id", empleado.id).in("fecha", borrar.slice(i, i + 100));
         fallo = r.error;
     }
+    if (fallo) return { fallo };
 
-    if (fallo) {
-        console.error("Error al guardar cambios:", fallo);
-        anterior.forEach((valor, clave) => {
-            if (valor === undefined) excepciones.delete(clave);
-            else excepciones.set(clave, valor);
-        });
-        verMiCalendario();
-        mostrarToast("No se pudo guardar. Inténtalo de nuevo.", true);
-        return false;
+    if (limpiarHoras.length && typeof guardarHorasDia === "function") {
+        await guardarHorasDia(empleado, limpiarHoras.map(fecha => ({ fecha, horas: null })), true);
     }
-
-    // Cambiar el turno de un día quita su ajuste manual de horas (salvo al pasar a B, LD, J o S, que lo mantienen)
-    if (typeof limpiarAjustesHoras === "function") {
-        await limpiarAjustesHoras(empleado, [...subir.filter(r => !sumaPrev.includes(r.codigo)).map(r => r.fecha), ...borrar]);
+    if (ponerHoras.length && typeof guardarHorasDia === "function") {
+        await guardarHorasDia(empleado, ponerHoras, true);
     }
-    if (conservarHoras.length && typeof guardarHorasDia === "function") {
-        await guardarHorasDia(empleado, conservarHoras, true);
-    }
-
-    mostrarToast(cambios.length > 1 ? "Cambios guardados" : "Guardado");
-    return true;
+    return { fallo: null };
 }
