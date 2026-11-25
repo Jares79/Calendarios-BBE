@@ -212,11 +212,52 @@ let canalYaConectado = false;
 let ocultoDesde = 0;
 let sincronizacionIniciada = false;
 
+let repintadoPendiente = false;
+let estadoCanal = "";
+
 function programarRepintado() {
     clearTimeout(temporizadorRepintado);
-    temporizadorRepintado = setTimeout(() => {
-        if (typeof refrescarCalendarioPropio === "function" && document.getElementById("cardCalendario")) refrescarCalendarioPropio();
-    }, 200);
+    temporizadorRepintado = setTimeout(repintarPantalla, 200);
+}
+
+// Repinta lo que se esté viendo con los datos nuevos: el mes, la hoja de un día, la búsqueda por día,
+// el calendario anual o "Mi año". No toca la edición en curso: si hay una hoja de edición abierta,
+// espera a que se cierre (ocultarDetalleDia lo vuelve a pedir).
+function repintarPantalla() {
+    if (!document.getElementById("cardCalendario")) return;
+    if (document.querySelector("#panelDetalleDia.hoja-edicion")) { repintadoPendiente = true; return; }
+    repintadoPendiente = false;
+
+    // Hoja de consulta de un día: se guarda cuál es para volver a abrirla con datos nuevos
+    const hoja = document.getElementById("panelDetalleDia");
+    const hojaDia = hoja && hoja.dataset.fecha ? { fecha: hoja.dataset.fecha, emp: hoja.dataset.emp, arriba: hoja.scrollTop } : null;
+
+    const alTerminar = () => {
+        const edicion = typeof modoEdicion !== "undefined" && modoEdicion;
+        const cambio = typeof modoCambio !== "undefined" && modoCambio;
+        if (!hojaDia || edicion || cambio || typeof seleccionarDia !== "function") return;
+        seleccionarDia(hojaDia.fecha, hojaDia.emp, true);
+        const nueva = document.getElementById("panelDetalleDia");
+        if (nueva) nueva.scrollTop = hojaDia.arriba;
+    };
+
+    const resultado = document.getElementById("resultado");
+    if (document.body.classList.contains("vista-resultado") && resultado) {
+        // Una vista de resultados: solo si sigue siendo la que se registró (otra pantalla pudo ocupar su sitio)
+        if (typeof vistaAbierta === "undefined" || !vistaAbierta || vistaAbierta.nodo !== resultado.firstElementChild) return;
+        const y = window.scrollY;
+        const zona = document.querySelector(".anual-scroll");
+        const pos = zona ? [zona.scrollTop, zona.scrollLeft] : null;
+        Promise.resolve(vistaAbierta.repintar()).then(() => {
+            window.scrollTo(0, y);
+            const nueva = document.querySelector(".anual-scroll");
+            if (nueva && pos) { nueva.scrollTop = pos[0]; nueva.scrollLeft = pos[1]; }
+            alTerminar();
+        });
+        return;
+    }
+    if (typeof refrescarCalendarioPropio === "function") refrescarCalendarioPropio();
+    alTerminar();
 }
 
 function programarRefresco(ms) {
@@ -295,6 +336,7 @@ function iniciarSincronizacion() {
             canalDatos.on("postgres_changes", { event: "*", schema: "public", table: tabla }, () => programarRefresco(1200));
         });
         canalDatos.subscribe(estado => {
+            estadoCanal = estado;
             if (estado === "SUBSCRIBED") {
                 if (canalYaConectado) programarRefresco(300);   // reconexión: se recupera lo que se haya perdido
                 canalYaConectado = true;
@@ -303,6 +345,10 @@ function iniciarSincronizacion() {
     } catch (e) {
         console.warn("Realtime no disponible:", e);
     }
+    // Red de seguridad: si Realtime no está conectado, se vuelve a leer cada minuto mientras la app está a la vista
+    setInterval(() => {
+        if (!document.hidden && estadoCanal !== "SUBSCRIBED") refrescarDatos();
+    }, 60000);
 }
 
 // Pone al día, desde el servidor, los cambios manuales de una persona en unos días concretos

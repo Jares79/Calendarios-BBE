@@ -18,7 +18,7 @@ Fecha de este resumen: 24 de noviembre de 2026. Sustituye al resumen de la fase 
   - **No sobrescribir sus archivos personalizados**: `index.html` (lleva su etiqueta `google-site-verification`), `js/push.js` (lleva su clave pública de avisos y el nombre `rapid-service`) y `js/google.js` (lleva su ID de cliente de Google). Los parches no deben incluirlos salvo que cambien de verdad, y entonces hay que avisar y decirle qué línea conservar.
   - Explicar con claridad **qué no se ha podido probar** contra Supabase real, Google real o un móvil real (el entorno de Claude no tiene internet).
   - Le gusta que se le diga qué es seguro y qué no, y que se le recomiende una opción. Valora los avisos de límites (seguridad, privacidad, planes gratuitos).
-  - Subir `VERSION` de `sw.js` en cada entrega que cambie archivos del caché (**ahora `bbe-v26`**).
+  - Subir `VERSION` de `sw.js` en cada entrega que cambie archivos del caché (**ahora `bbe-v27`**).
   - Le gustan los detalles cuidados: ventanas bonitas, avisos claros, textos en español.
 - **Privacidad como criterio**: no quiere poder ver lo que sus compañeros guarden (por eso Google Calendar se lee en el navegador y no pasa por Supabase).
 
@@ -131,6 +131,7 @@ Ver `supabase/LEEME-orden.md`. Puntos clave:
 - Los textos de la base de datos y de Google nunca se meten como HTML: `esc()` o `el()`.
 - `replaceChildren()` no admite arrays ni `null`: usar spread o `reemplazarHijos()`. `el()` aplana solo un nivel de arrays.
 - El cierre al tocar fuera de la hoja usa `composedPath()`; al abrir una hoja desde otra, `setTimeout(..., 0)`.
+- Las vistas de resultados que muestran a otras personas (búsqueda por día, anual de un grupo, «Mi año») se registran con `registrarVista(fn)` en `calendario.js` para poder repintarse solas (`repintarPantalla()` en `datos.js`); cualquier vista nueva de ese tipo debe registrarse igual. La hoja de consulta de un día lleva `data-fecha` y `data-emp` para poder reconstruirse. Primera versión de la fase 19: solo repintaba el mes propio, así que lo que cambiaba un compañero no se veía en la hoja de un día ni en las vistas abiertas hasta cambiar de pantalla (corregido).
 - Los años de datos se cargan bajo demanda (`asegurarAnio`). Desde la fase 19 se pueden releer (`refrescarDatos`) y los cambios de otros llegan por Realtime; cualquier escritura propia que cambie `excepciones`, `semanas` o `marcasDia` debe ir envuelta en `conEscrituraLocal()` para que una lectura del servidor no la pise.
 - `guardar_turnos` (SQL) valida todo antes de escribir y escribe todo en una transacción; el cliente cae al guardado por partes si la función no existe (`PGRST202`) o hay más de 800 días.
 - En las pruebas, `page.clock.install` acelera los temporizadores del navegador respecto al tiempo real de `wait_for_timeout`: para probar esperas, usar `wait_for_function` en lugar de dormir.
