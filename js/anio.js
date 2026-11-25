@@ -107,6 +107,7 @@ async function pintarMiAnio(anio) {
         totalesMarcas.length ? el("h3", { class: "grupo-titulo", text: "Días con marca" }) : null,
         totalesMarcas.length ? el("ul", { class: "anio-totales" }, totalesMarcas) : null
     );
+    registrarVista(() => pintarMiAnio(anio));
 }
 
 // Al pulsar un mes del año se abre ese mes (con sus días pulsables) y un botón para volver al año

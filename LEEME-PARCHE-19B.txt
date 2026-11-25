@@ -1,0 +1,5 @@
+PARCHE 19b - Calendario BBE
+===========================
+Va DESPUES del parche de la fase 19 (no sustituye al SQL: no hay SQL nuevo).
+Arrastra el CONTENIDO de esta carpeta a develop. Solo cambian estos archivos.
+Corrige que la pantalla abierta (hoja de un dia, busqueda por dia, anual) no se actualizaba sola.

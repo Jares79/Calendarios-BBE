@@ -1,0 +1,14 @@
+PARCHE FASE 19 - Calendario BBE
+================================
+Contiene SOLO los archivos que cambian, con su carpeta. Arrastra el CONTENIDO de esta carpeta
+(no la carpeta entera) a la rama develop de GitHub, igual que otras veces. No toca index.html,
+push.js, google.js ni nada tuyo personalizado.
+
+ORDEN
+1. Subir los archivos a develop.
+2. En Supabase > SQL Editor: pegar y ejecutar  supabase/fase19-sincronizacion.sql  (se puede repetir).
+3. Pegar y ejecutar  supabase/schema-comprobar.sql  -> debe decir "Todo en orden".
+   (Si falla algo, copia el mensaje o las filas que salgan y me las mandas.)
+4. Probar con dos móviles (ver el texto del chat) y, si va bien, fundir develop en main.
+
+Si algo fuera mal después del paso 2: supabase/fase19-deshacer.sql lo quita (la app sigue funcionando).

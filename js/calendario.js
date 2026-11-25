@@ -1,6 +1,14 @@
 // js/calendario.js
 // Búsqueda por día, detalle de un día y calendario anual.
 
+// Vista de resultados abierta que se puede repintar sola cuando llegan datos nuevos de otras personas
+// (búsqueda por día, calendario anual de un grupo, "Mi año"). Se guarda junto al nodo que dibujó: si otra
+// pantalla ocupa luego el sitio, el nodo ya no coincide y no se repinta nada por error.
+let vistaAbierta = null;
+function registrarVista(repintar) {
+    vistaAbierta = { nodo: document.getElementById("resultado").firstElementChild, repintar };
+}
+
 function pintar(nombre, info) {
     return `
         <div class="tarjeta-resultado">
@@ -61,6 +69,7 @@ async function consultar() {
     });
 
     mostrarEnResultado(html);
+    registrarVista(() => consultar());
 }
 
 function mostrarEnResultado(html) {
@@ -73,6 +82,7 @@ function mostrarEnResultado(html) {
 }
 
 function cerrarVistaResultado() {
+    vistaAbierta = null;
     ocultarDetalleDia();
     document.getElementById("resultado").style.display = "none";
     document.getElementById("cardCalendario").style.display = "block";
@@ -84,10 +94,12 @@ function cerrarVistaResultado() {
 function ocultarDetalleDia() {
     const panelDetalle = document.getElementById("panelDetalleDia");
     if (panelDetalle) panelDetalle.remove();
+    // Si se dejó de repintar la pantalla porque había una hoja de edición abierta, se hace ahora
+    if (typeof repintadoPendiente !== "undefined" && repintadoPendiente) programarRepintado();
 }
 
 // --- DETALLE DE UN DÍA (clic en una celda): hoja que sube desde abajo ---
-function seleccionarDia(fechaISO, empleadoId) {
+function seleccionarDia(fechaISO, empleadoId, sinAnimar) {
     ocultarDetalleDia();
 
     // En la selección de varios días para pedir un cambio, tocar un día lo marca o desmarca
@@ -127,7 +139,7 @@ function seleccionarDia(fechaISO, empleadoId) {
     const otraPersona = miFicha && miFicha.id === empleado.id ? otraPersonaDe(empleado) : null;
     const verOtra = otraPersona ? infoOtraPersona(fechaISO, otraPersona) : null;
 
-    const panel = el("div", { id: "panelDetalleDia", class: "detalle-dia " + info.clase, role: "dialog", "aria-label": "Detalle del día" },
+    const panel = el("div", { id: "panelDetalleDia", class: "detalle-dia " + info.clase, role: "dialog", "aria-label": "Detalle del día", "data-fecha": fechaISO, "data-emp": empleadoId },
         el("div", { class: "detalle-cabecera" },
             el("div", { class: "detalle-titulo" },
                 el("span", { class: "detalle-letra" + claseLargo(info), text: info.codigo }),
@@ -190,6 +202,7 @@ function seleccionarDia(fechaISO, empleadoId) {
             : null
     );
 
+    if (sinAnimar) panel.style.animation = "none";   // al reconstruirla con datos nuevos no vuelve a subir
     document.body.append(panel);
 }
 
@@ -306,6 +319,7 @@ async function verCalendario(anioParam, colectivoParam) {
     const selectVista = document.getElementById("anioVistaAnual");
     rellenarAnios(selectVista, anio);
     selectVista.addEventListener("change", () => verCalendario(selectVista.value, codigo));
+    registrarVista(() => verCalendario(anio, codigo));
 
     // Deja a la vista el día de hoy si se mira el año en curso
     const filaHoy = document.querySelector(".fila-hoy");

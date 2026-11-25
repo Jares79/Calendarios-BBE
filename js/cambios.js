@@ -528,8 +528,12 @@ async function pedirDeshacer(empleado, afectadas) {
 
 // Devuelve "guardar" (seguir con el cambio), "cancelar" o "deshacer" (se pidió deshacer y no se guarda nada)
 async function revisarAntesDeGuardar(empleado, colectivo, cambios) {
-    if (puedeUsarCambios()) await cargarPermutas();
-    else permutas = new Map();
+    if (puedeUsarCambios()) {
+        await cargarPermutas();
+        // Los turnos propios de esos días, tal como están ahora en el servidor: si un compañero acaba de aceptar
+        // un cambio, la pantalla puede ir un poco por detrás y entonces no se detectaría que viene de un cambio
+        await sincronizarDiasDe(empleado.id, cambios.map(c => c.fecha));
+    } else permutas = new Map();
 
     const avisos = [], afectadas = [];
     cambios.forEach(({ fecha, codigo }) => {

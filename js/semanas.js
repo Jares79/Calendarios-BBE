@@ -76,17 +76,21 @@ async function guardarSemanas(empleado, cambios) {
     borrar.forEach(f => semanas.delete(claveExcepcion(empleado.id, f)));
     refrescarCalendarioPropio();
 
-    let fallo = null;
-    for (let i = 0; i < subir.length && !fallo; i += 200) {
-        const r = await supabaseClient.from("semanas_especiales")
-            .upsert(subir.slice(i, i + 200), { onConflict: "empleado_id,semana" });
-        fallo = r.error;
-    }
-    for (let i = 0; i < borrar.length && !fallo; i += 100) {
-        const r = await supabaseClient.from("semanas_especiales")
-            .delete().eq("empleado_id", empleado.id).in("semana", borrar.slice(i, i + 100));
-        fallo = r.error;
-    }
+    // Mientras se guarda no se aplican lecturas del servidor que pudieran pisar lo recién puesto
+    const fallo = await conEscrituraLocal(async () => {
+        let fallo = null;
+        for (let i = 0; i < subir.length && !fallo; i += 200) {
+            const r = await supabaseClient.from("semanas_especiales")
+                .upsert(subir.slice(i, i + 200), { onConflict: "empleado_id,semana" });
+            fallo = r.error;
+        }
+        for (let i = 0; i < borrar.length && !fallo; i += 100) {
+            const r = await supabaseClient.from("semanas_especiales")
+                .delete().eq("empleado_id", empleado.id).in("semana", borrar.slice(i, i + 100));
+            fallo = r.error;
+        }
+        return fallo;
+    });
 
     if (fallo) {
         console.error("Error al guardar semanas:", fallo);
@@ -135,17 +139,21 @@ async function guardarMarcasDia(empleado, cambios, silencioso) {
     borrar.forEach(f => marcasDia.delete(claveExcepcion(empleado.id, f)));
     refrescarCalendarioPropio();
 
-    let fallo = null;
-    for (let i = 0; i < subir.length && !fallo; i += 200) {
-        const r = await supabaseClient.from("marcas_dia")
-            .upsert(subir.slice(i, i + 200), { onConflict: "empleado_id,fecha" });
-        fallo = r.error;
-    }
-    for (let i = 0; i < borrar.length && !fallo; i += 100) {
-        const r = await supabaseClient.from("marcas_dia")
-            .delete().eq("empleado_id", empleado.id).in("fecha", borrar.slice(i, i + 100));
-        fallo = r.error;
-    }
+    // Mientras se guarda no se aplican lecturas del servidor que pudieran pisar lo recién puesto
+    const fallo = await conEscrituraLocal(async () => {
+        let fallo = null;
+        for (let i = 0; i < subir.length && !fallo; i += 200) {
+            const r = await supabaseClient.from("marcas_dia")
+                .upsert(subir.slice(i, i + 200), { onConflict: "empleado_id,fecha" });
+            fallo = r.error;
+        }
+        for (let i = 0; i < borrar.length && !fallo; i += 100) {
+            const r = await supabaseClient.from("marcas_dia")
+                .delete().eq("empleado_id", empleado.id).in("fecha", borrar.slice(i, i + 100));
+            fallo = r.error;
+        }
+        return fallo;
+    });
     if (fallo) {
         console.error("Error al guardar marcas de días:", fallo);
         anterior.forEach((valor, clave) => {

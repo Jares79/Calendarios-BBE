@@ -61,9 +61,19 @@
     };
     return self;
   }
+  const canales = [];
+  window.__emitir = (tabla, cambio) => canales.forEach(c => c.manejadores.forEach(m => { if (m.filtro.table === tabla) m.cb(cambio); }));
+  window.__reconectar = () => canales.forEach(c => c.estadoCb && c.estadoCb('SUBSCRIBED'));
   const client = {
     from: qb,
     functions: { invoke: async (nombre, o) => { window.__invocado = [nombre, o && o.body]; return { data:{ ok:true, enviados: db.push_suscripciones.length }, error:null }; } },
+    // Realtime simulado: las pruebas lanzan cambios con window.__emitir(tabla, { eventType, new, old })
+    channel(nombre) {
+      const c = { nombre, manejadores: [], estadoCb: null,
+        on(tipo, filtro, cb) { c.manejadores.push({ filtro, cb }); return c; },
+        subscribe(cb) { c.estadoCb = cb; canales.push(c); setTimeout(() => cb && cb('SUBSCRIBED'), 0); return c; } };
+      return c;
+    },
     auth: { getSession: async()=>({ data:{ session:{ user:{id:'u1'} } } }), signOut: async()=>({}), onAuthStateChange(){} },
     rpc: async (name, a) => {
       a = a || {};
@@ -74,6 +84,18 @@
       const no = (m) => ({ data:{ ok:false, motivo:m }, error:null });
       if (name==='mi_perfil') return { data:{ iniciales:U.iniciales, nombre:'Usuario', rol:U.rol, empleadoId:U.empleadoId, empleadoNombre:'X', debeCambiarPin:false, colores:{} }, error:null };
       window.__writes.push(['rpc', name]);
+      if (name==='guardar_turnos') {   // fase 19: guardado de turnos y horas en una sola operación
+        if (window.__sinGuardarTurnos) return { data:null, error:{ code:'PGRST202', message:'Could not find the function public.guardar_turnos' } };
+        if (window.__falloGuardarTurnos) return { data:null, error:{ code:'XX000', message:'fallo simulado' } };
+        const sub = a.p_subir||[], bor = a.p_borrar||[], hb = a.p_horas_borrar||[], hp = a.p_horas_poner||[];
+        if (sub.some(x => !x.codigo || !x.fecha)) return no('datos_invalidos');
+        window.__ultimoGuardarTurnos = { subir:sub, borrar:bor, horasBorrar:hb, horasPoner:hp };
+        sub.forEach(x => { const i = db.excepciones.findIndex(r => r.empleado_id===me && r.fecha===x.fecha); if (i>=0) db.excepciones[i].codigo = x.codigo; else db.excepciones.push({ empleado_id:me, fecha:x.fecha, codigo:x.codigo }); });
+        db.excepciones = db.excepciones.filter(r => !(r.empleado_id===me && bor.includes(r.fecha)));
+        db.horas_dia = db.horas_dia.filter(r => !(r.empleado_id===me && hb.includes(r.fecha)));
+        hp.forEach(x => { const i = db.horas_dia.findIndex(r => r.empleado_id===me && r.fecha===x.fecha); if (i>=0) db.horas_dia[i].horas = x.horas; else db.horas_dia.push({ empleado_id:me, fecha:x.fecha, horas:x.horas }); });
+        return ok();
+      }
       if (name==='push_guardar') { const i = db.push_suscripciones.findIndex(x=>x.endpoint===a.p_endpoint); const fila = { id:'ps'+(db.push_suscripciones.length+1), user_id:'u1', empleado_id:me, endpoint:a.p_endpoint, p256dh:a.p_p256dh, auth:a.p_auth, avisar_cambios:true, avisar_mensajes:true }; if (i>=0) Object.assign(db.push_suscripciones[i], { p256dh:a.p_p256dh, auth:a.p_auth }); else db.push_suscripciones.push(fila); return { data:{ ok: !window.__pushFallo }, error:null }; }
       if (name==='push_preferencias') { const f = db.push_suscripciones.find(x=>x.endpoint===a.p_endpoint); if (f) { if (a.p_cambios!=null) f.avisar_cambios=a.p_cambios; if (a.p_mensajes!=null) f.avisar_mensajes=a.p_mensajes; } return { data:{ ok:!!f }, error:null }; }
       if (name==='push_borrar') { db.push_suscripciones = db.push_suscripciones.filter(x=>x.endpoint!==a.p_endpoint); return { data:{ ok:true }, error:null }; }
