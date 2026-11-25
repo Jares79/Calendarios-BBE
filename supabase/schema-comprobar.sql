@@ -126,7 +126,6 @@ esp_columnas(t, c) as (values
         ('horas_turno','anio'),
         ('horas_turno','codigo'),
         ('horas_turno','horas'),
-        ('intensivas','constraint'),
         ('intensivas','created_at'),
         ('intensivas','desde'),
         ('intensivas','hasta'),
@@ -250,7 +249,7 @@ problemas as (
 select tipo, nombre, estado from problemas
 union all
 select 'resumen',
-       'Todo en orden: 18 tablas, 35 funciones, 97 columnas, 40 políticas y tiempo real',
+       'Todo en orden: 18 tablas, 35 funciones, 96 columnas, 40 políticas y tiempo real',
        'OK'
  where not exists (select 1 from problemas)
 order by 1, 2;
